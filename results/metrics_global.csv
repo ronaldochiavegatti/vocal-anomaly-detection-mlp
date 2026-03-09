@@ -1,0 +1,7 @@
+class,precision,recall,f1,support
+Normal,0.847368,0.937409,0.890118,687
+Laringite,0.635514,0.485714,0.550607,140
+Disfonia Psicogenica,0.549020,0.307692,0.394366,91
+macro_avg,,,0.611697,918
+weighted_avg,,,0.789197,918
+accuracy,,,0.806100,918

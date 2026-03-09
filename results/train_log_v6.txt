@@ -1,0 +1,204 @@
+[2026-02-09 21:30:49] [INFO] Classificador de Anomalias Vocais - MLP em C
+[2026-02-09 21:30:49] [INFO] Modo: train | Diretorio: . | Seed: 42
+[2026-02-09 21:30:49] [INFO] === MODO: TREINAMENTO COM K-FOLD ===
+[2026-02-09 21:30:49] [INFO] Classe 0 (saudavel): 687 pacientes
+[2026-02-09 21:30:49] [INFO] Classe 1 (laringite): 140 pacientes
+[2026-02-09 21:30:49] [INFO] Classe 2 (disfonia_psicogênica): 91 pacientes
+[2026-02-09 21:30:49] [INFO] Dataset total: 918 pacientes
+[2026-02-09 21:30:49] [INFO] CSV lido: 1100 registros de ./overview_merged.csv
+[2026-02-09 21:30:49] [INFO] Features carregadas do cache: results/features.csv (918 x 150)
+[2026-02-09 21:30:49] [INFO] 
+========== FOLD 1/5 ==========
+[2026-02-09 21:30:49] [INFO] Treino: 733 -> 1647 (SMOTE), Validacao: 185
+[2026-02-09 21:30:49] [INFO] Epoch   1: train_loss=1.3025 train_acc=0.396 val_loss=0.9714 val_acc=0.524
+[2026-02-09 21:30:53] [INFO] Epoch  10: train_loss=0.7088 train_acc=0.612 val_loss=0.8062 val_acc=0.654
+[2026-02-09 21:30:57] [INFO] Epoch  20: train_loss=0.6172 train_acc=0.661 val_loss=0.7592 val_acc=0.697
+[2026-02-09 21:31:02] [INFO] Epoch  30: train_loss=0.5894 train_acc=0.662 val_loss=0.7282 val_acc=0.724
+[2026-02-09 21:31:06] [INFO] Epoch  40: train_loss=0.5718 train_acc=0.662 val_loss=0.7271 val_acc=0.714
+[2026-02-09 21:31:11] [INFO] Epoch  50: train_loss=0.5626 train_acc=0.648 val_loss=0.7045 val_acc=0.746
+[2026-02-09 21:31:15] [INFO] Epoch  60: train_loss=0.5484 train_acc=0.662 val_loss=0.7143 val_acc=0.751
+[2026-02-09 21:31:19] [INFO] Epoch  70: train_loss=0.5403 train_acc=0.663 val_loss=0.7221 val_acc=0.746
+[2026-02-09 21:31:24] [INFO] Epoch  80: train_loss=0.5396 train_acc=0.675 val_loss=0.6863 val_acc=0.757
+[2026-02-09 21:31:28] [INFO] Epoch  90: train_loss=0.5400 train_acc=0.658 val_loss=0.7087 val_acc=0.757
+[2026-02-09 21:31:33] [INFO] Epoch 100: train_loss=0.5396 train_acc=0.645 val_loss=0.7072 val_acc=0.746
+[2026-02-09 21:31:37] [INFO] Epoch 110: train_loss=0.5386 train_acc=0.665 val_loss=0.7096 val_acc=0.746
+[2026-02-09 21:31:41] [INFO] Epoch 120: train_loss=0.5453 train_acc=0.665 val_loss=0.6990 val_acc=0.768
+[2026-02-09 21:31:46] [INFO] Epoch 130: train_loss=0.5382 train_acc=0.656 val_loss=0.7052 val_acc=0.751
+[2026-02-09 21:31:46] [INFO] Early stopping na epoch 131 (melhor: epoch 81, val_acc=0.7784)
+[2026-02-09 21:31:46] [INFO] Pesos restaurados da epoch 81 (val_acc=0.7784)
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica
+  Normal                        128            3            7
+  Laringite                      19            8            1
+  Disfonia Psicogenica           10            1            8
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8153     0.9275     0.8678
+Laringite                  0.6667     0.2857     0.4000
+Disfonia Psicogenica       0.5000     0.4211     0.4571
+
+=== Metricas Globais ===
+Acuracia:     0.7784
+Macro F1:     0.5750
+Weighted F1:  0.7548
+Total amostras: 185
+[2026-02-09 21:31:46] [INFO] 
+========== FOLD 2/5 ==========
+[2026-02-09 21:31:46] [INFO] Treino: 734 -> 1647 (SMOTE), Validacao: 184
+[2026-02-09 21:31:47] [INFO] Epoch   1: train_loss=1.2275 train_acc=0.401 val_loss=0.8006 val_acc=0.728
+[2026-02-09 21:31:51] [INFO] Epoch  10: train_loss=0.7108 train_acc=0.600 val_loss=0.6205 val_acc=0.788
+[2026-02-09 21:31:55] [INFO] Epoch  20: train_loss=0.6285 train_acc=0.628 val_loss=0.6053 val_acc=0.804
+[2026-02-09 21:31:59] [INFO] Epoch  30: train_loss=0.5908 train_acc=0.666 val_loss=0.6135 val_acc=0.772
+[2026-02-09 21:32:03] [INFO] Epoch  40: train_loss=0.5721 train_acc=0.658 val_loss=0.5892 val_acc=0.815
+[2026-02-09 21:32:07] [INFO] Epoch  50: train_loss=0.5558 train_acc=0.665 val_loss=0.5983 val_acc=0.788
+[2026-02-09 21:32:10] [INFO] Early stopping na epoch 57 (melhor: epoch 7, val_acc=0.8207)
+[2026-02-09 21:32:10] [INFO] Pesos restaurados da epoch 7 (val_acc=0.8207)
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica
+  Normal                        128            4            6
+  Laringite                      10           16            2
+  Disfonia Psicogenica            7            4            7
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8828     0.9275     0.9046
+Laringite                  0.6667     0.5714     0.6154
+Disfonia Psicogenica       0.4667     0.3889     0.4242
+
+=== Metricas Globais ===
+Acuracia:     0.8207
+Macro F1:     0.6481
+Weighted F1:  0.8136
+Total amostras: 184
+[2026-02-09 21:32:10] [INFO] 
+========== FOLD 3/5 ==========
+[2026-02-09 21:32:10] [INFO] Treino: 735 -> 1650 (SMOTE), Validacao: 183
+[2026-02-09 21:32:10] [INFO] Epoch   1: train_loss=1.2163 train_acc=0.410 val_loss=0.8168 val_acc=0.678
+[2026-02-09 21:32:14] [INFO] Epoch  10: train_loss=0.7278 train_acc=0.605 val_loss=0.6113 val_acc=0.781
+[2026-02-09 21:32:18] [INFO] Epoch  20: train_loss=0.6290 train_acc=0.632 val_loss=0.5395 val_acc=0.814
+[2026-02-09 21:32:23] [INFO] Epoch  30: train_loss=0.5933 train_acc=0.638 val_loss=0.5539 val_acc=0.792
+[2026-02-09 21:32:27] [INFO] Epoch  40: train_loss=0.5719 train_acc=0.658 val_loss=0.5209 val_acc=0.814
+[2026-02-09 21:32:31] [INFO] Epoch  50: train_loss=0.5645 train_acc=0.650 val_loss=0.5380 val_acc=0.787
+[2026-02-09 21:32:35] [INFO] Epoch  60: train_loss=0.5651 train_acc=0.644 val_loss=0.5360 val_acc=0.820
+[2026-02-09 21:32:39] [INFO] Epoch  70: train_loss=0.5568 train_acc=0.661 val_loss=0.5710 val_acc=0.787
+[2026-02-09 21:32:42] [INFO] Early stopping na epoch 77 (melhor: epoch 27, val_acc=0.8251)
+[2026-02-09 21:32:42] [INFO] Pesos restaurados da epoch 27 (val_acc=0.8251)
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica
+  Normal                        125            7            5
+  Laringite                       7           18            3
+  Disfonia Psicogenica           10            0            8
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8803     0.9124     0.8961
+Laringite                  0.7200     0.6429     0.6792
+Disfonia Psicogenica       0.5000     0.4444     0.4706
+
+=== Metricas Globais ===
+Acuracia:     0.8251
+Macro F1:     0.6820
+Weighted F1:  0.8210
+Total amostras: 183
+[2026-02-09 21:32:42] [INFO] 
+========== FOLD 4/5 ==========
+[2026-02-09 21:32:42] [INFO] Treino: 735 -> 1650 (SMOTE), Validacao: 183
+[2026-02-09 21:32:43] [INFO] Epoch   1: train_loss=1.2280 train_acc=0.427 val_loss=0.8542 val_acc=0.612
+[2026-02-09 21:32:46] [INFO] Epoch  10: train_loss=0.7188 train_acc=0.599 val_loss=0.6964 val_acc=0.710
+[2026-02-09 21:32:51] [INFO] Epoch  20: train_loss=0.6225 train_acc=0.636 val_loss=0.6850 val_acc=0.760
+[2026-02-09 21:32:55] [INFO] Epoch  30: train_loss=0.5864 train_acc=0.660 val_loss=0.6582 val_acc=0.776
+[2026-02-09 21:32:59] [INFO] Epoch  40: train_loss=0.5749 train_acc=0.661 val_loss=0.6305 val_acc=0.776
+[2026-02-09 21:33:03] [INFO] Epoch  50: train_loss=0.5615 train_acc=0.641 val_loss=0.6455 val_acc=0.776
+[2026-02-09 21:33:07] [INFO] Epoch  60: train_loss=0.5532 train_acc=0.658 val_loss=0.6115 val_acc=0.781
+[2026-02-09 21:33:12] [INFO] Epoch  70: train_loss=0.5466 train_acc=0.655 val_loss=0.6207 val_acc=0.776
+[2026-02-09 21:33:15] [INFO] Early stopping na epoch 78 (melhor: epoch 28, val_acc=0.7978)
+[2026-02-09 21:33:15] [INFO] Pesos restaurados da epoch 28 (val_acc=0.7978)
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica
+  Normal                        127            5            5
+  Laringite                       9           15            4
+  Disfonia Psicogenica            8            6            4
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8819     0.9270     0.9039
+Laringite                  0.5769     0.5357     0.5556
+Disfonia Psicogenica       0.3077     0.2222     0.2581
+
+=== Metricas Globais ===
+Acuracia:     0.7978
+Macro F1:     0.5725
+Weighted F1:  0.7871
+Total amostras: 183
+[2026-02-09 21:33:15] [INFO] 
+========== FOLD 5/5 ==========
+[2026-02-09 21:33:15] [INFO] Treino: 735 -> 1650 (SMOTE), Validacao: 183
+[2026-02-09 21:33:15] [INFO] Epoch   1: train_loss=1.1534 train_acc=0.399 val_loss=0.8860 val_acc=0.596
+[2026-02-09 21:33:19] [INFO] Epoch  10: train_loss=0.6906 train_acc=0.607 val_loss=0.7685 val_acc=0.694
+[2026-02-09 21:33:23] [INFO] Epoch  20: train_loss=0.6106 train_acc=0.647 val_loss=0.7274 val_acc=0.721
+[2026-02-09 21:33:27] [INFO] Epoch  30: train_loss=0.5733 train_acc=0.661 val_loss=0.7076 val_acc=0.732
+[2026-02-09 21:33:32] [INFO] Epoch  40: train_loss=0.5629 train_acc=0.655 val_loss=0.7297 val_acc=0.710
+[2026-02-09 21:33:36] [INFO] Epoch  50: train_loss=0.5590 train_acc=0.661 val_loss=0.7045 val_acc=0.732
+[2026-02-09 21:33:40] [INFO] Epoch  60: train_loss=0.5493 train_acc=0.652 val_loss=0.6841 val_acc=0.732
+[2026-02-09 21:33:44] [INFO] Epoch  70: train_loss=0.5431 train_acc=0.675 val_loss=0.6816 val_acc=0.738
+[2026-02-09 21:33:48] [INFO] Epoch  80: train_loss=0.5487 train_acc=0.641 val_loss=0.6870 val_acc=0.732
+[2026-02-09 21:33:52] [INFO] Epoch  90: train_loss=0.5387 train_acc=0.661 val_loss=0.6955 val_acc=0.743
+[2026-02-09 21:33:57] [INFO] Epoch 100: train_loss=0.5361 train_acc=0.674 val_loss=0.6567 val_acc=0.765
+[2026-02-09 21:34:01] [INFO] Epoch 110: train_loss=0.5287 train_acc=0.674 val_loss=0.7019 val_acc=0.743
+[2026-02-09 21:34:05] [INFO] Epoch 120: train_loss=0.5452 train_acc=0.681 val_loss=0.7082 val_acc=0.738
+[2026-02-09 21:34:09] [INFO] Epoch 130: train_loss=0.5346 train_acc=0.670 val_loss=0.6806 val_acc=0.765
+[2026-02-09 21:34:13] [INFO] Epoch 140: train_loss=0.5396 train_acc=0.681 val_loss=0.7056 val_acc=0.754
+[2026-02-09 21:34:18] [INFO] Epoch 150: train_loss=0.5374 train_acc=0.666 val_loss=0.7037 val_acc=0.749
+[2026-02-09 21:34:22] [INFO] Epoch 160: train_loss=0.5423 train_acc=0.647 val_loss=0.7010 val_acc=0.738
+[2026-02-09 21:34:26] [INFO] Epoch 170: train_loss=0.5420 train_acc=0.628 val_loss=0.7224 val_acc=0.721
+[2026-02-09 21:34:27] [INFO] Early stopping na epoch 173 (melhor: epoch 123, val_acc=0.7923)
+[2026-02-09 21:34:27] [INFO] Pesos restaurados da epoch 123 (val_acc=0.7923)
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica
+  Normal                        131            5            1
+  Laringite                      19            9            0
+  Disfonia Psicogenica           13            0            5
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8037     0.9562     0.8733
+Laringite                  0.6429     0.3214     0.4286
+Disfonia Psicogenica       0.8333     0.2778     0.4167
+
+=== Metricas Globais ===
+Acuracia:     0.7923
+Macro F1:     0.5729
+Weighted F1:  0.7604
+Total amostras: 183
+[2026-02-09 21:34:27] [INFO] 
+========== RESULTADOS AGREGADOS (5-FOLD) ==========
+[2026-02-09 21:34:27] [INFO] Acuracia media:     0.8029
+[2026-02-09 21:34:27] [INFO] Macro F1 medio:     0.6101
+[2026-02-09 21:34:27] [INFO] Weighted F1 medio:  0.7874
+[2026-02-09 21:34:27] [INFO] 
+=== Metricas Globais (todos os folds combinados) ===
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica
+  Normal                        639           24           24
+  Laringite                      64           66           10
+  Disfonia Psicogenica           48           11           32
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8509     0.9301     0.8887
+Laringite                  0.6535     0.4714     0.5477
+Disfonia Psicogenica       0.4848     0.3516     0.4076
+
+=== Metricas Globais ===
+Acuracia:     0.8028
+Macro F1:     0.6147
+Weighted F1:  0.7890
+Total amostras: 918
+[2026-02-09 21:34:27] [INFO] Tempo total: 218.5 segundos
