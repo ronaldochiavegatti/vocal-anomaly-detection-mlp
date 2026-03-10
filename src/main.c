@@ -19,6 +19,16 @@
 #include "mlp_train.h"
 #include "kfold.h"
 #include "metrics.h"
+#include "feature_select.h"
+#include "knn.h"
+#include "logreg.h"
+#include "wav_augment.h"
+#include "wav_io.h"
+#include "dsp_utils.h"
+#include "feature_temporal.h"
+#include "feature_spectral.h"
+#include "feature_wavelet.h"
+#include "dataset.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -394,6 +404,218 @@ static int features_load_csv(const char *path, FeatureMatrix *fm)
     return 0;
 }
 
+/*
+ * Extrai FEATURES_PER_VOWEL features de um buffer float em memoria.
+ * Equivalente a extract_vowel_features() de feature_extract.c mas sem I/O.
+ */
+static void extract_vowel_from_float(const float *samples, int n, int sr, float *out)
+{
+    float *pre_emph = (float *)safe_malloc(n * sizeof(float));
+    memcpy(pre_emph, samples, n * sizeof(float));
+    dsp_pre_emphasis(pre_emph, n, PRE_EMPHASIS_ALPHA);
+
+    int idx = 0;
+    TemporalFeatures tf;
+    temporal_extract(samples, n, sr, &tf);
+    out[idx++] = tf.jitter_local; out[idx++] = tf.jitter_rap;
+    out[idx++] = tf.jitter_ppq5; out[idx++] = tf.shimmer_local;
+    out[idx++] = tf.shimmer_apq3; out[idx++] = tf.shimmer_apq5;
+    out[idx++] = tf.shimmer_apq11; out[idx++] = tf.energy_mean;
+    out[idx++] = tf.hnr; out[idx++] = tf.zcr;
+
+    SpectralFeatures sf;
+    spectral_extract(pre_emph, n, sr, &sf);
+    out[idx++] = sf.f0_mean; out[idx++] = sf.f0_std;
+    out[idx++] = sf.formants[0]; out[idx++] = sf.formants[1];
+    out[idx++] = sf.formants[2]; out[idx++] = sf.formants[3];
+    out[idx++] = sf.spectral_entropy; out[idx++] = sf.spectral_centroid;
+    out[idx++] = sf.spectral_rolloff;
+    for (int m = 0; m < 13; m++) out[idx++] = sf.mfcc[m];
+
+    WaveletFeatures wf;
+    wavelet_extract(samples, n, &wf);
+    for (int l = 0; l < WAVELET_LEVELS; l++) out[idx++] = wf.mean[l];
+    for (int l = 0; l < WAVELET_LEVELS; l++) out[idx++] = wf.variance[l];
+    for (int l = 0; l < WAVELET_LEVELS; l++) out[idx++] = wf.energy[l];
+
+    free(pre_emph);
+}
+
+/*
+ * Aplica 4 tecnicas de augmentacao nas classes minoritarias (Laryngite, Disfonia)
+ * do fold de treino. Expande train_x e train_y com as amostras augmentadas.
+ * Modifica *x_ptr, *y_ptr, *n_ptr in-place (realoca).
+ */
+static void augment_fold_training(float **x_ptr, int **y_ptr, int *n_ptr,
+                                   int nf, const Dataset *ds,
+                                   const int *indices, int n_orig)
+{
+    /* Contar quantas amostras minoritarias existem */
+    int n_minority = 0;
+    for (int i = 0; i < n_orig; i++) {
+        int cls = ds->patients[indices[i]].class_label;
+        if (cls == CLASS_LARYNGITIS || cls == CLASS_DYSPHONIA) n_minority++;
+    }
+    if (n_minority == 0) return;
+
+    int n_aug_per_sample = 4;
+    int n_new = *n_ptr + n_minority * n_aug_per_sample;
+    float *new_x = (float *)safe_malloc((size_t)n_new * nf * sizeof(float));
+    int   *new_y = (int   *)safe_malloc((size_t)n_new * sizeof(int));
+
+    /* Copiar dados originais */
+    memcpy(new_x, *x_ptr, (size_t)(*n_ptr) * nf * sizeof(float));
+    memcpy(new_y, *y_ptr, (size_t)(*n_ptr) * sizeof(int));
+
+    int out_idx = *n_ptr;
+
+    for (int i = 0; i < n_orig; i++) {
+        int pat_idx = indices[i];
+        const Patient *p = &ds->patients[pat_idx];
+        if (p->class_label != CLASS_LARYNGITIS && p->class_label != CLASS_DYSPHONIA)
+            continue;
+
+        /* Carregar WAVs das 3 vogais */
+        WavFile wavs[NUM_VOWELS];
+        int wav_ok[NUM_VOWELS];
+        for (int v = 0; v < NUM_VOWELS; v++)
+            wav_ok[v] = (wav_read(p->vowel_paths[v], &wavs[v]) == 0);
+
+        /* 4 configuracoes de augmentacao */
+        for (int aug = 0; aug < n_aug_per_sample; aug++) {
+            float *feat_row = &new_x[out_idx * nf];
+            memset(feat_row, 0, nf * sizeof(float));
+
+            for (int v = 0; v < NUM_VOWELS; v++) {
+                if (!wav_ok[v]) continue;
+                int ns = wavs[v].num_samples;
+                int sr = wavs[v].sample_rate;
+                float *buf = (float *)safe_malloc(ns * sizeof(float));
+                memcpy(buf, wavs[v].samples, ns * sizeof(float));
+
+                switch (aug) {
+                    case 0: wav_aug_noise(buf, ns, 25.0f); break;
+                    case 1: wav_aug_gain(buf, ns,  3.0f); break;
+                    case 2: wav_aug_gain(buf, ns, -3.0f); break;
+                    case 3: wav_aug_stretch(buf, ns, 1.05f); break;
+                }
+
+                extract_vowel_from_float(buf, ns, sr,
+                                         &feat_row[v * FEATURES_PER_VOWEL]);
+                free(buf);
+            }
+            new_y[out_idx] = p->class_label;
+            out_idx++;
+        }
+
+        for (int v = 0; v < NUM_VOWELS; v++)
+            if (wav_ok[v]) wav_free(&wavs[v]);
+    }
+
+    free(*x_ptr);
+    free(*y_ptr);
+    *x_ptr = new_x;
+    *y_ptr = new_y;
+    *n_ptr = out_idx;
+}
+
+/*
+ * inner_cv_select_thresholds - Seleciona var/corr thresholds via 3-fold CV interno.
+ * x_raw: features brutas (pre-normalizacao) [n x nf]
+ * y: labels [n]
+ * Avalia 9 combinacoes, retorna a que maximiza Macro F1 medio no inner val.
+ */
+static void inner_cv_select_thresholds(const float *x_raw, const int *y,
+                                        int n, int nf,
+                                        float *best_var_out, float *best_corr_out)
+{
+    static const float var_grid[]  = {0.005f, 0.01f,  0.02f};
+    static const float corr_grid[] = {0.90f,  0.95f,  0.98f};
+    int n_var = 3, n_corr = 3, n_inner = 3;
+
+    /* Shuffled index array for inner split */
+    int *idx = (int *)safe_malloc(n * sizeof(int));
+    for (int i = 0; i < n; i++) idx[i] = i;
+    rng_seed(RANDOM_SEED + 77);
+    rng_shuffle_int(idx, n);
+
+    *best_var_out  = 0.01f;
+    *best_corr_out = 0.95f;
+    float best_f1 = -1.0f;
+
+    for (int vi = 0; vi < n_var; vi++) {
+        for (int ci = 0; ci < n_corr; ci++) {
+            float vt = var_grid[vi];
+            float ct = corr_grid[ci];
+            float f1_sum = 0.0f;
+
+            for (int fi = 0; fi < n_inner; fi++) {
+                int val_start     = (fi * n) / n_inner;
+                int val_end       = ((fi + 1) * n) / n_inner;
+                int n_ival        = val_end - val_start;
+                int n_itrain      = n - n_ival;
+
+                float *ix_tr = (float *)safe_malloc(n_itrain * nf * sizeof(float));
+                int   *iy_tr = (int   *)safe_malloc(n_itrain * sizeof(int));
+                float *ix_vl = (float *)safe_malloc(n_ival   * nf * sizeof(float));
+                int   *iy_vl = (int   *)safe_malloc(n_ival   * sizeof(int));
+
+                int ti = 0, vii = 0;
+                for (int i = 0; i < n; i++) {
+                    int orig = idx[i];
+                    if (i >= val_start && i < val_end) {
+                        memcpy(&ix_vl[vii * nf], &x_raw[orig * nf], nf * sizeof(float));
+                        iy_vl[vii++] = y[orig];
+                    } else {
+                        memcpy(&ix_tr[ti * nf], &x_raw[orig * nf], nf * sizeof(float));
+                        iy_tr[ti++] = y[orig];
+                    }
+                }
+
+                /* Normalize within inner fold */
+                NormParams inorm;
+                norm_fit(ix_tr, n_itrain, nf, &inorm);
+                norm_transform(ix_tr, n_itrain, &inorm);
+                norm_transform(ix_vl, n_ival, &inorm);
+
+                /* Feature selection */
+                int *sel   = (int *)safe_malloc(nf * sizeof(int));
+                int n_sel  = select_features(ix_tr, n_itrain, nf, vt, ct, sel, nf);
+
+                float *sx_tr = (float *)safe_malloc(n_itrain * n_sel * sizeof(float));
+                float *sx_vl = (float *)safe_malloc(n_ival   * n_sel * sizeof(float));
+                apply_feature_selection(ix_tr, n_itrain, nf, sel, n_sel, sx_tr);
+                apply_feature_selection(ix_vl, n_ival,   nf, sel, n_sel, sx_vl);
+
+                /* Train LR and evaluate */
+                int *y_pred = (int *)safe_malloc(n_ival * sizeof(int));
+                LRModel lr_inner;
+                rng_seed(RANDOM_SEED + fi * 37 + vi * 11 + ci * 5);
+                lr_init(&lr_inner, n_sel, NUM_CLASSES);
+                lr_train(&lr_inner, sx_tr, iy_tr, n_itrain,
+                         sx_vl,   iy_vl, n_ival, n_sel, y_pred);
+                lr_free(&lr_inner);
+
+                MetricsResult mr;
+                metrics_compute(iy_vl, y_pred, n_ival, &mr);
+                f1_sum += mr.macro_f1;
+
+                free(ix_tr); free(iy_tr); free(ix_vl); free(iy_vl);
+                free(sel); free(sx_tr); free(sx_vl); free(y_pred);
+                norm_free(&inorm);
+            }
+
+            float avg_f1 = f1_sum / n_inner;
+            if (avg_f1 > best_f1) {
+                best_f1       = avg_f1;
+                *best_var_out  = vt;
+                *best_corr_out = ct;
+            }
+        }
+    }
+    free(idx);
+}
+
 static int mode_train(const char *base_dir)
 {
     log_info("=== MODO: TREINAMENTO COM K-FOLD ===");
@@ -435,7 +657,18 @@ static int mode_train(const char *base_dir)
     float acc_sum = 0.0f, macro_f1_sum = 0.0f, weighted_f1_sum = 0.0f;
     int *all_y_true = (int *)safe_malloc(fm.count * sizeof(int));
     int *all_y_pred = (int *)safe_malloc(fm.count * sizeof(int));
+    float *all_y_prob = (float *)safe_malloc(fm.count * MLP_OUTPUT_SIZE * sizeof(float));
     int all_count = 0;
+
+    /* Predicoes acumuladas para baselines (majority class, kNN, logistic regression) */
+    int *maj_all_pred = (int *)safe_malloc(fm.count * sizeof(int));
+    int *knn_all_pred = (int *)safe_malloc(fm.count * sizeof(int));
+    int *lr_all_pred  = (int *)safe_malloc(fm.count * sizeof(int));
+
+    /* Acumular importancia de features por fold (indexado pelo original 0..TOTAL_FEATURES-1) */
+    float *imp_acc_sum = (float *)safe_calloc(TOTAL_FEATURES, sizeof(float));
+    float *imp_f1_sum  = (float *)safe_calloc(TOTAL_FEATURES, sizeof(float));
+    int   *imp_count   = (int   *)safe_calloc(TOTAL_FEATURES, sizeof(int));
 
     for (int f = 0; f < K_FOLDS; f++) {
         log_info("\n========== FOLD %d/%d ==========", f + 1, K_FOLDS);
@@ -460,24 +693,64 @@ static int mode_train(const char *base_dir)
             val_y[i] = fm.labels[idx];
         }
 
+        /* Augmentacao no dominio do audio (somente classes minoritarias no treino) */
+        augment_fold_training(&train_x, &train_y, &fold->n_train,
+                              nf, &ds, fold->train_indices, fold->n_train);
+
+        /* Nested CV: selecionar thresholds de feature selection via 3-fold interno */
+        float best_var_thresh, best_corr_thresh;
+        inner_cv_select_thresholds(train_x, train_y, fold->n_train, nf,
+                                   &best_var_thresh, &best_corr_thresh);
+        log_info("Fold %d: inner CV selecionou var=%.3f corr=%.2f",
+                 f + 1, best_var_thresh, best_corr_thresh);
+
         /* Normalizar (fit no treino, transform em ambos) */
         NormParams norm;
         norm_fit(train_x, fold->n_train, nf, &norm);
         norm_transform(train_x, fold->n_train, &norm);
         norm_transform(val_x, fold->n_val, &norm);
 
-        /* Feature selection */
+        /* Feature selection com thresholds escolhidos pelo inner CV */
         int *selected = (int *)safe_malloc(nf * sizeof(int));
         int n_selected = select_features(train_x, fold->n_train, nf,
-                                         0.01f, 0.95f, selected, nf);
+                                         best_var_thresh, best_corr_thresh,
+                                         selected, nf);
+        log_info("Fold %d: inner CV var=%.3f corr=%.2f -> n_features=%d",
+                 f + 1, best_var_thresh, best_corr_thresh, n_selected);
 
         float *sel_train_x = (float *)safe_malloc(fold->n_train * n_selected * sizeof(float));
         float *sel_val_x = (float *)safe_malloc(fold->n_val * n_selected * sizeof(float));
         apply_feature_selection(train_x, fold->n_train, nf, selected, n_selected, sel_train_x);
         apply_feature_selection(val_x, fold->n_val, nf, selected, n_selected, sel_val_x);
 
+        /* Salvar indices de features selecionadas para reproducibilidade */
+        char sel_path[1024];
+        snprintf(sel_path, sizeof(sel_path), "%s/selected_fold%d.bin", MODELS_DIR, f);
+        selected_save(sel_path, selected, n_selected);
+
         if (f == 0) {
             log_info("Feature selection: %d -> %d features", nf, n_selected);
+        }
+
+        /* Baselines: majority class, kNN e logistic regression (pre-SMOTE) */
+        {
+            int base_offset = all_count; /* ainda nao incrementado */
+            /* Majority class: prediz sempre classe 0 (Normal) */
+            for (int i = 0; i < fold->n_val; i++)
+                maj_all_pred[base_offset + i] = 0;
+            /* kNN k=5 */
+            knn_predict(sel_train_x, train_y, fold->n_train,
+                        sel_val_x, fold->n_val, n_selected,
+                        5, &knn_all_pred[base_offset]);
+            /* Logistic regression (Adam, cosine LR, early stopping) */
+            LRModel lr_model;
+            rng_seed(RANDOM_SEED + f * 100 + 1);
+            lr_init(&lr_model, n_selected, NUM_CLASSES);
+            lr_train(&lr_model,
+                     sel_train_x, train_y, fold->n_train,
+                     sel_val_x,   val_y,   fold->n_val,
+                     n_selected, &lr_all_pred[base_offset]);
+            lr_free(&lr_model);
         }
 
         /* Borderline-SMOTE oversampling */
@@ -507,7 +780,27 @@ static int mode_train(const char *base_dir)
 
             all_y_true[all_count] = val_y[i];
             all_y_pred[all_count] = pred;
+            for (int c = 0; c < MLP_OUTPUT_SIZE; c++)
+                all_y_prob[all_count * MLP_OUTPUT_SIZE + c] = output[c];
             all_count++;
+        }
+
+        /* Permutation importance no fold */
+        {
+            float *fimp_acc = (float *)safe_calloc(n_selected, sizeof(float));
+            float *fimp_f1  = (float *)safe_calloc(n_selected, sizeof(float));
+            int *fold_true = &all_y_true[all_count - fold->n_val];
+            metrics_permutation_importance(sel_val_x, fold_true,
+                                           fold->n_val, n_selected,
+                                           &net, selected, n_selected,
+                                           fimp_acc, fimp_f1);
+            for (int j = 0; j < n_selected; j++) {
+                int orig = selected[j];
+                imp_acc_sum[orig] += fimp_acc[j];
+                imp_f1_sum[orig]  += fimp_f1[j];
+                imp_count[orig]++;
+            }
+            free(fimp_acc); free(fimp_f1);
         }
 
         /* Metricas do fold */
@@ -559,8 +852,138 @@ static int mode_train(const char *base_dir)
     snprintf(metrics_path, sizeof(metrics_path), "%s/metrics_global.csv", RESULTS_DIR);
     metrics_export_csv(&global_metrics, metrics_path);
 
+    /* Baselines: metricas globais e tabela comparativa */
+    {
+        MetricsResult maj_m, knn_m, lr_m;
+        metrics_compute(all_y_true, maj_all_pred, all_count, &maj_m);
+        metrics_compute(all_y_true, knn_all_pred, all_count, &knn_m);
+        metrics_compute(all_y_true, lr_all_pred,  all_count, &lr_m);
+
+        log_info("\n=== Tabela Comparativa de Baselines ===");
+        log_info("%-22s %8s %8s %8s %10s %9s",
+                 "Method", "Accuracy", "Macro_F1",
+                 "F1_Norm", "F1_Laring", "F1_Disf");
+        log_info("%-22s %8.4f %8.4f %8.4f %10.4f %9.4f",
+                 "MajorityClass",
+                 maj_m.accuracy, maj_m.macro_f1,
+                 maj_m.f1[0], maj_m.f1[1], maj_m.f1[2]);
+        log_info("%-22s %8.4f %8.4f %8.4f %10.4f %9.4f",
+                 "kNN(k=5)",
+                 knn_m.accuracy, knn_m.macro_f1,
+                 knn_m.f1[0], knn_m.f1[1], knn_m.f1[2]);
+        log_info("%-22s %8.4f %8.4f %8.4f %10.4f %9.4f",
+                 "LogisticRegression",
+                 lr_m.accuracy, lr_m.macro_f1,
+                 lr_m.f1[0], lr_m.f1[1], lr_m.f1[2]);
+        log_info("%-22s %8.4f %8.4f %8.4f %10.4f %9.4f",
+                 "MLP(proposed)",
+                 global_metrics.accuracy, global_metrics.macro_f1,
+                 global_metrics.f1[0], global_metrics.f1[1], global_metrics.f1[2]);
+
+        char bl_path[1024];
+        snprintf(bl_path, sizeof(bl_path), "%s/baselines.csv", RESULTS_DIR);
+        FILE *bl_f = fopen(bl_path, "w");
+        if (bl_f) {
+            fprintf(bl_f, "Method,Accuracy,Macro_F1,F1_Normal,F1_Laryngite,F1_Disfonia\n");
+            fprintf(bl_f, "MajorityClass,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+                    maj_m.accuracy, maj_m.macro_f1,
+                    maj_m.f1[0], maj_m.f1[1], maj_m.f1[2]);
+            fprintf(bl_f, "kNN_k5,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+                    knn_m.accuracy, knn_m.macro_f1,
+                    knn_m.f1[0], knn_m.f1[1], knn_m.f1[2]);
+            fprintf(bl_f, "LogisticRegression,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+                    lr_m.accuracy, lr_m.macro_f1,
+                    lr_m.f1[0], lr_m.f1[1], lr_m.f1[2]);
+            fprintf(bl_f, "MLP_proposed,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+                    global_metrics.accuracy, global_metrics.macro_f1,
+                    global_metrics.f1[0], global_metrics.f1[1], global_metrics.f1[2]);
+            fclose(bl_f);
+            log_info("Baselines salvos em %s", bl_path);
+        }
+    }
+    free(maj_all_pred);
+    free(knn_all_pred);
+    free(lr_all_pred);
+
+    /* Feature importance: escrever CSV e sumarizar por grupo */
+    {
+        char fi_path[1024];
+        snprintf(fi_path, sizeof(fi_path), "%s/feature_importance.csv", RESULTS_DIR);
+        FILE *fi_f = fopen(fi_path, "w");
+        if (fi_f) {
+            fprintf(fi_f, "feature_idx,importance_acc,importance_f1\n");
+            for (int j = 0; j < TOTAL_FEATURES; j++) {
+                if (imp_count[j] > 0) {
+                    fprintf(fi_f, "%d,%.6f,%.6f\n", j,
+                            imp_acc_sum[j] / imp_count[j],
+                            imp_f1_sum[j]  / imp_count[j]);
+                }
+            }
+            fclose(fi_f);
+            log_info("Feature importance salvo em %s", fi_path);
+        }
+
+        /* Sumarizar por grupo */
+        float g_acc[3] = {0}, g_f1[3] = {0};
+        int   g_cnt[3] = {0};
+        for (int j = 0; j < TOTAL_FEATURES; j++) {
+            if (imp_count[j] == 0) continue;
+            int g = (j < 30) ? 0 : (j < 96) ? 1 : 2;
+            g_acc[g] += imp_acc_sum[j] / imp_count[j];
+            g_f1[g]  += imp_f1_sum[j]  / imp_count[j];
+            g_cnt[g]++;
+        }
+        static const char *gnames[3] = {"Temporal (0-29)", "Spectral (30-95)", "Wavelet (96-149)"};
+        log_info("=== Feature Importance por Grupo ===");
+        for (int g = 0; g < 3; g++) {
+            if (g_cnt[g] > 0)
+                log_info("  %-18s acc_drop=%.4f  f1_drop=%.4f  (n=%d)",
+                         gnames[g],
+                         g_acc[g] / g_cnt[g],
+                         g_f1[g]  / g_cnt[g],
+                         g_cnt[g]);
+        }
+    }
+    free(imp_acc_sum); free(imp_f1_sum); free(imp_count);
+
+    /* Bootstrap CI sobre todas as predicoes acumuladas */
+    ConfidenceInterval ci[CI_N_METRICS];
+    metrics_bootstrap_ci(all_y_true, all_y_pred, all_count, 1000, 42, ci);
+    log_info("Bootstrap CI 95%% (N=1000, seed=42):");
+    log_info("  Accuracy:    %.4f [%.4f, %.4f]", ci[CI_ACCURACY].mean,     ci[CI_ACCURACY].lower,     ci[CI_ACCURACY].upper);
+    log_info("  Macro F1:    %.4f [%.4f, %.4f]", ci[CI_MACRO_F1].mean,     ci[CI_MACRO_F1].lower,     ci[CI_MACRO_F1].upper);
+    log_info("  F1 Normal:   %.4f [%.4f, %.4f]", ci[CI_F1_NORMAL].mean,    ci[CI_F1_NORMAL].lower,    ci[CI_F1_NORMAL].upper);
+    log_info("  F1 Laringite:%.4f [%.4f, %.4f]", ci[CI_F1_LARYNGITE].mean, ci[CI_F1_LARYNGITE].lower, ci[CI_F1_LARYNGITE].upper);
+    log_info("  F1 Disfonia: %.4f [%.4f, %.4f]", ci[CI_F1_DISFONIA].mean,  ci[CI_F1_DISFONIA].lower,  ci[CI_F1_DISFONIA].upper);
+
+    /* Anexar secao de CI ao CSV de metricas */
+    {
+        FILE *mf = fopen(metrics_path, "a");
+        if (mf) {
+            static const char *ci_names[CI_N_METRICS] = {
+                "accuracy", "macro_f1", "f1_normal", "f1_laryngite", "f1_disfonia"
+            };
+            fprintf(mf, "# bootstrap_ci\nmetric,mean,ci_lower,ci_upper\n");
+            for (int m = 0; m < CI_N_METRICS; m++)
+                fprintf(mf, "%s,%.6f,%.6f,%.6f\n",
+                        ci_names[m], ci[m].mean, ci[m].lower, ci[m].upper);
+            fclose(mf);
+        }
+    }
+
+    /* ROC/AUC e curvas Precision-Recall por classe */
+    char roc_path[1024], pr_path[1024];
+    snprintf(roc_path, sizeof(roc_path), "%s/roc_curves.csv", RESULTS_DIR);
+    snprintf(pr_path,  sizeof(pr_path),  "%s/pr_curves.csv",  RESULTS_DIR);
+    metrics_roc_auc(all_y_true, all_y_prob, all_count, NUM_CLASSES,
+                    global_metrics.auc, roc_path);
+    metrics_pr_curve(all_y_true, all_y_prob, all_count, NUM_CLASSES, pr_path);
+    log_info("AUC Normal=%.3f Laryngite=%.3f Disfonia=%.3f",
+             global_metrics.auc[0], global_metrics.auc[1], global_metrics.auc[2]);
+
     free(all_y_true);
     free(all_y_pred);
+    free(all_y_prob);
     kfold_free(&splits);
     features_free(&fm);
     dataset_free(&ds);
