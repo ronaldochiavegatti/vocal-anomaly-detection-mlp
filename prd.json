@@ -1,0 +1,160 @@
+{
+  "project": "VocalAnomalyDetection",
+  "branchName": "ralph/academic-improvements",
+  "description": "Academic rigor improvements for vocal anomaly detection pipeline — adds feature persistence, ROC/AUC, bootstrap CIs, permutation importance, baselines, nested CV, and audio augmentation to support biomedical publication.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Save selected feature indices per fold",
+      "description": "As a researcher, I want to persist which features were selected in each fold so that I can run inference on new patients without re-running the full pipeline.",
+      "acceptanceCriteria": [
+        "Create src/feature_select.c and include/feature_select.h with functions selected_save(path, indices, n) and selected_load(path, indices, n)",
+        "selected_save writes binary format: [int n_selected][int idx_0]...[int idx_{n-1}]",
+        "In src/main.c, call selected_save after select_features() in each fold k, writing to models/selected_fold{k}.bin",
+        "Running make train produces 5 files: models/selected_fold0.bin through models/selected_fold4.bin",
+        "include/feature_select.h declares both functions with correct signatures",
+        "Makefile includes src/feature_select.c in the build",
+        "make compiles with 0 errors and 0 relevant warnings"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "feature_select.c + feature_select.h criados; selected_save() chamado após select_features() em cada fold"
+    },
+    {
+      "id": "US-002",
+      "title": "Accumulate softmax probabilities across folds",
+      "description": "As a developer, I need to store raw softmax output probabilities for all validation samples so that ROC/AUC and bootstrap CI computations have access to them.",
+      "acceptanceCriteria": [
+        "In src/main.c, allocate all_y_prob[total_samples][3] alongside the existing all_y_pred array",
+        "In the per-fold prediction loop (around line 499-511), save mlp_forward softmax output to all_y_prob[i]",
+        "all_y_prob is populated for all folds before final metrics are computed",
+        "No change to existing all_y_pred or all_y_true logic",
+        "make compiles with 0 errors and 0 relevant warnings"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "all_y_prob alocado como float[fm.count * MLP_OUTPUT_SIZE]; preenchido no loop de predições por fold; liberado no final"
+    },
+    {
+      "id": "US-003",
+      "title": "Compute ROC curves and AUC per class",
+      "description": "As a researcher, I want per-class ROC and Precision-Recall curves so that I can report AUC in publications and assess model discrimination on imbalanced classes.",
+      "acceptanceCriteria": [
+        "Add metrics_roc_auc(y_true, y_prob, n_samples, n_classes, auc_out) to src/metrics.c using one-vs-rest and trapezoidal rule",
+        "Add metrics_pr_curve(y_true, y_prob, n_samples, n_classes) to src/metrics.c",
+        "Add float auc[NUM_CLASSES] field to MetricsResult struct in include/metrics.h",
+        "In src/main.c, call both functions after all folds complete using all_y_true and all_y_prob",
+        "Write results/roc_curves.csv with header and columns: class,threshold,tpr,fpr",
+        "Write results/pr_curves.csv with header and columns: class,threshold,precision,recall",
+        "AUC per class printed to stdout in format: AUC Normal=X.XXX Laryngite=X.XXX Disfonia=X.XXX",
+        "make compiles with 0 errors and 0 relevant warnings"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "metrics_roc_auc e metrics_pr_curve implementados com 101 thresholds; auc[] adicionado ao MetricsResult; chamados em main.c após os folds"
+    },
+    {
+      "id": "US-004",
+      "title": "Bootstrap confidence intervals on accumulated predictions",
+      "description": "As a researcher, I want 95% confidence intervals on accuracy, Macro F1, and per-class F1 so that I can report statistically valid results in publications.",
+      "acceptanceCriteria": [
+        "Add struct ConfidenceInterval { float mean; float lower; float upper; } to include/metrics.h",
+        "Add metrics_bootstrap_ci(y_true, y_pred, n_samples, n_bootstrap, results_array) to src/metrics.c; resamples with replacement n_bootstrap=1000 times, computes percentiles 2.5 and 97.5",
+        "In src/main.c, call metrics_bootstrap_ci after all folds complete using all_y_true and all_y_pred with seed=42",
+        "Append CI section to results/metrics_global.csv with columns: metric,mean,ci_lower,ci_upper",
+        "Metrics covered: accuracy, macro_f1, f1_normal, f1_laryngite, f1_disfonia",
+        "Runtime overhead < 500ms (no re-training)",
+        "make compiles with 0 errors and 0 relevant warnings"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "ConfidenceInterval struct + CI_* constants adicionados a metrics.h; metrics_bootstrap_ci implementado com qsort; chamado em main.c com seed=42, N=1000; CI section anexada ao metrics_global.csv"
+    },
+    {
+      "id": "US-005",
+      "title": "Implement permutation feature importance",
+      "description": "As a researcher, I want to know which acoustic features most affect diagnosis so I can provide clinical interpretability in publications.",
+      "acceptanceCriteria": [
+        "Add metrics_permutation_importance(X_val, y_true, n_samples, n_features, net, norm, selected, n_selected, importance_acc_out, importance_f1_out) to src/metrics.c",
+        "For each feature j: shuffle column j in X_val, re-run forward pass, record importance[j] = original_accuracy - permuted_accuracy, restore column",
+        "Group-level permutation computed for 3 groups: Temporal (indices 0-29), Spectral (30-95), Wavelet (96-149) using the selected feature index mapping",
+        "In src/main.c, call after each fold's evaluation on the fold's validation set; accumulate importance across folds",
+        "Write results/feature_importance.csv with header and columns: feature_idx,importance_acc,importance_f1",
+        "Group summary (Temporal/Spectral/Wavelet mean importance) printed to stdout after all folds",
+        "make compiles with 0 errors and 0 relevant warnings"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "metrics_permutation_importance implementado com Fisher-Yates shuffle; acumulação por original feature index; CSV feature_importance.csv e group summary (Temporal/Spectral/Wavelet) escritos após todos os folds"
+    },
+    {
+      "id": "US-006",
+      "title": "Implement majority class and kNN baselines",
+      "description": "As a researcher, I want to compare the MLP against simple baselines so that I can contextualize the 80.6% result in a publication table.",
+      "acceptanceCriteria": [
+        "Create src/knn.c and include/knn.h with knn_predict(X_train, y_train, n_train, X_val, n_val, n_features, k, y_pred_out) using Euclidean distance and majority vote",
+        "Majority class baseline implemented inline: always predict class 0 (Normal); compute accuracy, macro F1, per-class F1 using existing metrics functions",
+        "kNN baseline (k=5) uses the same normalized features and same train/val split as main MLP per fold",
+        "Makefile includes src/knn.c in the build",
+        "Comparison table printed to stdout: Method | Accuracy | Macro_F1 | F1_Normal | F1_Laryngite | F1_Disfonia",
+        "Results saved to results/baselines.csv with same columns plus Method column",
+        "make compiles with 0 errors and 0 relevant warnings"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": "knn.c + knn.h criados; majority class inline; ambos rodam pre-SMOTE por fold; predicoes acumuladas; tabela comparativa impressa e baselines.csv escrito"
+    },
+    {
+      "id": "US-007",
+      "title": "Implement logistic regression baseline",
+      "description": "As a researcher, I want a logistic regression baseline (MLP with 0 hidden layers) to complete the comparison table for publication.",
+      "acceptanceCriteria": [
+        "Logistic regression implemented as MLP with 0 hidden layers using mlp_init_dynamic(net, input_size) with n_hidden=0 (Input → Dense(3) + Softmax)",
+        "Trained with same Adam optimizer, same early stopping patience=30, same max epochs as main model",
+        "Uses same train/val split, same normalization, same feature selection as main MLP per fold",
+        "Results averaged across 5 folds and appended to results/baselines.csv as row with Method=LogisticRegression",
+        "Row also appended to the comparison table printed to stdout",
+        "make compiles with 0 errors and 0 relevant warnings"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": "logreg.c + logreg.h criados como módulo standalone; Adam+cosine LR+early stopping+label smoothing+L2+noise identicos ao MLP; predicoes acumuladas por fold; appended ao baselines.csv e tabela comparativa"
+    },
+    {
+      "id": "US-008",
+      "title": "Implement nested CV inner loop for threshold selection",
+      "description": "As a researcher, I want to select feature selection thresholds via inner CV so that hyperparameter choices are unbiased and defensible to reviewers.",
+      "acceptanceCriteria": [
+        "Implement inner_cv_select_thresholds(data, n_samples, labels, best_var_thresh_out, best_corr_thresh_out) in src/main.c",
+        "Inner grid: var_threshold in {0.005, 0.01, 0.02}, corr_threshold in {0.90, 0.95, 0.98} — 9 combinations total",
+        "Inner loop: 3-fold CV on outer fold's training set; select combination that maximizes inner val Macro F1",
+        "Outer fold training uses best thresholds found by inner loop instead of hardcoded values",
+        "Per-fold log output: Fold k: inner CV selected var=X.XXX corr=X.XX -> n_features=ZZZ",
+        "select_features() called with selected thresholds as parameters (already supports this via arguments)",
+        "make compiles with 0 errors and 0 relevant warnings"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": "inner_cv_select_thresholds implementado em main.c: 3-fold inline (sem reuso de KFoldSplits/K_FOLDS), grid 3×3=9 combinações, LR como modelo interno; select_features chamado com thresholds selecionados; log por fold"
+    },
+    {
+      "id": "US-009",
+      "title": "Implement audio-domain augmentation module",
+      "description": "As a researcher, I want to generate augmented audio samples from minority classes using physical transformations so that my augmentation methodology is more scientifically sound than feature-space SMOTE.",
+      "acceptanceCriteria": [
+        "Create src/wav_augment.c and include/wav_augment.h",
+        "Implement wav_add_noise(samples, n, snr_db) — additive white Gaussian noise at SNR 20-30 dB on int16_t PCM samples",
+        "Implement wav_gain_perturb(samples, n_samples, db) — amplitude scaling by ±3 dB on int16_t PCM samples",
+        "Implement wav_pitch_shift(samples, n, sample_rate, semitones) — ±1-2 semitone pitch shift",
+        "Implement wav_time_stretch(samples, n, factor) — ±5-10% duration change using linear interpolation",
+        "In src/main.c, apply augmentation only to Laryngite and Disfonia patients in training folds (not validation)",
+        "Augmented samples pass through feature extraction pipeline; do not write augmented WAV files to disk",
+        "Makefile includes src/wav_augment.c in the build",
+        "make compiles with 0 errors and 0 relevant warnings"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": "wav_augment.c + wav_augment.h criados com 4 funções (noise/gain/stretch/pitch) em float; extract_vowel_from_float helper adicionado a main.c; augment_fold_training aplica 4 técnicas por paciente minoritário no treino; sem escrita em disco"
+    }
+  ]
+}
