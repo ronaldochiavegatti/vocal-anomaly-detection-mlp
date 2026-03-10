@@ -1,4 +1,5 @@
 #include "feature_select.h"
+#include "config.h"
 #include <stdio.h>
 
 int selected_save(const char *path, const int *indices, int n)
@@ -16,6 +17,7 @@ int selected_load(const char *path, int *indices, int *n)
     FILE *f = fopen(path, "rb");
     if (!f) return -1;
     if (fread(n, sizeof(int), 1, f) != 1) { fclose(f); return -1; }
+    if (*n <= 0 || *n > TOTAL_FEATURES) { fclose(f); return -1; }
     if (fread(indices, sizeof(int), (size_t)*n, f) != (size_t)*n) { fclose(f); return -1; }
     fclose(f);
     return 0;

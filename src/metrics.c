@@ -106,9 +106,9 @@ void metrics_permutation_importance(const float *X_val, const int *y_true,
                                     float *importance_acc_out,
                                     float *importance_f1_out)
 {
-    float *X = (float *)malloc((size_t)n_samples * n_features * sizeof(float));
-    int   *y_pred = (int *)malloc((size_t)n_samples * sizeof(int));
-    float *col    = (float *)malloc((size_t)n_samples * sizeof(float));
+    float *X = (float *)safe_malloc((size_t)n_samples * n_features * sizeof(float));
+    int   *y_pred = (int *)safe_malloc((size_t)n_samples * sizeof(int));
+    float *col    = (float *)safe_malloc((size_t)n_samples * sizeof(float));
     float  output[MLP_OUTPUT_SIZE];
 
     memcpy(X, X_val, (size_t)n_samples * n_features * sizeof(float));
@@ -176,10 +176,10 @@ void metrics_bootstrap_ci(const int *y_true, const int *y_pred, int n_samples,
 {
     float *dist[CI_N_METRICS];
     for (int m = 0; m < CI_N_METRICS; m++)
-        dist[m] = (float *)malloc((size_t)n_bootstrap * sizeof(float));
+        dist[m] = (float *)safe_malloc((size_t)n_bootstrap * sizeof(float));
 
-    int *bt = (int *)malloc((size_t)n_samples * sizeof(int));
-    int *bp = (int *)malloc((size_t)n_samples * sizeof(int));
+    int *bt = (int *)safe_malloc((size_t)n_samples * sizeof(int));
+    int *bp = (int *)safe_malloc((size_t)n_samples * sizeof(int));
 
     rng_seed(seed);
 
