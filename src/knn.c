@@ -1,5 +1,6 @@
 #include "knn.h"
 #include "config.h"
+#include "utils.h"
 #include <stdlib.h>
 
 void knn_predict(const float *X_train, const int *y_train, int n_train,
@@ -7,8 +8,8 @@ void knn_predict(const float *X_train, const int *y_train, int n_train,
                  int k, int *y_pred_out)
 {
     int kk = (k < n_train) ? k : n_train;
-    float *dists = (float *)malloc((size_t)n_train * sizeof(float));
-    int   *order = (int   *)malloc((size_t)n_train * sizeof(int));
+    float *dists = (float *)safe_malloc((size_t)n_train * sizeof(float));
+    int   *order = (int   *)safe_malloc((size_t)n_train * sizeof(int));
 
     for (int i = 0; i < n_val; i++) {
         /* Distancias ao quadrado para todas as amostras de treino */

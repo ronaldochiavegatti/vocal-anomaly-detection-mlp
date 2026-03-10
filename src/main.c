@@ -28,7 +28,6 @@
 #include "feature_temporal.h"
 #include "feature_spectral.h"
 #include "feature_wavelet.h"
-#include "dataset.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -526,17 +525,17 @@ static void augment_fold_training(float **x_ptr, int **y_ptr, int *n_ptr,
  * Avalia 9 combinacoes, retorna a que maximiza Macro F1 medio no inner val.
  */
 static void inner_cv_select_thresholds(const float *x_raw, const int *y,
-                                        int n, int nf,
+                                        int n, int nf, int outer_fold,
                                         float *best_var_out, float *best_corr_out)
 {
     static const float var_grid[]  = {0.005f, 0.01f,  0.02f};
     static const float corr_grid[] = {0.90f,  0.95f,  0.98f};
     int n_var = 3, n_corr = 3, n_inner = 3;
 
-    /* Shuffled index array for inner split */
+    /* Shuffled index array for inner split — seed varia por fold externo */
     int *idx = (int *)safe_malloc(n * sizeof(int));
     for (int i = 0; i < n; i++) idx[i] = i;
-    rng_seed(RANDOM_SEED + 77);
+    rng_seed(RANDOM_SEED + 77 + outer_fold * 13);
     rng_shuffle_int(idx, n);
 
     *best_var_out  = 0.01f;
@@ -702,7 +701,7 @@ static int mode_train(const char *base_dir)
 
         /* Nested CV: selecionar thresholds de feature selection via 3-fold interno */
         float best_var_thresh, best_corr_thresh;
-        inner_cv_select_thresholds(train_x, train_y, n_train_aug, nf,
+        inner_cv_select_thresholds(train_x, train_y, n_train_aug, nf, f,
                                    &best_var_thresh, &best_corr_thresh);
         log_info("Fold %d: inner CV selecionou var=%.3f corr=%.2f",
                  f + 1, best_var_thresh, best_corr_thresh);
