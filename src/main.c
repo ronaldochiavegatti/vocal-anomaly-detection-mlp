@@ -665,10 +665,12 @@ static int mode_train(const char *base_dir)
     int *knn_all_pred = (int *)safe_malloc(fm.count * sizeof(int));
     int *lr_all_pred  = (int *)safe_malloc(fm.count * sizeof(int));
 
-    /* Acumular importancia de features por fold (indexado pelo original 0..TOTAL_FEATURES-1) */
+    /* Acumular importancia de features por fold */
     float *imp_acc_sum = (float *)safe_calloc(TOTAL_FEATURES, sizeof(float));
     float *imp_f1_sum  = (float *)safe_calloc(TOTAL_FEATURES, sizeof(float));
     int   *imp_count   = (int   *)safe_calloc(TOTAL_FEATURES, sizeof(int));
+
+    float best_val_f1 = -1.0f;
 
     for (int f = 0; f < K_FOLDS; f++) {
         log_info("\n========== FOLD %d/%d ==========", f + 1, K_FOLDS);
@@ -694,33 +696,34 @@ static int mode_train(const char *base_dir)
         }
 
         /* Augmentacao no dominio do audio (somente classes minoritarias no treino) */
-        augment_fold_training(&train_x, &train_y, &fold->n_train,
+        int n_train_aug = fold->n_train;
+        augment_fold_training(&train_x, &train_y, &n_train_aug,
                               nf, &ds, fold->train_indices, fold->n_train);
 
         /* Nested CV: selecionar thresholds de feature selection via 3-fold interno */
         float best_var_thresh, best_corr_thresh;
-        inner_cv_select_thresholds(train_x, train_y, fold->n_train, nf,
+        inner_cv_select_thresholds(train_x, train_y, n_train_aug, nf,
                                    &best_var_thresh, &best_corr_thresh);
         log_info("Fold %d: inner CV selecionou var=%.3f corr=%.2f",
                  f + 1, best_var_thresh, best_corr_thresh);
 
         /* Normalizar (fit no treino, transform em ambos) */
         NormParams norm;
-        norm_fit(train_x, fold->n_train, nf, &norm);
-        norm_transform(train_x, fold->n_train, &norm);
+        norm_fit(train_x, n_train_aug, nf, &norm);
+        norm_transform(train_x, n_train_aug, &norm);
         norm_transform(val_x, fold->n_val, &norm);
 
         /* Feature selection com thresholds escolhidos pelo inner CV */
         int *selected = (int *)safe_malloc(nf * sizeof(int));
-        int n_selected = select_features(train_x, fold->n_train, nf,
+        int n_selected = select_features(train_x, n_train_aug, nf,
                                          best_var_thresh, best_corr_thresh,
                                          selected, nf);
         log_info("Fold %d: inner CV var=%.3f corr=%.2f -> n_features=%d",
                  f + 1, best_var_thresh, best_corr_thresh, n_selected);
 
-        float *sel_train_x = (float *)safe_malloc(fold->n_train * n_selected * sizeof(float));
+        float *sel_train_x = (float *)safe_malloc(n_train_aug * n_selected * sizeof(float));
         float *sel_val_x = (float *)safe_malloc(fold->n_val * n_selected * sizeof(float));
-        apply_feature_selection(train_x, fold->n_train, nf, selected, n_selected, sel_train_x);
+        apply_feature_selection(train_x, n_train_aug, nf, selected, n_selected, sel_train_x);
         apply_feature_selection(val_x, fold->n_val, nf, selected, n_selected, sel_val_x);
 
         /* Salvar indices de features selecionadas para reproducibilidade */
@@ -739,7 +742,7 @@ static int mode_train(const char *base_dir)
             for (int i = 0; i < fold->n_val; i++)
                 maj_all_pred[base_offset + i] = 0;
             /* kNN k=5 */
-            knn_predict(sel_train_x, train_y, fold->n_train,
+            knn_predict(sel_train_x, train_y, n_train_aug,
                         sel_val_x, fold->n_val, n_selected,
                         5, &knn_all_pred[base_offset]);
             /* Logistic regression (Adam, cosine LR, early stopping) */
@@ -747,7 +750,7 @@ static int mode_train(const char *base_dir)
             rng_seed(RANDOM_SEED + f * 100 + 1);
             lr_init(&lr_model, n_selected, NUM_CLASSES);
             lr_train(&lr_model,
-                     sel_train_x, train_y, fold->n_train,
+                     sel_train_x, train_y, n_train_aug,
                      sel_val_x,   val_y,   fold->n_val,
                      n_selected, &lr_all_pred[base_offset]);
             lr_free(&lr_model);
@@ -755,11 +758,11 @@ static int mode_train(const char *base_dir)
 
         /* Borderline-SMOTE oversampling */
         float *os_train_x; int *os_train_y; int os_n_train;
-        smote_oversample(sel_train_x, train_y, fold->n_train, n_selected,
+        smote_oversample(sel_train_x, train_y, n_train_aug, n_selected,
                          &os_train_x, &os_train_y, &os_n_train);
 
         log_info("Treino: %d -> %d (Borderline-SMOTE), Validacao: %d, Features: %d",
-                 fold->n_train, os_n_train, fold->n_val, n_selected);
+                 n_train_aug, os_n_train, fold->n_val, n_selected);
 
         MLP net;
         TrainHistory hist;
@@ -815,14 +818,28 @@ static int mode_train(const char *base_dir)
         weighted_f1_sum += fold_metrics.weighted_f1;
 
         /* Salvar modelo do fold */
-        char model_path[1024];
+        char model_path[1024], norm_path[1024];
         snprintf(model_path, sizeof(model_path), "%s/mlp_fold%d.bin", MODELS_DIR, f);
         mlp_save(&net, model_path);
 
         /* Salvar normalizacao do fold */
-        char norm_path[1024];
         snprintf(norm_path, sizeof(norm_path), "%s/norm_fold%d.bin", MODELS_DIR, f);
         norm_save(&norm, norm_path);
+
+        /* Salvar melhor modelo (baseado no F1) */
+        if (fold_metrics.macro_f1 > best_val_f1) {
+            best_val_f1 = fold_metrics.macro_f1;
+            
+            char b_model[1024], b_norm[1024], b_sel[1024];
+            snprintf(b_model, sizeof(b_model), "%s/best_model.bin", MODELS_DIR);
+            snprintf(b_norm,  sizeof(b_norm),  "%s/best_norm.bin",  MODELS_DIR);
+            snprintf(b_sel,   sizeof(b_sel),   "%s/best_selected.bin", MODELS_DIR);
+            
+            mlp_save(&net, b_model);
+            norm_save(&norm, b_norm);
+            selected_save(b_sel, selected, n_selected);
+            log_info("Fold %d e o melhor ate agora (F1=%.4f). Salvo como 'best'.", f + 1, best_val_f1);
+        }
 
         /* Liberar recursos */
         mlp_free(&net);
