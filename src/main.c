@@ -520,9 +520,11 @@ static void augment_fold_training(float **x_ptr, int **y_ptr, int *n_ptr,
 
 /*
  * inner_cv_select_thresholds - Seleciona var/corr thresholds via 3-fold CV interno.
- * x_raw: features brutas (pre-normalizacao) [n x nf]
- * y: labels [n]
- * Avalia 9 combinacoes, retorna a que maximiza Macro F1 medio no inner val.
+ * x_raw:      features brutas (pre-normalizacao) [n x nf]
+ * y:          labels [n]
+ * outer_fold: indice do fold externo (0..K_FOLDS-1); usado para variar a seed do
+ *             shuffle interno, garantindo splits independentes por fold externo.
+ * Avalia 9 combinacoes (var x corr), retorna a que maximiza Macro F1 medio no inner val.
  */
 static void inner_cv_select_thresholds(const float *x_raw, const int *y,
                                         int n, int nf, int outer_fold,

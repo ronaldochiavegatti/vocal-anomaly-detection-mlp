@@ -10,7 +10,11 @@
 /* Salva n indices em path. Retorna 0 em sucesso, -1 em erro. */
 int selected_save(const char *path, const int *indices, int n);
 
-/* Carrega indices de path. Preenche indices[] e *n. Retorna 0 em sucesso, -1 em erro. */
+/*
+ * Carrega indices de path. Preenche indices[] e *n.
+ * Retorna 0 em sucesso, -1 em erro (incluindo se o n lido for <= 0 ou > TOTAL_FEATURES).
+ * O buffer indices[] deve ter capacidade para pelo menos TOTAL_FEATURES elementos.
+ */
 int selected_load(const char *path, int *indices, int *n);
 
 #endif /* FEATURE_SELECT_H */
