@@ -6,6 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Vocal anomaly detection pipeline implemented in pure C. Classifies patients into 3 classes (Normal, Laryngite, Disfonia) from voice recordings using a Multi-Layer Perceptron. Dataset: 918 patients (687/140/91), severe imbalance.
 
+## Prerequisites
+
+- Audio files (SVD database) placed in `saudavel/`, `laringite/`, `disfonia_psicogênica/` at the working directory
+- `overview_merged.csv` metadata file at the working directory
+- `results/` and `models/` directories must be created manually before running (not auto-created):
+  ```bash
+  mkdir -p results models
+  ```
+
 ## Build & Run Commands
 
 ```bash
@@ -14,12 +23,14 @@ make clean                    # Remove build/
 
 make extract                  # Extract features from WAV files (~257s), caches to results/features.csv
 make train                    # Train 5-fold CV (loads cached CSV if present, ~45-53s)
-make full                     # Extract + train pipeline
+make full                     # Alias for train (auto-loads cache if results/features.csv exists)
 
 ./build/vocal_detect extract [base_dir]
 ./build/vocal_detect train   [base_dir]
 ./build/vocal_detect full    [base_dir]
 ```
+
+**Note**: `make test` target exists in Makefile but `test` mode is **not implemented** in `main.c`.
 
 **Compiler flags**: `gcc -O2 -Wall -Wextra -Wno-format-truncation -std=c99 -Iinclude -lm`
 
@@ -39,8 +50,8 @@ WAV files (saudavel/, laringite/, disfonia_psicogênica/)
   → kfold.c: stratified 5-fold splits
   → Per fold in main.c:
       ├─ normalize.c: Z-score (fit on train, apply to val)
-      ├─ select_features(): remove low-variance + correlated (150 → ~114)
-      ├─ smote_oversample(): Borderline-SMOTE to balance minority classes
+      ├─ select_features() [in main.c]: remove low-variance (threshold=0.01) + correlated (threshold=0.95) features (150 → ~114)
+      ├─ smote_oversample() [in main.c]: Borderline-SMOTE (k=5) to balance minority classes
       ├─ mlp_train.c: mini-batch Adam, cosine LR decay, early stopping
       │     ├─ mlp.c: forward (LeakyReLU + Dropout + Softmax), backward, Adam update
       │     └─ saves best checkpoint to models/mlp_fold{k}.bin

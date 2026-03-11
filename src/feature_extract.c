@@ -21,6 +21,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 /*
  * Extrai as 29 features de uma unica vogal.
@@ -70,6 +73,9 @@ static int extract_vowel_features(const char *wav_path, float *out)
     out[idx++] = sf.spectral_centroid;
     out[idx++] = sf.spectral_rolloff;
     for (int m = 0; m < 13; m++) out[idx++] = sf.mfcc[m];
+    /* US-011: Delta e Delta-Delta MFCCs */
+    for (int m = 0; m < 13; m++) out[idx++] = sf.delta_mfcc[m];
+    for (int m = 0; m < 13; m++) out[idx++] = sf.delta2_mfcc[m];
 
     /* Features wavelet (sinal original) */
     WaveletFeatures wf;
@@ -93,6 +99,8 @@ int features_extract_all(const Dataset *ds, FeatureMatrix *fm)
     double t_start = timer_now();
     int errors = 0;
 
+    /* US-014: Paralelize patient loop with OpenMP (each patient is independent) */
+#pragma omp parallel for reduction(+:errors) schedule(dynamic, 4)
     for (int i = 0; i < ds->count; i++) {
         const Patient *p = &ds->patients[i];
         fm->labels[i] = p->class_label;
@@ -103,12 +111,6 @@ int features_extract_all(const Dataset *ds, FeatureMatrix *fm)
             if (extract_vowel_features(p->vowel_paths[v], dest) != 0) {
                 errors++;
             }
-        }
-
-        /* Progresso a cada 100 pacientes */
-        if ((i + 1) % 100 == 0 || i == ds->count - 1) {
-            double elapsed = timer_now() - t_start;
-            log_info("Extracao: %d/%d pacientes (%.1fs)", i + 1, ds->count, elapsed);
         }
     }
 
@@ -149,6 +151,11 @@ int features_export_csv(const FeatureMatrix *fm, const char *path)
         "spectral_centroid", "spectral_rolloff",
         "mfcc_0", "mfcc_1", "mfcc_2", "mfcc_3", "mfcc_4", "mfcc_5",
         "mfcc_6", "mfcc_7", "mfcc_8", "mfcc_9", "mfcc_10", "mfcc_11", "mfcc_12",
+        /* US-011: Delta e Delta-Delta MFCCs */
+        "dmfcc_0", "dmfcc_1", "dmfcc_2", "dmfcc_3", "dmfcc_4", "dmfcc_5",
+        "dmfcc_6", "dmfcc_7", "dmfcc_8", "dmfcc_9", "dmfcc_10", "dmfcc_11", "dmfcc_12",
+        "d2mfcc_0", "d2mfcc_1", "d2mfcc_2", "d2mfcc_3", "d2mfcc_4", "d2mfcc_5",
+        "d2mfcc_6", "d2mfcc_7", "d2mfcc_8", "d2mfcc_9", "d2mfcc_10", "d2mfcc_11", "d2mfcc_12",
         "wl_mean_1", "wl_mean_2", "wl_mean_3", "wl_mean_4", "wl_mean_5", "wl_mean_6",
         "wl_var_1", "wl_var_2", "wl_var_3", "wl_var_4", "wl_var_5", "wl_var_6",
         "wl_energy_1", "wl_energy_2", "wl_energy_3", "wl_energy_4", "wl_energy_5", "wl_energy_6"

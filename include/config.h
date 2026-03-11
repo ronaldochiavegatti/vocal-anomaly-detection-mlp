@@ -45,7 +45,7 @@
 #define NUM_TEMPORAL_FEATURES 10  /* jitter_local, jitter_rap, jitter_ppq5, shimmer_local, shimmer_apq3/5/11, energia, hnr, zcr */
 
 /* Features espectrais por vogal */
-#define NUM_SPECTRAL_FEATURES 22  /* f0_mean, f0_std, F1-F4, entropia, centroid, rolloff, mfcc[13] */
+#define NUM_SPECTRAL_FEATURES 48  /* f0_mean, f0_std, F1-F4, entropia, centroid, rolloff, mfcc[13], delta_mfcc[13], delta2_mfcc[13] */
 
 /* Features wavelet por vogal */
 #define WAVELET_LEVELS        6
@@ -103,10 +103,12 @@
 #define K_FOLDS               5
 #define RANDOM_SEED           42
 
-/* ========== Pesos de classe (leves - SMOTE ja balanceia) ========== */
-/* Mild boost for minority classes on top of SMOTE */
-#define CLASS_WEIGHT_NORMAL     0.9f
-#define CLASS_WEIGHT_LARYNGITIS 1.1f
-#define CLASS_WEIGHT_DYSPHONIA  1.2f
+/* ========== Pesos de classe (US-012: Weighted Cross-Entropy, ajustado para Macro F1 early stop) ========== */
+/* Moderate boost for minority classes; paired with Macro F1 early stopping (US-013).
+ * Disfonia weight increased to 1.7 to boost recall without over-correction
+ * (Macro F1 early stopping prevents model from sacrificing Normal recall). */
+#define CLASS_WEIGHT_NORMAL     0.80f
+#define CLASS_WEIGHT_LARYNGITIS 1.25f
+#define CLASS_WEIGHT_DYSPHONIA  1.70f
 
 #endif /* CONFIG_H */

@@ -1,0 +1,54 @@
+{
+  "project_name": "vocal-anomaly-mlp-v3.1-refinement",
+  "objective": "Otimizar a classificação de Disfonia Psicogênica e aumentar o Macro F1 da pipeline.",
+  "baseline_metrics": {
+    "accuracy": 0.7712,
+    "macro_f1": 0.5985,
+    "f1_disfonia": 0.3743,
+    "total_time_seconds": 1289
+  },
+  "target_metrics": {
+    "macro_f1": 0.65,
+    "f1_disfonia": 0.50,
+    "total_time_seconds": 300
+  },
+  "tasks": [
+    {
+      "id": "US-010",
+      "priority": "HIGH",
+      "description": "Implementação de Wavelet Denoising em dsp_utils.c",
+      "dependencies": []
+    },
+    {
+      "id": "US-011",
+      "priority": "HIGH",
+      "description": "Extração de Delta e Delta-Delta MFCCs",
+      "dependencies": []
+    },
+    {
+      "id": "US-012",
+      "priority": "MEDIUM",
+      "description": "Implementação de Weighted Cross-Entropy Loss",
+      "dependencies": ["US-013"]
+    },
+    {
+      "id": "US-013",
+      "priority": "MEDIUM",
+      "description": "Implementação de Early Stopping baseado em Macro F1",
+      "dependencies": []
+    },
+    {
+      "id": "US-014",
+      "priority": "LOW",
+      "description": "Paralelização do loop de extração com OpenMP",
+      "dependencies": ["US-011"]
+    }
+  ],
+  "validation_command": "make clean && make full",
+  "success_criteria": [
+    "Compilação sem warnings",
+    "Macro F1 medido no final da execução > 0.65",
+    "F1 da classe Disfonia > 0.45",
+    "Redução de tempo total de execução medida em segundos"
+  ]
+}

@@ -17,8 +17,6 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-/* No class weights - SMOTE already handles class imbalance */
-
 static float cosine_annealing_lr(int epoch, int max_epochs)
 {
     float progress = (float)epoch / max_epochs;
@@ -42,6 +40,34 @@ static int argmax(const float *v, int n)
         if (v[i] > v[best]) best = i;
     }
     return best;
+}
+
+/* US-013: Compute Macro F1 on validation set for early stopping */
+static float compute_val_macro_f1(MLP *net, const float *val_x, const int *val_y,
+                                   int n_val, int num_features)
+{
+    int confusion[NUM_CLASSES][NUM_CLASSES];
+    memset(confusion, 0, sizeof(confusion));
+    float output[MLP_OUTPUT_SIZE];
+
+    for (int i = 0; i < n_val; i++) {
+        mlp_forward(net, &val_x[i * num_features], output, 0);
+        int pred = argmax(output, MLP_OUTPUT_SIZE);
+        if (val_y[i] >= 0 && val_y[i] < NUM_CLASSES && pred >= 0 && pred < NUM_CLASSES)
+            confusion[val_y[i]][pred]++;
+    }
+
+    float f1_sum = 0.0f;
+    for (int c = 0; c < NUM_CLASSES; c++) {
+        int tp = confusion[c][c];
+        int pred_sum = 0, true_sum = 0;
+        for (int i = 0; i < NUM_CLASSES; i++) pred_sum += confusion[i][c];
+        for (int j = 0; j < NUM_CLASSES; j++) true_sum += confusion[c][j];
+        float p = (pred_sum > 0) ? (float)tp / pred_sum : 0.0f;
+        float r = (true_sum > 0) ? (float)tp / true_sum : 0.0f;
+        f1_sum += (p + r > 0.0f) ? 2.0f * p * r / (p + r) : 0.0f;
+    }
+    return f1_sum / NUM_CLASSES;
 }
 
 /*
@@ -163,6 +189,7 @@ int mlp_train(MLP *net,
     history->best_epoch = 0;
     history->best_val_loss = 1e30f;
     float best_val_acc = -1.0f;
+    float best_val_macro_f1 = -1.0f;
 
     int *indices = (int *)safe_malloc(n_train * sizeof(int));
     for (int i = 0; i < n_train; i++) indices[i] = i;
@@ -282,17 +309,19 @@ int mlp_train(MLP *net,
 
         float val_loss;
         float val_acc = mlp_evaluate(net, val_x, val_y, n_val, num_features, &val_loss);
+        float val_macro_f1 = compute_val_macro_f1(net, val_x, val_y, n_val, num_features);
 
         EpochResult *er = &history->epochs[epoch];
         er->train_loss = epoch_loss;
         er->train_acc = train_acc;
         er->val_loss = val_loss;
         er->val_acc = val_acc;
+        er->val_macro_f1 = val_macro_f1;
         history->num_epochs = epoch + 1;
 
         if ((epoch + 1) % 10 == 0 || epoch == 0) {
-            log_info("Epoch %3d: train_loss=%.4f train_acc=%.3f val_loss=%.4f val_acc=%.3f",
-                     epoch + 1, epoch_loss, train_acc, val_loss, val_acc);
+            log_info("Epoch %3d: train_loss=%.4f train_acc=%.3f val_loss=%.4f val_acc=%.3f val_f1=%.3f",
+                     epoch + 1, epoch_loss, train_acc, val_loss, val_acc, val_macro_f1);
         }
 
         /* SWA: accumulate weights after swa_start epoch */
@@ -313,6 +342,10 @@ int mlp_train(MLP *net,
         }
         if (val_acc > best_val_acc) {
             best_val_acc = val_acc;
+        }
+        /* US-013: Early stopping based on Macro F1 */
+        if (val_macro_f1 > best_val_macro_f1) {
+            best_val_macro_f1 = val_macro_f1;
             history->best_epoch = epoch;
             patience_counter = 0;
             mlp_save_checkpoint(net, best_weights, best_biases);
@@ -328,8 +361,8 @@ int mlp_train(MLP *net,
         } else {
             patience_counter++;
             if (patience_counter >= EARLY_STOP_PATIENCE) {
-                log_info("Early stopping na epoch %d (melhor: epoch %d, val_acc=%.4f)",
-                         epoch + 1, history->best_epoch + 1, best_val_acc);
+                log_info("Early stopping na epoch %d (melhor: epoch %d, val_f1=%.4f val_acc=%.4f)",
+                         epoch + 1, history->best_epoch + 1, best_val_macro_f1, best_val_acc);
                 break;
             }
         }
@@ -349,10 +382,11 @@ int mlp_train(MLP *net,
 
         float swa_val_loss;
         float swa_val_acc = mlp_evaluate(net, val_x, val_y, n_val, num_features, &swa_val_loss);
-        log_info("SWA val_acc=%.4f (avg of %d snapshots) vs best val_acc=%.4f",
-                 swa_val_acc, swa_count, best_val_acc);
+        float swa_macro_f1 = compute_val_macro_f1(net, val_x, val_y, n_val, num_features);
+        log_info("SWA val_f1=%.4f val_acc=%.4f (avg of %d snapshots) vs best val_f1=%.4f",
+                 swa_macro_f1, swa_val_acc, swa_count, best_val_macro_f1);
 
-        if (swa_val_acc > best_val_acc) {
+        if (swa_macro_f1 > best_val_macro_f1) {
             log_info("Usando pesos SWA (melhor que checkpoint)");
             /* Keep current SWA weights in net */
         } else {
@@ -367,8 +401,8 @@ int mlp_train(MLP *net,
                     memcpy(l->bn.running_var, best_bn_var[i], l->bn.size * sizeof(float));
                 }
             }
-            log_info("Pesos restaurados da epoch %d (val_acc=%.4f)",
-                     history->best_epoch + 1, best_val_acc);
+            log_info("Pesos restaurados da epoch %d (val_f1=%.4f)",
+                     history->best_epoch + 1, best_val_macro_f1);
         }
     } else {
         /* Not enough SWA snapshots, use best checkpoint */
@@ -382,8 +416,8 @@ int mlp_train(MLP *net,
                 memcpy(l->bn.running_var, best_bn_var[i], l->bn.size * sizeof(float));
             }
         }
-        log_info("Pesos restaurados da epoch %d (val_acc=%.4f)",
-                 history->best_epoch + 1, best_val_acc);
+        log_info("Pesos restaurados da epoch %d (val_f1=%.4f)",
+                 history->best_epoch + 1, best_val_macro_f1);
     }
 
     for (int i = 0; i < net->num_layers; i++) {

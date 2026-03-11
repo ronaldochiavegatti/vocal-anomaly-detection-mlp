@@ -8,7 +8,7 @@
 #ifndef FEATURE_SPECTRAL_H
 #define FEATURE_SPECTRAL_H
 
-/* Estrutura com as 22 features espectrais */
+/* Estrutura com as 48 features espectrais (US-011: +Delta e Delta-Delta MFCCs) */
 typedef struct {
     float f0_mean;            /* frequencia fundamental media (Hz) */
     float f0_std;             /* desvio-padrao de f0 (Hz) */
@@ -16,7 +16,9 @@ typedef struct {
     float spectral_entropy;   /* entropia espectral normalizada */
     float spectral_centroid;  /* centroide espectral (Hz) */
     float spectral_rolloff;   /* rolloff espectral 85% (Hz) */
-    float mfcc[13];           /* coeficientes mel-cepstrais */
+    float mfcc[13];           /* coeficientes mel-cepstrais estaticos */
+    float delta_mfcc[13];     /* delta MFCCs (derivada temporal 1a ordem) */
+    float delta2_mfcc[13];    /* delta-delta MFCCs (derivada temporal 2a ordem) */
 } SpectralFeatures;
 
 /*
