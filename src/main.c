@@ -409,12 +409,18 @@ static int features_load_csv(const char *path, FeatureMatrix *fm)
  */
 static void extract_vowel_from_float(const float *samples, int n, int sr, float *out)
 {
+    /* US-010: Wavelet denoising on a copy before feature extraction */
+    float *denoised = (float *)safe_malloc(n * sizeof(float));
+    memcpy(denoised, samples, n * sizeof(float));
+    dsp_wavelet_denoise(denoised, n, 3);
+
     float *pre_emph = (float *)safe_malloc(n * sizeof(float));
-    memcpy(pre_emph, samples, n * sizeof(float));
+    memcpy(pre_emph, denoised, n * sizeof(float));
     dsp_pre_emphasis(pre_emph, n, PRE_EMPHASIS_ALPHA);
 
     int idx = 0;
     TemporalFeatures tf;
+    /* Temporal features: original signal (jitter/shimmer are pathological biomarkers) */
     temporal_extract(samples, n, sr, &tf);
     out[idx++] = tf.jitter_local; out[idx++] = tf.jitter_rap;
     out[idx++] = tf.jitter_ppq5; out[idx++] = tf.shimmer_local;
@@ -430,14 +436,19 @@ static void extract_vowel_from_float(const float *samples, int n, int sr, float 
     out[idx++] = sf.spectral_entropy; out[idx++] = sf.spectral_centroid;
     out[idx++] = sf.spectral_rolloff;
     for (int m = 0; m < 13; m++) out[idx++] = sf.mfcc[m];
+    /* US-011: Delta e Delta-Delta MFCCs */
+    for (int m = 0; m < 13; m++) out[idx++] = sf.delta_mfcc[m];
+    for (int m = 0; m < 13; m++) out[idx++] = sf.delta2_mfcc[m];
 
     WaveletFeatures wf;
+    /* Wavelet features: original signal */
     wavelet_extract(samples, n, &wf);
     for (int l = 0; l < WAVELET_LEVELS; l++) out[idx++] = wf.mean[l];
     for (int l = 0; l < WAVELET_LEVELS; l++) out[idx++] = wf.variance[l];
     for (int l = 0; l < WAVELET_LEVELS; l++) out[idx++] = wf.energy[l];
 
     free(pre_emph);
+    free(denoised);
 }
 
 /*
@@ -701,9 +712,11 @@ static int mode_train(const char *base_dir)
         augment_fold_training(&train_x, &train_y, &n_train_aug,
                               nf, &ds, fold->train_indices, fold->n_train);
 
-        /* Nested CV: selecionar thresholds de feature selection via 3-fold interno */
+        /* Nested CV: selecionar thresholds de feature selection via 3-fold interno.
+         * Usa apenas amostras originais (pre-augmentacao) para evitar que amostras
+         * sinteticas bias the threshold selection e reduzir custo computacional. */
         float best_var_thresh, best_corr_thresh;
-        inner_cv_select_thresholds(train_x, train_y, n_train_aug, nf, f,
+        inner_cv_select_thresholds(train_x, train_y, fold->n_train, nf, f,
                                    &best_var_thresh, &best_corr_thresh);
         log_info("Fold %d: inner CV selecionou var=%.3f corr=%.2f",
                  f + 1, best_var_thresh, best_corr_thresh);

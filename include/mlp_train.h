@@ -17,6 +17,7 @@ typedef struct {
     float train_acc;
     float val_loss;
     float val_acc;
+    float val_macro_f1;
 } EpochResult;
 
 /* Historico de treinamento */

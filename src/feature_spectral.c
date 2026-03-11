@@ -444,12 +444,37 @@ static float mel_to_hz(float mel)
 }
 
 /*
- * Extrai MFCCs do sinal.
- * Usa frames com Hamming, Mel filterbank, log energia, DCT-II.
+ * US-011: Computa delta de coeficientes frame-a-frame com janela N=2.
+ * Formula: Delta[t] = (2*c[t+2] + c[t+1] - c[t-1] - 2*c[t-2]) / 10
+ * Com replicacao de bordas.
  */
-static void compute_mfcc(const float *signal, int n, int sample_rate, float *mfcc_out)
+static void compute_delta_frames(const float *frames, int num_frames, int n_coef,
+                                  float *delta)
+{
+    for (int t = 0; t < num_frames; t++) {
+        for (int k = 0; k < n_coef; k++) {
+            int t1p = (t + 1 < num_frames) ? t + 1 : num_frames - 1;
+            int t1m = (t - 1 >= 0)         ? t - 1 : 0;
+            int t2p = (t + 2 < num_frames) ? t + 2 : num_frames - 1;
+            int t2m = (t - 2 >= 0)         ? t - 2 : 0;
+            delta[t * n_coef + k] =
+                (2.0f * frames[t2p * n_coef + k] + frames[t1p * n_coef + k]
+                - frames[t1m * n_coef + k] - 2.0f * frames[t2m * n_coef + k]) / 10.0f;
+        }
+    }
+}
+
+/*
+ * Extrai MFCCs estaticos, delta e delta-delta do sinal.
+ * Usa frames com Hamming, Mel filterbank, log energia, DCT-II.
+ * Saida: mfcc_out[13], delta_out[13], delta2_out[13] (medias sobre frames)
+ */
+static void compute_mfcc(const float *signal, int n, int sample_rate,
+                          float *mfcc_out, float *delta_out, float *delta2_out)
 {
     memset(mfcc_out, 0, NUM_MFCC_COEFFS * sizeof(float));
+    memset(delta_out, 0, NUM_MFCC_COEFFS * sizeof(float));
+    memset(delta2_out, 0, NUM_MFCC_COEFFS * sizeof(float));
 
     int frame_size = FRAME_SIZE;
     int frame_step = FRAME_STEP;
@@ -477,11 +502,12 @@ static void compute_mfcc(const float *signal, int n, int sample_rate, float *mfc
         if (bins[i] >= half) bins[i] = half - 1;
     }
 
-    /* Acumular MFCC de todos os frames */
+    /* Buffer per-frame de MFCCs para calculo de deltas */
+    float *mfcc_frames = (float *)safe_calloc(num_frames * NUM_MFCC_COEFFS, sizeof(float));
+
     float *frame = (float *)safe_malloc(fft_size * sizeof(float));
     float *imag = (float *)safe_calloc(fft_size, sizeof(float));
     float *mel_energies = (float *)safe_malloc(NUM_MEL_FILTERS * sizeof(float));
-    float *mfcc_sum = (float *)safe_calloc(NUM_MFCC_COEFFS, sizeof(float));
 
     for (int fi = 0; fi < num_frames; fi++) {
         int offset = fi * frame_step;
@@ -526,26 +552,56 @@ static void compute_mfcc(const float *signal, int n, int sample_rate, float *mfc
 
         free(power);
 
-        /* DCT-II para obter MFCCs */
+        /* DCT-II para obter MFCCs deste frame */
         for (int k = 0; k < NUM_MFCC_COEFFS; k++) {
             float sum = 0.0f;
             for (int m = 0; m < NUM_MEL_FILTERS; m++) {
                 sum += mel_energies[m] *
                        cosf((float)M_PI * k * (m + 0.5f) / NUM_MEL_FILTERS);
             }
-            mfcc_sum[k] += sum;
+            mfcc_frames[fi * NUM_MFCC_COEFFS + k] = sum;
         }
     }
 
-    /* Media sobre frames */
+    /* US-011: Calcular delta e delta-delta frame-a-frame */
+    float *delta_frames  = (float *)safe_malloc(num_frames * NUM_MFCC_COEFFS * sizeof(float));
+    float *delta2_frames = (float *)safe_malloc(num_frames * NUM_MFCC_COEFFS * sizeof(float));
+    compute_delta_frames(mfcc_frames, num_frames, NUM_MFCC_COEFFS, delta_frames);
+    compute_delta_frames(delta_frames, num_frames, NUM_MFCC_COEFFS, delta2_frames);
+
+    /* Computar media dos MFCCs estaticos e desvio-padrao dos deltas.
+     * Nota: mean(delta) tende a zero para vogais sustentadas (pouco informativo).
+     * Std(delta) captura a variabilidade da dinamica espectral — mais discriminativo
+     * para vozes patologicas que exibem irregularidades periodicas. */
     for (int k = 0; k < NUM_MFCC_COEFFS; k++) {
-        mfcc_out[k] = mfcc_sum[k] / num_frames;
+        float sum = 0.0f, sum_d = 0.0f, sum_d2 = 0.0f;
+        for (int fi = 0; fi < num_frames; fi++) {
+            sum    += mfcc_frames[fi  * NUM_MFCC_COEFFS + k];
+            sum_d  += delta_frames[fi  * NUM_MFCC_COEFFS + k];
+            sum_d2 += delta2_frames[fi * NUM_MFCC_COEFFS + k];
+        }
+        mfcc_out[k] = sum / num_frames;
+        float mean_d  = sum_d  / num_frames;
+        float mean_d2 = sum_d2 / num_frames;
+
+        /* Desvio-padrao temporal dos deltas */
+        float var_d = 0.0f, var_d2 = 0.0f;
+        for (int fi = 0; fi < num_frames; fi++) {
+            float dd  = delta_frames[fi  * NUM_MFCC_COEFFS + k] - mean_d;
+            float dd2 = delta2_frames[fi * NUM_MFCC_COEFFS + k] - mean_d2;
+            var_d  += dd  * dd;
+            var_d2 += dd2 * dd2;
+        }
+        delta_out[k]  = sqrtf(var_d  / num_frames);
+        delta2_out[k] = sqrtf(var_d2 / num_frames);
     }
 
+    free(mfcc_frames);
+    free(delta_frames);
+    free(delta2_frames);
     free(frame);
     free(imag);
     free(mel_energies);
-    free(mfcc_sum);
 }
 
 /* ========== Interface publica ========== */
@@ -573,8 +629,8 @@ int spectral_extract(const float *signal, int n, int sample_rate,
     out->spectral_centroid = compute_spectral_centroid(signal, n, sample_rate);
     out->spectral_rolloff = compute_spectral_rolloff(signal, n, sample_rate);
 
-    /* MFCC */
-    compute_mfcc(signal, n, sample_rate, out->mfcc);
+    /* MFCC + Delta + Delta-Delta (US-011) */
+    compute_mfcc(signal, n, sample_rate, out->mfcc, out->delta_mfcc, out->delta2_mfcc);
 
     return 0;
 }

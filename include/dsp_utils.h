@@ -57,4 +57,13 @@ int dsp_next_power_of_2(int n);
  */
 float dsp_energy(const float *signal, int n);
 
+/*
+ * US-010: Wavelet Denoising via Haar DWT + soft thresholding.
+ * Aplica denoising in-place usando o limiar universal de Donoho & Johnstone:
+ *   sigma = RMS(coef_detalhe_nivel1), T = sigma * sqrt(2 * log(n))
+ * levels: numero de niveis de decomposicao (recomendado: 3-5).
+ * Apenas a porcao com potencia de 2 <= n e processada.
+ */
+void dsp_wavelet_denoise(float *signal, int n, int levels);
+
 #endif /* DSP_UTILS_H */

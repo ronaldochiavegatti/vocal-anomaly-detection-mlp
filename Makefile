@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -O2 -Wall -Wextra -Wno-format-truncation -std=c99 -Iinclude
-LDFLAGS = -lm
+CFLAGS = -O2 -Wall -Wextra -Wno-format-truncation -std=c99 -Iinclude -fopenmp
+LDFLAGS = -lm -fopenmp
 SRC_DIR = src
 BUILD_DIR = build
 SRCS = $(wildcard $(SRC_DIR)/*.c)
@@ -30,7 +30,11 @@ test: $(TARGET)
 full: $(TARGET)
 	./$(TARGET) full
 
+# Reseta o ambiente da pipeline: limpa build, modelos temporarios e resultados CSV
+# Preserva: best_model.bin e logs historicos (*.txt)
 clean:
 	rm -rf $(BUILD_DIR)
+	rm -f models/mlp_fold*.bin models/norm_fold*.bin models/selected_fold*.bin
+	rm -f results/*.csv
 
 .PHONY: all clean extract train test full
