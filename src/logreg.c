@@ -119,7 +119,8 @@ void lr_train(LRModel *lr,
 
                 /* Class weight */
                 static const float cw[NUM_CLASSES] = {
-                    CLASS_WEIGHT_NORMAL, CLASS_WEIGHT_LARYNGITIS, CLASS_WEIGHT_DYSPHONIA
+                    CLASS_WEIGHT_NORMAL, CLASS_WEIGHT_LARYNGITIS, CLASS_WEIGHT_DYSPHONIA,
+                    CLASS_WEIGHT_FUNC_DYSPHONIA, CLASS_WEIGHT_REINKE
                 };
                 float w = cw[y];
 

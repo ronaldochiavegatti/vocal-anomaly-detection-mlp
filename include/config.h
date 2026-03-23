@@ -9,9 +9,11 @@
 #define CONFIG_H
 
 /* ========== Caminhos ========== */
-#define DATA_DIR_NORMAL       "saudavel"
-#define DATA_DIR_LARYNGITIS   "laringite"
-#define DATA_DIR_DYSPHONIA    "disfonia_psicog\u00eanica"
+#define DATA_DIR_NORMAL           "saudavel"
+#define DATA_DIR_LARYNGITIS       "laringite"
+#define DATA_DIR_DYSPHONIA        "disfonia_psicog\u00eanica"
+#define DATA_DIR_FUNC_DYSPHONIA   "disfonia_funcional"
+#define DATA_DIR_REINKE           "edema_de_reinke"
 #define CSV_METADATA          "overview_merged.csv"
 #define MODELS_DIR            "models"
 #define RESULTS_DIR           "results"
@@ -23,15 +25,19 @@
 #define PRE_EMPHASIS_ALPHA    0.97f
 
 /* ========== Classes ========== */
-#define NUM_CLASSES           3
-#define CLASS_NORMAL          0
-#define CLASS_LARYNGITIS      1
-#define CLASS_DYSPHONIA       2
+#define NUM_CLASSES              5
+#define CLASS_NORMAL             0
+#define CLASS_LARYNGITIS         1
+#define CLASS_DYSPHONIA          2
+#define CLASS_FUNC_DYSPHONIA     3
+#define CLASS_REINKE             4
 
 /* Nomes das classes (para exibicao) */
-#define CLASS_NAME_NORMAL     "Normal"
-#define CLASS_NAME_LARYNGITIS "Laringite"
-#define CLASS_NAME_DYSPHONIA  "Disfonia Psicogenica"
+#define CLASS_NAME_NORMAL         "Normal"
+#define CLASS_NAME_LARYNGITIS     "Laringite"
+#define CLASS_NAME_DYSPHONIA      "Disfonia Psicogenica"
+#define CLASS_NAME_FUNC_DYSPHONIA "Disfonia Funcional"
+#define CLASS_NAME_REINKE         "Edema de Reinke"
 
 /* ========== Vogais para extracao de features ========== */
 #define NUM_VOWELS            3
@@ -45,7 +51,7 @@
 #define NUM_TEMPORAL_FEATURES 10  /* jitter_local, jitter_rap, jitter_ppq5, shimmer_local, shimmer_apq3/5/11, energia, hnr, zcr */
 
 /* Features espectrais por vogal */
-#define NUM_SPECTRAL_FEATURES 48  /* f0_mean, f0_std, F1-F4, entropia, centroid, rolloff, mfcc[13], delta_mfcc[13], delta2_mfcc[13] */
+#define NUM_SPECTRAL_FEATURES 51  /* f0_mean, f0_std, F1-F4, entropia, centroid, rolloff, mfcc[13], delta_mfcc[13], delta2_mfcc[13], cpp_mean, cpp_std, cpp_slope */
 
 /* Features wavelet por vogal */
 #define WAVELET_LEVELS        6
@@ -53,8 +59,8 @@
 #define NUM_WAVELET_FEATURES  (WAVELET_LEVELS * WAVELET_STATS)  /* 18 */
 
 /* Total de features por vogal e por paciente */
-#define FEATURES_PER_VOWEL    (NUM_TEMPORAL_FEATURES + NUM_SPECTRAL_FEATURES + NUM_WAVELET_FEATURES)  /* 50 */
-#define TOTAL_FEATURES        (NUM_VOWELS * FEATURES_PER_VOWEL)  /* 150 */
+#define FEATURES_PER_VOWEL    (NUM_TEMPORAL_FEATURES + NUM_SPECTRAL_FEATURES + NUM_WAVELET_FEATURES)  /* 79 */
+#define TOTAL_FEATURES        (NUM_VOWELS * FEATURES_PER_VOWEL)  /* 237 */
 
 /* Parametros DSP */
 #define FRAME_SIZE_MS         30      /* tamanho do frame em ms */
@@ -66,11 +72,11 @@
 #define LPC_ORDER             12
 
 /* ========== Arquitetura MLP ========== */
-#define MLP_INPUT_SIZE        TOTAL_FEATURES  /* 150 */
+#define MLP_INPUT_SIZE        TOTAL_FEATURES  /* 237 (pre-selection; runtime input may differ) */
 #define MLP_HIDDEN1_SIZE      128
 #define MLP_HIDDEN2_SIZE      64
 #define MLP_HIDDEN3_SIZE      32   /* unused when MLP_NUM_LAYERS=3 */
-#define MLP_OUTPUT_SIZE       NUM_CLASSES      /* 3 */
+#define MLP_OUTPUT_SIZE       NUM_CLASSES      /* 5 */
 #define MLP_NUM_LAYERS        3                /* 2 hidden + 1 output */
 
 /* ========== Dropout ========== */
@@ -103,12 +109,15 @@
 #define K_FOLDS               5
 #define RANDOM_SEED           42
 
-/* ========== Pesos de classe (US-012: Weighted Cross-Entropy, ajustado para Macro F1 early stop) ========== */
-/* Moderate boost for minority classes; paired with Macro F1 early stopping (US-013).
- * Disfonia weight increased to 1.7 to boost recall without over-correction
- * (Macro F1 early stopping prevents model from sacrificing Normal recall). */
-#define CLASS_WEIGHT_NORMAL     0.80f
-#define CLASS_WEIGHT_LARYNGITIS 1.25f
-#define CLASS_WEIGHT_DYSPHONIA  1.70f
+/* ========== Pesos de classe (5 classes, v27 — US-026 tuning) ========== */
+/* v26 results: Normal=0.822, Laringite=0.360, DisfPsicog=0.273, DisfFunc=0.240, Reinke=0.362
+ * v27 adjustments: Normal reduced (doing well), Laringite/DisfFunc significantly increased,
+ * DisfPsicog and DisfFunc equalized (acoustically similar classes), Reinke boosted.
+ * Paired with Macro F1 early stopping to prevent over-correction. */
+#define CLASS_WEIGHT_NORMAL         0.65f
+#define CLASS_WEIGHT_LARYNGITIS     1.35f
+#define CLASS_WEIGHT_DYSPHONIA      1.70f
+#define CLASS_WEIGHT_FUNC_DYSPHONIA 1.70f
+#define CLASS_WEIGHT_REINKE         2.10f
 
 #endif /* CONFIG_H */

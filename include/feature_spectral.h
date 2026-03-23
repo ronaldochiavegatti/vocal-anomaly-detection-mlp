@@ -8,7 +8,7 @@
 #ifndef FEATURE_SPECTRAL_H
 #define FEATURE_SPECTRAL_H
 
-/* Estrutura com as 48 features espectrais (US-011: +Delta e Delta-Delta MFCCs) */
+/* Estrutura com as 51 features espectrais (US-011: +Delta/Delta-Delta MFCCs; +CPP) */
 typedef struct {
     float f0_mean;            /* frequencia fundamental media (Hz) */
     float f0_std;             /* desvio-padrao de f0 (Hz) */
@@ -17,8 +17,11 @@ typedef struct {
     float spectral_centroid;  /* centroide espectral (Hz) */
     float spectral_rolloff;   /* rolloff espectral 85% (Hz) */
     float mfcc[13];           /* coeficientes mel-cepstrais estaticos */
-    float delta_mfcc[13];     /* delta MFCCs (derivada temporal 1a ordem) */
-    float delta2_mfcc[13];    /* delta-delta MFCCs (derivada temporal 2a ordem) */
+    float delta_mfcc[13];     /* delta MFCCs (std dev da derivada temporal 1a ordem) */
+    float delta2_mfcc[13];    /* delta-delta MFCCs (std dev da derivada temporal 2a ordem) */
+    float cpp_mean;           /* CPP medio (Cepstral Peak Prominence) - Boersma/Hillenbrand */
+    float cpp_std;            /* desvio-padrao do CPP (variabilidade da regularidade glotal) */
+    float cpp_slope;          /* inclinacao temporal do CPP (tendencia de regularizacao) */
 } SpectralFeatures;
 
 /*

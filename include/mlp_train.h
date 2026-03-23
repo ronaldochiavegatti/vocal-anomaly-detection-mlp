@@ -60,4 +60,11 @@ float mlp_evaluate(MLP *net, const float *x, const int *y, int n,
  */
 void train_history_free(TrainHistory *h);
 
+/*
+ * Exporta o historico de treinamento como CSV (uma linha por epoca).
+ * Se fold==0, cria o arquivo e escreve o header; caso contrario, faz append.
+ * Colunas: fold, epoch, train_loss, train_acc, val_loss, val_acc, val_macro_f1
+ */
+void train_history_export_csv(const TrainHistory *h, const char *path, int fold);
+
 #endif /* MLP_TRAIN_H */

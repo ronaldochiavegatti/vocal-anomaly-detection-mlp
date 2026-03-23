@@ -76,6 +76,10 @@ static int extract_vowel_features(const char *wav_path, float *out)
     /* US-011: Delta e Delta-Delta MFCCs */
     for (int m = 0; m < 13; m++) out[idx++] = sf.delta_mfcc[m];
     for (int m = 0; m < 13; m++) out[idx++] = sf.delta2_mfcc[m];
+    /* CPP: Cepstral Peak Prominence */
+    out[idx++] = sf.cpp_mean;
+    out[idx++] = sf.cpp_std;
+    out[idx++] = sf.cpp_slope;
 
     /* Features wavelet (sinal original) */
     WaveletFeatures wf;
@@ -156,6 +160,8 @@ int features_export_csv(const FeatureMatrix *fm, const char *path)
         "dmfcc_6", "dmfcc_7", "dmfcc_8", "dmfcc_9", "dmfcc_10", "dmfcc_11", "dmfcc_12",
         "d2mfcc_0", "d2mfcc_1", "d2mfcc_2", "d2mfcc_3", "d2mfcc_4", "d2mfcc_5",
         "d2mfcc_6", "d2mfcc_7", "d2mfcc_8", "d2mfcc_9", "d2mfcc_10", "d2mfcc_11", "d2mfcc_12",
+        /* CPP */
+        "cpp_mean", "cpp_std", "cpp_slope",
         "wl_mean_1", "wl_mean_2", "wl_mean_3", "wl_mean_4", "wl_mean_5", "wl_mean_6",
         "wl_var_1", "wl_var_2", "wl_var_3", "wl_var_4", "wl_var_5", "wl_var_6",
         "wl_energy_1", "wl_energy_2", "wl_energy_3", "wl_energy_4", "wl_energy_5", "wl_energy_6"

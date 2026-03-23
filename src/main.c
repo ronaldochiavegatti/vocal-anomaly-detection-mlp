@@ -372,10 +372,19 @@ static int features_load_csv(const char *path, FeatureMatrix *fm)
     FILE *f = fopen(path, "r");
     if (!f) return -1;
 
+    /* Ler header e validar contagem de colunas */
+    char buf[65536];
+    if (!fgets(buf, sizeof(buf), f)) { fclose(f); return -1; }
+    int n_cols = 1;
+    for (const char *p = buf; *p && *p != '\n' && *p != '\r'; p++)
+        if (*p == ',') n_cols++;
+    /* n_cols = n_features + 1 (label); rejeitar cache com dimensao diferente */
+    if (n_cols - 1 != TOTAL_FEATURES) {
+        fclose(f); return -1;
+    }
+
     /* Contar linhas (excluindo header) */
     int n_lines = 0;
-    char buf[65536];
-    if (!fgets(buf, sizeof(buf), f)) { fclose(f); return -1; } /* header */
     while (fgets(buf, sizeof(buf), f)) n_lines++;
 
     if (n_lines == 0) { fclose(f); return -1; }
@@ -439,6 +448,10 @@ static void extract_vowel_from_float(const float *samples, int n, int sr, float 
     /* US-011: Delta e Delta-Delta MFCCs */
     for (int m = 0; m < 13; m++) out[idx++] = sf.delta_mfcc[m];
     for (int m = 0; m < 13; m++) out[idx++] = sf.delta2_mfcc[m];
+    /* CPP: Cepstral Peak Prominence */
+    out[idx++] = sf.cpp_mean;
+    out[idx++] = sf.cpp_std;
+    out[idx++] = sf.cpp_slope;
 
     WaveletFeatures wf;
     /* Wavelet features: original signal */
@@ -460,11 +473,10 @@ static void augment_fold_training(float **x_ptr, int **y_ptr, int *n_ptr,
                                    int nf, const Dataset *ds,
                                    const int *indices, int n_orig)
 {
-    /* Contar quantas amostras minoritarias existem */
+    /* Contar amostras nao-normais (todas as classes minoritarias) */
     int n_minority = 0;
     for (int i = 0; i < n_orig; i++) {
-        int cls = ds->patients[indices[i]].class_label;
-        if (cls == CLASS_LARYNGITIS || cls == CLASS_DYSPHONIA) n_minority++;
+        if (ds->patients[indices[i]].class_label != CLASS_NORMAL) n_minority++;
     }
     if (n_minority == 0) return;
 
@@ -482,7 +494,7 @@ static void augment_fold_training(float **x_ptr, int **y_ptr, int *n_ptr,
     for (int i = 0; i < n_orig; i++) {
         int pat_idx = indices[i];
         const Patient *p = &ds->patients[pat_idx];
-        if (p->class_label != CLASS_LARYNGITIS && p->class_label != CLASS_DYSPHONIA)
+        if (p->class_label == CLASS_NORMAL)
             continue;
 
         /* Carregar WAVs das 3 vogais */
@@ -661,6 +673,9 @@ static int mode_train(const char *base_dir)
         features_export_csv(&fm, feat_path);
     }
 
+    /* Seed global para reproducibilidade (afeta shuffle, noise injection, etc.) */
+    rng_seed(RANDOM_SEED);
+
     /* K-fold split */
     KFoldSplits splits;
     kfold_split(fm.labels, fm.count, RANDOM_SEED, &splits);
@@ -721,9 +736,11 @@ static int mode_train(const char *base_dir)
         log_info("Fold %d: inner CV selecionou var=%.3f corr=%.2f",
                  f + 1, best_var_thresh, best_corr_thresh);
 
-        /* Normalizar (fit no treino, transform em ambos) */
+        /* Normalizar (fit somente nas amostras originais de treino, transform em todos)
+         * Usar fold->n_train (original) e nao n_train_aug (aumentado) evita que amostras
+         * sinteticas de augmentacao influenciem os parametros de normalizacao. */
         NormParams norm;
-        norm_fit(train_x, n_train_aug, nf, &norm);
+        norm_fit(train_x, fold->n_train, nf, &norm);
         norm_transform(train_x, n_train_aug, &norm);
         norm_transform(val_x, fold->n_val, &norm);
 
@@ -784,6 +801,13 @@ static int mode_train(const char *base_dir)
         mlp_init_dynamic(&net, n_selected);
         mlp_train(&net, os_train_x, os_train_y, os_n_train,
                   sel_val_x, val_y, fold->n_val, n_selected, &hist);
+
+        /* Exportar curvas de aprendizado por epoca */
+        {
+            char lc_path[1024];
+            snprintf(lc_path, sizeof(lc_path), "%s/learning_curves.csv", RESULTS_DIR);
+            train_history_export_csv(&hist, lc_path, f);
+        }
 
         /* Predictions */
         float output[MLP_OUTPUT_SIZE];
@@ -891,47 +915,84 @@ static int mode_train(const char *base_dir)
         metrics_compute(all_y_true, lr_all_pred,  all_count, &lr_m);
 
         log_info("\n=== Tabela Comparativa de Baselines ===");
-        log_info("%-22s %8s %8s %8s %10s %9s",
+        log_info("%-22s %8s %8s %8s %10s %9s %10s %8s",
                  "Method", "Accuracy", "Macro_F1",
-                 "F1_Norm", "F1_Laring", "F1_Disf");
-        log_info("%-22s %8.4f %8.4f %8.4f %10.4f %9.4f",
+                 "F1_Norm", "F1_Laring", "F1_Disf", "F1_FuncD", "F1_Reinke");
+        log_info("%-22s %8.4f %8.4f %8.4f %10.4f %9.4f %10.4f %8.4f",
                  "MajorityClass",
                  maj_m.accuracy, maj_m.macro_f1,
-                 maj_m.f1[0], maj_m.f1[1], maj_m.f1[2]);
-        log_info("%-22s %8.4f %8.4f %8.4f %10.4f %9.4f",
+                 maj_m.f1[0], maj_m.f1[1], maj_m.f1[2], maj_m.f1[3], maj_m.f1[4]);
+        log_info("%-22s %8.4f %8.4f %8.4f %10.4f %9.4f %10.4f %8.4f",
                  "kNN(k=5)",
                  knn_m.accuracy, knn_m.macro_f1,
-                 knn_m.f1[0], knn_m.f1[1], knn_m.f1[2]);
-        log_info("%-22s %8.4f %8.4f %8.4f %10.4f %9.4f",
+                 knn_m.f1[0], knn_m.f1[1], knn_m.f1[2], knn_m.f1[3], knn_m.f1[4]);
+        log_info("%-22s %8.4f %8.4f %8.4f %10.4f %9.4f %10.4f %8.4f",
                  "LogisticRegression",
                  lr_m.accuracy, lr_m.macro_f1,
-                 lr_m.f1[0], lr_m.f1[1], lr_m.f1[2]);
-        log_info("%-22s %8.4f %8.4f %8.4f %10.4f %9.4f",
+                 lr_m.f1[0], lr_m.f1[1], lr_m.f1[2], lr_m.f1[3], lr_m.f1[4]);
+        log_info("%-22s %8.4f %8.4f %8.4f %10.4f %9.4f %10.4f %8.4f",
                  "MLP(proposed)",
                  global_metrics.accuracy, global_metrics.macro_f1,
-                 global_metrics.f1[0], global_metrics.f1[1], global_metrics.f1[2]);
+                 global_metrics.f1[0], global_metrics.f1[1], global_metrics.f1[2],
+                 global_metrics.f1[3], global_metrics.f1[4]);
 
         char bl_path[1024];
         snprintf(bl_path, sizeof(bl_path), "%s/baselines.csv", RESULTS_DIR);
         FILE *bl_f = fopen(bl_path, "w");
         if (bl_f) {
-            fprintf(bl_f, "Method,Accuracy,Macro_F1,F1_Normal,F1_Laryngite,F1_Disfonia\n");
-            fprintf(bl_f, "MajorityClass,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+            fprintf(bl_f, "Method,Accuracy,Macro_F1,F1_Normal,F1_Laryngite,F1_DisfPsicog,F1_DisfFuncional,F1_Reinke\n");
+            fprintf(bl_f, "MajorityClass,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
                     maj_m.accuracy, maj_m.macro_f1,
-                    maj_m.f1[0], maj_m.f1[1], maj_m.f1[2]);
-            fprintf(bl_f, "kNN_k5,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+                    maj_m.f1[0], maj_m.f1[1], maj_m.f1[2], maj_m.f1[3], maj_m.f1[4]);
+            fprintf(bl_f, "kNN_k5,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
                     knn_m.accuracy, knn_m.macro_f1,
-                    knn_m.f1[0], knn_m.f1[1], knn_m.f1[2]);
-            fprintf(bl_f, "LogisticRegression,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+                    knn_m.f1[0], knn_m.f1[1], knn_m.f1[2], knn_m.f1[3], knn_m.f1[4]);
+            fprintf(bl_f, "LogisticRegression,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
                     lr_m.accuracy, lr_m.macro_f1,
-                    lr_m.f1[0], lr_m.f1[1], lr_m.f1[2]);
-            fprintf(bl_f, "MLP_proposed,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+                    lr_m.f1[0], lr_m.f1[1], lr_m.f1[2], lr_m.f1[3], lr_m.f1[4]);
+            fprintf(bl_f, "MLP_proposed,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
                     global_metrics.accuracy, global_metrics.macro_f1,
-                    global_metrics.f1[0], global_metrics.f1[1], global_metrics.f1[2]);
+                    global_metrics.f1[0], global_metrics.f1[1], global_metrics.f1[2],
+                    global_metrics.f1[3], global_metrics.f1[4]);
             fclose(bl_f);
             log_info("Baselines salvos em %s", bl_path);
         }
     }
+    /* Teste de McNemar: MLP vs. baselines (significancia estatistica) */
+    {
+        float chi2, pval;
+        log_info("\n=== Teste de McNemar (correcao de continuidade, alpha=0.05) ===");
+        metrics_mcnemar(all_y_true, all_y_pred, maj_all_pred, all_count, &chi2, &pval);
+        log_info("  MLP vs MajorityClass: chi2=%.3f  p=%.4f%s",
+                 chi2, pval, pval < 0.05f ? " *SIGNIFICATIVO*" : "");
+        float chi2_maj = chi2, pval_maj = pval;
+        metrics_mcnemar(all_y_true, all_y_pred, knn_all_pred, all_count, &chi2, &pval);
+        log_info("  MLP vs kNN(k=5):      chi2=%.3f  p=%.4f%s",
+                 chi2, pval, pval < 0.05f ? " *SIGNIFICATIVO*" : "");
+        float chi2_knn = chi2, pval_knn = pval;
+        metrics_mcnemar(all_y_true, all_y_pred, lr_all_pred, all_count, &chi2, &pval);
+        log_info("  MLP vs LogReg:        chi2=%.3f  p=%.4f%s",
+                 chi2, pval, pval < 0.05f ? " *SIGNIFICATIVO*" : "");
+        float chi2_lr = chi2, pval_lr = pval;
+
+        /* Exportar McNemar para baselines.csv como secao adicional */
+        char bl_path[1024];
+        snprintf(bl_path, sizeof(bl_path), "%s/baselines.csv", RESULTS_DIR);
+        FILE *bl_f = fopen(bl_path, "a");
+        if (bl_f) {
+            fprintf(bl_f, "# mcnemar_test (Edwards continuity correction, alpha=0.05)\n");
+            fprintf(bl_f, "Comparison,chi2,p_value,significant\n");
+            fprintf(bl_f, "MLP_vs_MajorityClass,%.4f,%.6f,%s\n",
+                    chi2_maj, pval_maj, pval_maj < 0.05f ? "yes" : "no");
+            fprintf(bl_f, "MLP_vs_kNN_k5,%.4f,%.6f,%s\n",
+                    chi2_knn, pval_knn, pval_knn < 0.05f ? "yes" : "no");
+            fprintf(bl_f, "MLP_vs_LogisticRegression,%.4f,%.6f,%s\n",
+                    chi2_lr, pval_lr, pval_lr < 0.05f ? "yes" : "no");
+            fclose(bl_f);
+            log_info("McNemar exportado para %s", bl_path);
+        }
+    }
+
     free(maj_all_pred);
     free(knn_all_pred);
     free(lr_all_pred);
@@ -984,15 +1045,18 @@ static int mode_train(const char *base_dir)
     log_info("  Accuracy:    %.4f [%.4f, %.4f]", ci[CI_ACCURACY].mean,     ci[CI_ACCURACY].lower,     ci[CI_ACCURACY].upper);
     log_info("  Macro F1:    %.4f [%.4f, %.4f]", ci[CI_MACRO_F1].mean,     ci[CI_MACRO_F1].lower,     ci[CI_MACRO_F1].upper);
     log_info("  F1 Normal:   %.4f [%.4f, %.4f]", ci[CI_F1_NORMAL].mean,    ci[CI_F1_NORMAL].lower,    ci[CI_F1_NORMAL].upper);
-    log_info("  F1 Laringite:%.4f [%.4f, %.4f]", ci[CI_F1_LARYNGITE].mean, ci[CI_F1_LARYNGITE].lower, ci[CI_F1_LARYNGITE].upper);
-    log_info("  F1 Disfonia: %.4f [%.4f, %.4f]", ci[CI_F1_DISFONIA].mean,  ci[CI_F1_DISFONIA].lower,  ci[CI_F1_DISFONIA].upper);
+    log_info("  F1 Laringite:%.4f [%.4f, %.4f]", ci[CI_F1_LARYNGITE].mean,     ci[CI_F1_LARYNGITE].lower,     ci[CI_F1_LARYNGITE].upper);
+    log_info("  F1 Disfonia: %.4f [%.4f, %.4f]", ci[CI_F1_DISFONIA].mean,      ci[CI_F1_DISFONIA].lower,      ci[CI_F1_DISFONIA].upper);
+    log_info("  F1 FuncDisf: %.4f [%.4f, %.4f]", ci[CI_F1_FUNC_DISFONIA].mean, ci[CI_F1_FUNC_DISFONIA].lower, ci[CI_F1_FUNC_DISFONIA].upper);
+    log_info("  F1 Reinke:   %.4f [%.4f, %.4f]", ci[CI_F1_REINKE].mean,        ci[CI_F1_REINKE].lower,        ci[CI_F1_REINKE].upper);
 
     /* Anexar secao de CI ao CSV de metricas */
     {
         FILE *mf = fopen(metrics_path, "a");
         if (mf) {
             static const char *ci_names[CI_N_METRICS] = {
-                "accuracy", "macro_f1", "f1_normal", "f1_laryngite", "f1_disfonia"
+                "accuracy", "macro_f1", "f1_normal", "f1_laryngite",
+                "f1_disfonia", "f1_func_disfonia", "f1_reinke"
             };
             fprintf(mf, "# bootstrap_ci\nmetric,mean,ci_lower,ci_upper\n");
             for (int m = 0; m < CI_N_METRICS; m++)
@@ -1009,8 +1073,9 @@ static int mode_train(const char *base_dir)
     metrics_roc_auc(all_y_true, all_y_prob, all_count, NUM_CLASSES,
                     global_metrics.auc, roc_path);
     metrics_pr_curve(all_y_true, all_y_prob, all_count, NUM_CLASSES, pr_path);
-    log_info("AUC Normal=%.3f Laryngite=%.3f Disfonia=%.3f",
-             global_metrics.auc[0], global_metrics.auc[1], global_metrics.auc[2]);
+    log_info("AUC Normal=%.3f Laringite=%.3f DisfPsicog=%.3f FuncDisf=%.3f Reinke=%.3f",
+             global_metrics.auc[0], global_metrics.auc[1], global_metrics.auc[2],
+             global_metrics.auc[3], global_metrics.auc[4]);
 
     free(all_y_true);
     free(all_y_pred);

@@ -52,12 +52,14 @@ typedef struct {
 } ConfidenceInterval;
 
 /* Indices dos metricas no array de CI */
-#define CI_ACCURACY     0
-#define CI_MACRO_F1     1
-#define CI_F1_NORMAL    2
-#define CI_F1_LARYNGITE 3
-#define CI_F1_DISFONIA  4
-#define CI_N_METRICS    5
+#define CI_ACCURACY          0
+#define CI_MACRO_F1          1
+#define CI_F1_NORMAL         2
+#define CI_F1_LARYNGITE      3
+#define CI_F1_DISFONIA       4
+#define CI_F1_FUNC_DISFONIA  5
+#define CI_F1_REINKE         6
+#define CI_N_METRICS         7
 
 /*
  * Calcula intervalos de confianca 95% via bootstrap sobre predicoes acumuladas.
@@ -98,5 +100,20 @@ void metrics_roc_auc(const int *y_true, const float *y_prob, int n_samples,
  */
 void metrics_pr_curve(const int *y_true, const float *y_prob, int n_samples,
                       int n_classes, const char *pr_csv_path);
+
+/*
+ * Teste de McNemar para comparar dois classificadores (Edwards, 1948).
+ * Calcula chi-quadrado com correcao de continuidade sobre a tabela 2x2:
+ *   b = A certo, B errado   c = A errado, B certo
+ * chi2 = (|b - c| - 1)^2 / (b + c)
+ * p_value = erfc(sqrt(chi2 / 2))  [chi2 com 1 grau de liberdade]
+ *
+ * Retorna 0 se b+c == 0 (classificadores identicos).
+ * Saida: chi2_out e p_value_out.
+ */
+void metrics_mcnemar(const int *y_true,
+                     const int *y_pred_a, const int *y_pred_b,
+                     int n_samples,
+                     float *chi2_out, float *p_value_out);
 
 #endif /* METRICS_H */
