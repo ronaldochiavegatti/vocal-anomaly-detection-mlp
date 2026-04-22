@@ -269,7 +269,8 @@ int mlp_train(MLP *net,
 
                 /* Cross-entropy with label smoothing and mild class weights */
                 static const float cw[NUM_CLASSES] = {
-                    CLASS_WEIGHT_NORMAL, CLASS_WEIGHT_LARYNGITIS, CLASS_WEIGHT_DYSPHONIA
+                    CLASS_WEIGHT_NORMAL, CLASS_WEIGHT_LARYNGITIS, CLASS_WEIGHT_DYSPHONIA,
+                    CLASS_WEIGHT_FUNC_DYSPHONIA, CLASS_WEIGHT_REINKE
                 };
                 float w = cw[y];
                 to_one_hot_smooth(y, one_hot, LABEL_SMOOTHING);
@@ -464,4 +465,23 @@ void train_history_free(TrainHistory *h)
         free(h->epochs);
         h->epochs = NULL;
     }
+}
+
+void train_history_export_csv(const TrainHistory *h, const char *path, int fold)
+{
+    FILE *f = fopen(path, fold == 0 ? "w" : "a");
+    if (!f) return;
+
+    if (fold == 0)
+        fprintf(f, "fold,epoch,train_loss,train_acc,val_loss,val_acc,val_macro_f1\n");
+
+    for (int e = 0; e < h->num_epochs; e++) {
+        const EpochResult *er = &h->epochs[e];
+        fprintf(f, "%d,%d,%.6f,%.4f,%.6f,%.4f,%.4f\n",
+                fold + 1, e + 1,
+                er->train_loss, er->train_acc,
+                er->val_loss, er->val_acc,
+                er->val_macro_f1);
+    }
+    fclose(f);
 }

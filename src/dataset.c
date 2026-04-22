@@ -139,7 +139,8 @@ int dataset_load(const char *base_dir, const char *csv_path, Dataset *ds)
 
     /* Estrutura: nome_do_diretorio -> classe */
     const char *class_dirs[NUM_CLASSES] = {
-        DATA_DIR_NORMAL, DATA_DIR_LARYNGITIS, DATA_DIR_DYSPHONIA
+        DATA_DIR_NORMAL, DATA_DIR_LARYNGITIS, DATA_DIR_DYSPHONIA,
+        DATA_DIR_FUNC_DYSPHONIA, DATA_DIR_REINKE
     };
 
     for (int c = 0; c < NUM_CLASSES; c++) {

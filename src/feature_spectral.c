@@ -604,6 +604,118 @@ static void compute_mfcc(const float *signal, int n, int sample_rate,
     free(mel_energies);
 }
 
+/* ========== CPP: Cepstral Peak Prominence ========== */
+
+/*
+ * Boersma (1993), Hillenbrand et al. (1994).
+ * CPP mede a proeminencia do pico cepstral na faixa de F0:
+ *   CPP = peak_cepstrum(q*) - mean_cepstrum(q em [min_q, max_q])
+ * Voz regular (Normal) -> CPP alto; voz irregular (Disfonia) -> CPP baixo.
+ *
+ * Implementacao: cepstrum real = IFFT(log|FFT(frame)|)
+ *                             ~= FFT(log|FFT(frame)|) / N  (entrada simetrica real)
+ */
+static float compute_cpp_frame(const float *frame, int frame_len, int sample_rate)
+{
+    int fft_size = dsp_next_power_of_2(frame_len);
+    float *real = (float *)safe_calloc(fft_size, sizeof(float));
+    float *imag = (float *)safe_calloc(fft_size, sizeof(float));
+
+    memcpy(real, frame, frame_len * sizeof(float));
+    dsp_fft(real, imag, fft_size);
+
+    /* Log-magnitude spectrum */
+    int half = fft_size / 2 + 1;
+    float *log_spec = (float *)safe_calloc(fft_size, sizeof(float));
+    for (int k = 0; k < half; k++) {
+        float mag = sqrtf(real[k] * real[k] + imag[k] * imag[k]);
+        log_spec[k] = logf(mag + 1e-10f);
+    }
+    /* Mirror para frequencias negativas (entrada simetrica real) */
+    for (int k = 1; k < fft_size / 2; k++)
+        log_spec[fft_size - k] = log_spec[k];
+
+    /* Cepstrum real: IFFT(log_spec) ~= FFT(log_spec) / N */
+    float *cep_imag = (float *)safe_calloc(fft_size, sizeof(float));
+    dsp_fft(log_spec, cep_imag, fft_size);
+    /* log_spec[q] / fft_size = cepstrum na quefrencia q */
+
+    /* Faixa de quefrencia para F0 */
+    int min_q = sample_rate / F0_MAX_HZ;   /* ~88 para 44100 Hz */
+    int max_q = sample_rate / F0_MIN_HZ;   /* ~551 para 44100 Hz */
+    if (max_q >= fft_size / 2) max_q = fft_size / 2 - 1;
+
+    float cpp = 0.0f;
+    if (min_q < max_q) {
+        float peak = -1e30f;
+        float cep_sum = 0.0f;
+        int n_range = max_q - min_q + 1;
+        for (int q = min_q; q <= max_q; q++) {
+            float c = log_spec[q] / fft_size;
+            if (c > peak) peak = c;
+            cep_sum += c;
+        }
+        float mean_q = cep_sum / n_range;
+        cpp = peak - mean_q;
+        if (cpp < 0.0f) cpp = 0.0f;
+    }
+
+    free(real); free(imag); free(log_spec); free(cep_imag);
+    return cpp;
+}
+
+/*
+ * Extrai CPP medio, desvio-padrao e slope temporal sobre todos os frames.
+ */
+static void compute_cpp(const float *signal, int n, int sample_rate,
+                         float *cpp_mean, float *cpp_std, float *cpp_slope)
+{
+    *cpp_mean = 0.0f; *cpp_std = 0.0f; *cpp_slope = 0.0f;
+
+    int frame_size = FRAME_SIZE;
+    int frame_step = FRAME_STEP;
+    int num_frames = (n - frame_size) / frame_step + 1;
+    if (num_frames <= 0) return;
+
+    float *cpp_vals = (float *)safe_malloc(num_frames * sizeof(float));
+    float *frame    = (float *)safe_malloc(frame_size * sizeof(float));
+
+    for (int i = 0; i < num_frames; i++) {
+        memcpy(frame, signal + i * frame_step, frame_size * sizeof(float));
+        dsp_hamming_window(frame, frame_size);
+        cpp_vals[i] = compute_cpp_frame(frame, frame_size, sample_rate);
+    }
+
+    /* Media */
+    float sum = 0.0f;
+    for (int i = 0; i < num_frames; i++) sum += cpp_vals[i];
+    *cpp_mean = sum / num_frames;
+
+    /* Desvio-padrao */
+    float var_sum = 0.0f;
+    for (int i = 0; i < num_frames; i++) {
+        float d = cpp_vals[i] - *cpp_mean;
+        var_sum += d * d;
+    }
+    *cpp_std = sqrtf(var_sum / num_frames);
+
+    /* Slope via regressao linear simples: beta = (N*sum(i*y) - sum(i)*sum(y)) / denom */
+    float s_x = 0.0f, s_y = 0.0f, s_xx = 0.0f, s_xy = 0.0f;
+    for (int i = 0; i < num_frames; i++) {
+        float xi = (float)i;
+        s_x  += xi;
+        s_y  += cpp_vals[i];
+        s_xx += xi * xi;
+        s_xy += xi * cpp_vals[i];
+    }
+    float nf = (float)num_frames;
+    float denom = nf * s_xx - s_x * s_x;
+    *cpp_slope = (fabsf(denom) > 1e-10f) ? (nf * s_xy - s_x * s_y) / denom : 0.0f;
+
+    free(cpp_vals);
+    free(frame);
+}
+
 /* ========== Interface publica ========== */
 
 int spectral_extract(const float *signal, int n, int sample_rate,
@@ -631,6 +743,9 @@ int spectral_extract(const float *signal, int n, int sample_rate,
 
     /* MFCC + Delta + Delta-Delta (US-011) */
     compute_mfcc(signal, n, sample_rate, out->mfcc, out->delta_mfcc, out->delta2_mfcc);
+
+    /* CPP: Cepstral Peak Prominence (mean, std, slope) */
+    compute_cpp(signal, n, sample_rate, &out->cpp_mean, &out->cpp_std, &out->cpp_slope);
 
     return 0;
 }

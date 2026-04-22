@@ -1,0 +1,254 @@
+[2026-03-23 01:25:04] [INFO] Classificador de Anomalias Vocais - MLP em C
+[2026-03-23 01:25:04] [INFO] Modo: full | Diretorio: . | Seed: 42
+[2026-03-23 01:25:04] [INFO] === MODO: TREINAMENTO COM K-FOLD ===
+[2026-03-23 01:25:04] [INFO] Classe 0 (saudavel): 687 pacientes
+[2026-03-23 01:25:04] [INFO] Classe 1 (laringite): 140 pacientes
+[2026-03-23 01:25:04] [INFO] Classe 2 (disfonia_psicogênica): 91 pacientes
+[2026-03-23 01:25:04] [INFO] Classe 3 (disfonia_funcional): 112 pacientes
+[2026-03-23 01:25:04] [INFO] Classe 4 (edema_de_reinke): 68 pacientes
+[2026-03-23 01:25:04] [INFO] Dataset total: 1098 pacientes
+[2026-03-23 01:25:04] [INFO] CSV lido: 1254 registros de ./overview_merged.csv
+[2026-03-23 01:25:04] [INFO] Extraindo features de 1098 pacientes...
+[2026-03-23 01:25:46] [INFO] Extracao completa: 1098 pacientes, 0 erros, 41.8s
+[2026-03-23 01:25:46] [INFO] Features exportadas: results/features.csv (1098 x 237)
+[2026-03-23 01:25:46] [INFO] 
+========== FOLD 1/5 ==========
+[2026-03-23 01:33:40] [INFO] Fold 1: inner CV selecionou var=0.010 corr=0.95
+[2026-03-23 01:33:40] [INFO] Fold 1: inner CV var=0.010 corr=0.95 -> n_features=158
+[2026-03-23 01:33:40] [INFO] Feature selection: 237 -> 158 features
+[2026-03-23 01:33:41] [INFO] Treino: 2184 -> 2800 (Borderline-SMOTE), Validacao: 222, Features: 158
+[2026-03-23 01:33:41] [INFO] Epoch   1: train_loss=4.7192 train_acc=0.234 val_loss=1.4434 val_acc=0.464 val_f1=0.334
+[2026-03-23 01:33:43] [INFO] Epoch  10: train_loss=1.7635 train_acc=0.544 val_loss=1.1098 val_acc=0.608 val_f1=0.414
+[2026-03-23 01:33:45] [INFO] Epoch  20: train_loss=1.3498 train_acc=0.716 val_loss=1.1124 val_acc=0.550 val_f1=0.362
+[2026-03-23 01:33:47] [INFO] Epoch  30: train_loss=1.1017 train_acc=0.791 val_loss=1.1197 val_acc=0.617 val_f1=0.414
+[2026-03-23 01:33:49] [INFO] Epoch  40: train_loss=0.9858 train_acc=0.827 val_loss=1.1927 val_acc=0.595 val_f1=0.382
+[2026-03-23 01:33:50] [INFO] Early stopping na epoch 46 (melhor: epoch 16, val_f1=0.4208 val_acc=0.6171)
+[2026-03-23 01:33:50] [INFO] SWA val_f1=0.3914 val_acc=0.5856 (avg of 6 snapshots) vs best val_f1=0.4208
+[2026-03-23 01:33:50] [INFO] Pesos restaurados da epoch 16 (val_f1=0.4208)
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        103           12           13            9            1
+  Laringite                      11            6            2            5            4
+  Disfonia Psicogenica            5            1            7            6            0
+  Disfonia Funcional              6            2            8            6            1
+  Edema de Reinke                 2            2            1            1            8
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8110     0.7464     0.7774
+Laringite                  0.2609     0.2143     0.2353
+Disfonia Psicogenica       0.2258     0.3684     0.2800
+Disfonia Funcional         0.2222     0.2609     0.2400
+Edema de Reinke            0.5714     0.5714     0.5714
+
+=== Metricas Globais ===
+Acuracia:     0.5856
+Macro F1:     0.4208
+Weighted F1:  0.5978
+Total amostras: 222
+[2026-03-23 01:33:51] [INFO] Fold 1 e o melhor ate agora (F1=0.4208). Salvo como 'best'.
+[2026-03-23 01:33:51] [INFO] 
+========== FOLD 2/5 ==========
+[2026-03-23 01:41:46] [INFO] Fold 2: inner CV selecionou var=0.010 corr=0.95
+[2026-03-23 01:41:46] [INFO] Fold 2: inner CV var=0.010 corr=0.95 -> n_features=160
+[2026-03-23 01:41:47] [INFO] Treino: 2189 -> 2800 (Borderline-SMOTE), Validacao: 221, Features: 160
+[2026-03-23 01:41:47] [INFO] Epoch   1: train_loss=5.2163 train_acc=0.236 val_loss=1.4138 val_acc=0.398 val_f1=0.256
+[2026-03-23 01:41:49] [INFO] Epoch  10: train_loss=1.6824 train_acc=0.575 val_loss=1.0930 val_acc=0.593 val_f1=0.312
+[2026-03-23 01:41:51] [INFO] Epoch  20: train_loss=1.3343 train_acc=0.716 val_loss=1.1475 val_acc=0.593 val_f1=0.340
+[2026-03-23 01:41:53] [INFO] Epoch  30: train_loss=1.1286 train_acc=0.770 val_loss=1.1422 val_acc=0.643 val_f1=0.362
+[2026-03-23 01:41:55] [INFO] Epoch  40: train_loss=1.0154 train_acc=0.822 val_loss=1.1669 val_acc=0.647 val_f1=0.387
+[2026-03-23 01:41:57] [INFO] Epoch  50: train_loss=0.9201 train_acc=0.852 val_loss=1.1675 val_acc=0.643 val_f1=0.396
+[2026-03-23 01:41:59] [INFO] Epoch  60: train_loss=0.8965 train_acc=0.855 val_loss=1.2115 val_acc=0.647 val_f1=0.406
+[2026-03-23 01:42:01] [INFO] Epoch  70: train_loss=0.8684 train_acc=0.868 val_loss=1.2246 val_acc=0.629 val_f1=0.369
+[2026-03-23 01:42:03] [INFO] Epoch  80: train_loss=0.8349 train_acc=0.881 val_loss=1.2268 val_acc=0.620 val_f1=0.386
+[2026-03-23 01:42:03] [INFO] Early stopping na epoch 82 (melhor: epoch 52, val_f1=0.4265 val_acc=0.6652)
+[2026-03-23 01:42:03] [INFO] SWA val_f1=0.3894 val_acc=0.6516 (avg of 13 snapshots) vs best val_f1=0.4265
+[2026-03-23 01:42:03] [INFO] Pesos restaurados da epoch 52 (val_f1=0.4265)
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        123            1            2           10            2
+  Laringite                      12            9            3            0            4
+  Disfonia Psicogenica            7            2            4            4            1
+  Disfonia Funcional             14            0            2            7            0
+  Edema de Reinke                 4            5            0            1            4
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.7688     0.8913     0.8255
+Laringite                  0.5294     0.3214     0.4000
+Disfonia Psicogenica       0.3636     0.2222     0.2759
+Disfonia Funcional         0.3182     0.3043     0.3111
+Edema de Reinke            0.3636     0.2857     0.3200
+
+=== Metricas Globais ===
+Acuracia:     0.6652
+Macro F1:     0.4265
+Weighted F1:  0.6413
+Total amostras: 221
+[2026-03-23 01:42:04] [INFO] Fold 2 e o melhor ate agora (F1=0.4265). Salvo como 'best'.
+[2026-03-23 01:42:04] [INFO] 
+========== FOLD 3/5 ==========
+[2026-03-23 01:50:08] [INFO] Fold 3: inner CV selecionou var=0.005 corr=0.90
+[2026-03-23 01:50:08] [INFO] Fold 3: inner CV var=0.005 corr=0.90 -> n_features=151
+[2026-03-23 01:50:09] [INFO] Treino: 2195 -> 2800 (Borderline-SMOTE), Validacao: 219, Features: 151
+[2026-03-23 01:50:09] [INFO] Epoch   1: train_loss=4.7386 train_acc=0.256 val_loss=1.4347 val_acc=0.429 val_f1=0.286
+[2026-03-23 01:50:11] [INFO] Epoch  10: train_loss=1.8110 train_acc=0.530 val_loss=1.0946 val_acc=0.598 val_f1=0.383
+[2026-03-23 01:50:13] [INFO] Epoch  20: train_loss=1.3630 train_acc=0.699 val_loss=0.9985 val_acc=0.653 val_f1=0.400
+[2026-03-23 01:50:15] [INFO] Epoch  30: train_loss=1.1420 train_acc=0.776 val_loss=1.0138 val_acc=0.658 val_f1=0.421
+[2026-03-23 01:50:17] [INFO] Epoch  40: train_loss=1.0322 train_acc=0.812 val_loss=1.0584 val_acc=0.635 val_f1=0.351
+[2026-03-23 01:50:19] [INFO] Epoch  50: train_loss=0.9528 train_acc=0.837 val_loss=1.0810 val_acc=0.639 val_f1=0.361
+[2026-03-23 01:50:20] [INFO] Early stopping na epoch 57 (melhor: epoch 27, val_f1=0.4444 val_acc=0.6804)
+[2026-03-23 01:50:20] [INFO] SWA val_f1=0.3814 val_acc=0.6438 (avg of 8 snapshots) vs best val_f1=0.4444
+[2026-03-23 01:50:20] [INFO] Pesos restaurados da epoch 27 (val_f1=0.4444)
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        115            5            2           11            4
+  Laringite                       5           13            0            6            4
+  Disfonia Psicogenica            1            3            6            7            1
+  Disfonia Funcional              9            1            4            8            0
+  Edema de Reinke                 3            7            1            0            3
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8647     0.8394     0.8519
+Laringite                  0.4483     0.4643     0.4561
+Disfonia Psicogenica       0.4615     0.3333     0.3871
+Disfonia Funcional         0.2500     0.3636     0.2963
+Edema de Reinke            0.2500     0.2143     0.2308
+
+=== Metricas Globais ===
+Acuracia:     0.6621
+Macro F1:     0.4444
+Weighted F1:  0.6675
+Total amostras: 219
+[2026-03-23 01:50:21] [INFO] Fold 3 e o melhor ate agora (F1=0.4444). Salvo como 'best'.
+[2026-03-23 01:50:21] [INFO] 
+========== FOLD 4/5 ==========
+[2026-03-23 01:58:18] [INFO] Fold 4: inner CV selecionou var=0.020 corr=0.90
+[2026-03-23 01:58:18] [INFO] Fold 4: inner CV var=0.020 corr=0.90 -> n_features=152
+[2026-03-23 01:58:19] [INFO] Treino: 2200 -> 2800 (Borderline-SMOTE), Validacao: 218, Features: 152
+[2026-03-23 01:58:19] [INFO] Epoch   1: train_loss=4.6170 train_acc=0.266 val_loss=1.4273 val_acc=0.417 val_f1=0.281
+[2026-03-23 01:58:20] [INFO] Epoch  10: train_loss=1.6934 train_acc=0.579 val_loss=1.0801 val_acc=0.610 val_f1=0.382
+[2026-03-23 01:58:22] [INFO] Epoch  20: train_loss=1.3174 train_acc=0.715 val_loss=1.1685 val_acc=0.601 val_f1=0.348
+[2026-03-23 01:58:24] [INFO] Epoch  30: train_loss=1.0855 train_acc=0.792 val_loss=1.2252 val_acc=0.628 val_f1=0.358
+[2026-03-23 01:58:26] [INFO] Epoch  40: train_loss=0.9671 train_acc=0.842 val_loss=1.3224 val_acc=0.587 val_f1=0.326
+[2026-03-23 01:58:26] [INFO] Early stopping na epoch 41 (melhor: epoch 11, val_f1=0.3965 val_acc=0.6468)
+[2026-03-23 01:58:26] [INFO] SWA val_f1=0.3362 val_acc=0.5963 (avg of 5 snapshots) vs best val_f1=0.3965
+[2026-03-23 01:58:26] [INFO] Pesos restaurados da epoch 11 (val_f1=0.3965)
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        118            6            3            6            4
+  Laringite                       7            9            1            1           10
+  Disfonia Psicogenica            8            2            3            1            4
+  Disfonia Funcional             11            2            1            4            4
+  Edema de Reinke                 1            4            0            1            7
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8138     0.8613     0.8369
+Laringite                  0.3913     0.3214     0.3529
+Disfonia Psicogenica       0.3750     0.1667     0.2308
+Disfonia Funcional         0.3077     0.1818     0.2286
+Edema de Reinke            0.2414     0.5385     0.3333
+
+=== Metricas Globais ===
+Acuracia:     0.6468
+Macro F1:     0.3965
+Weighted F1:  0.6333
+Total amostras: 218
+[2026-03-23 01:58:27] [INFO] 
+========== FOLD 5/5 ==========
+[2026-03-23 02:06:09] [INFO] Fold 5: inner CV selecionou var=0.005 corr=0.95
+[2026-03-23 02:06:09] [INFO] Fold 5: inner CV var=0.005 corr=0.95 -> n_features=159
+[2026-03-23 02:06:10] [INFO] Treino: 2200 -> 2800 (Borderline-SMOTE), Validacao: 218, Features: 159
+[2026-03-23 02:06:10] [INFO] Epoch   1: train_loss=4.8206 train_acc=0.243 val_loss=1.5036 val_acc=0.362 val_f1=0.214
+[2026-03-23 02:06:12] [INFO] Epoch  10: train_loss=1.7253 train_acc=0.556 val_loss=1.1338 val_acc=0.606 val_f1=0.370
+[2026-03-23 02:06:14] [INFO] Epoch  20: train_loss=1.3713 train_acc=0.703 val_loss=1.1163 val_acc=0.601 val_f1=0.343
+[2026-03-23 02:06:16] [INFO] Epoch  30: train_loss=1.1493 train_acc=0.776 val_loss=1.1469 val_acc=0.601 val_f1=0.361
+[2026-03-23 02:06:17] [INFO] Early stopping na epoch 38 (melhor: epoch 8, val_f1=0.4378 val_acc=0.6560)
+[2026-03-23 02:06:17] [INFO] SWA val_f1=0.3641 val_acc=0.6101 (avg of 4 snapshots) vs best val_f1=0.4378
+[2026-03-23 02:06:17] [INFO] Pesos restaurados da epoch 8 (val_f1=0.4378)
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        117            7            7            4            2
+  Laringite                      15            8            1            0            4
+  Disfonia Psicogenica            8            0            4            4            2
+  Disfonia Funcional             12            2            1            4            3
+  Edema de Reinke                 3            0            0            1            9
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.7548     0.8540     0.8014
+Laringite                  0.4706     0.2857     0.3556
+Disfonia Psicogenica       0.3077     0.2222     0.2581
+Disfonia Funcional         0.3077     0.1818     0.2286
+Edema de Reinke            0.4500     0.6923     0.5455
+
+=== Metricas Globais ===
+Acuracia:     0.6514
+Macro F1:     0.4378
+Weighted F1:  0.6262
+Total amostras: 218
+[2026-03-23 02:06:18] [INFO] 
+========== RESULTADOS AGREGADOS (5-FOLD) ==========
+[2026-03-23 02:06:18] [INFO] Acuracia media:     0.6422
+[2026-03-23 02:06:18] [INFO] Macro F1 medio:     0.4252
+[2026-03-23 02:06:18] [INFO] Weighted F1 medio:  0.6332
+[2026-03-23 02:06:18] [INFO] 
+=== Metricas Globais (todos os folds combinados) ===
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        576           31           27           40           13
+  Laringite                      50           45            7           12           26
+  Disfonia Psicogenica           29            8           24           22            8
+  Disfonia Funcional             52            7           16           29            8
+  Edema de Reinke                13           18            2            4           31
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8000     0.8384     0.8188
+Laringite                  0.4128     0.3214     0.3614
+Disfonia Psicogenica       0.3158     0.2637     0.2874
+Disfonia Funcional         0.2710     0.2589     0.2648
+Edema de Reinke            0.3605     0.4559     0.4026
+
+=== Metricas Globais ===
+Acuracia:     0.6421
+Macro F1:     0.4270
+Weighted F1:  0.6341
+Total amostras: 1098
+[2026-03-23 02:06:18] [INFO] 
+=== Tabela Comparativa de Baselines ===
+[2026-03-23 02:06:18] [INFO] Method                 Accuracy Macro_F1  F1_Norm  F1_Laring   F1_Disf   F1_FuncD F1_Reinke
+[2026-03-23 02:06:18] [INFO] MajorityClass            0.6257   0.1539   0.7697     0.0000    0.0000     0.0000   0.0000
+[2026-03-23 02:06:18] [INFO] kNN(k=5)                 0.6448   0.2558   0.7976     0.3041    0.1273     0.0000   0.0500
+[2026-03-23 02:06:18] [INFO] LogisticRegression       0.6056   0.3975   0.7958     0.3897    0.2595     0.2358   0.3067
+[2026-03-23 02:06:18] [INFO] MLP(proposed)            0.6421   0.4270   0.8188     0.3614    0.2874     0.2648   0.4026
+[2026-03-23 02:06:18] [INFO] Baselines salvos em results/baselines.csv
+[2026-03-23 02:06:18] [INFO] 
+=== Teste de McNemar (correcao de continuidade, alpha=0.05) ===
+[2026-03-23 02:06:18] [INFO]   MLP vs MajorityClass: chi2=1.204  p=0.2725
+[2026-03-23 02:06:18] [INFO]   MLP vs kNN(k=5):      chi2=0.018  p=0.8939
+[2026-03-23 02:06:18] [INFO]   MLP vs LogReg:        chi2=7.243  p=0.0071 *SIGNIFICATIVO*
+[2026-03-23 02:06:18] [INFO] McNemar exportado para results/baselines.csv
+[2026-03-23 02:06:18] [INFO] Feature importance salvo em results/feature_importance.csv
+[2026-03-23 02:06:18] [INFO] === Feature Importance por Grupo ===
+[2026-03-23 02:06:18] [INFO]   Temporal (0-29)    acc_drop=0.0087  f1_drop=0.0133  (n=25)
+[2026-03-23 02:06:18] [INFO]   Spectral (30-95)   acc_drop=0.0072  f1_drop=0.0121  (n=46)
+[2026-03-23 02:06:18] [INFO]   Wavelet (96-149)   acc_drop=0.0051  f1_drop=0.0081  (n=102)
+[2026-03-23 02:06:18] [INFO] Bootstrap CI 95% (N=1000, seed=42):
+[2026-03-23 02:06:18] [INFO]   Accuracy:    0.6421 [0.6138, 0.6703]
+[2026-03-23 02:06:18] [INFO]   Macro F1:    0.4263 [0.3884, 0.4645]
+[2026-03-23 02:06:18] [INFO]   F1 Normal:   0.8186 [0.7959, 0.8390]
+[2026-03-23 02:06:18] [INFO]   F1 Laringite:0.3614 [0.2881, 0.4368]
+[2026-03-23 02:06:18] [INFO]   F1 Disfonia: 0.2855 [0.1882, 0.3793]
+[2026-03-23 02:06:18] [INFO]   F1 FuncDisf: 0.2638 [0.1827, 0.3445]
+[2026-03-23 02:06:18] [INFO]   F1 Reinke:   0.4021 [0.3014, 0.4970]
+[2026-03-23 02:06:18] [INFO] AUC Normal=0.811 Laringite=0.742 DisfPsicog=0.674 FuncDisf=0.643 Reinke=0.779
+[2026-03-23 02:06:18] [INFO] Tempo total: 2474.2 segundos

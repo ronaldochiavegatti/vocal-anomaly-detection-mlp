@@ -15,7 +15,8 @@
 #define ROC_N_THRESHOLDS 101
 
 static const char *class_names[NUM_CLASSES] = {
-    CLASS_NAME_NORMAL, CLASS_NAME_LARYNGITIS, CLASS_NAME_DYSPHONIA
+    CLASS_NAME_NORMAL, CLASS_NAME_LARYNGITIS, CLASS_NAME_DYSPHONIA,
+    CLASS_NAME_FUNC_DYSPHONIA, CLASS_NAME_REINKE
 };
 
 void metrics_compute(const int *y_true, const int *y_pred, int n,
@@ -163,6 +164,38 @@ void metrics_permutation_importance(const float *X_val, const int *y_true,
     free(X); free(y_pred); free(col);
 }
 
+void metrics_mcnemar(const int *y_true,
+                     const int *y_pred_a, const int *y_pred_b,
+                     int n_samples,
+                     float *chi2_out, float *p_value_out)
+{
+    /* b: A certo, B errado | c: A errado, B certo */
+    int b = 0, c = 0;
+    for (int i = 0; i < n_samples; i++) {
+        int a_ok = (y_pred_a[i] == y_true[i]);
+        int b_ok = (y_pred_b[i] == y_true[i]);
+        if (a_ok && !b_ok) b++;
+        if (!a_ok && b_ok) c++;
+    }
+
+    if (b + c == 0) {
+        *chi2_out   = 0.0f;
+        *p_value_out = 1.0f;
+        return;
+    }
+
+    /* Chi-quadrado com correcao de continuidade de Edwards */
+    float diff = fabsf((float)(b - c)) - 1.0f;
+    if (diff < 0.0f) diff = 0.0f;
+    float chi2 = (diff * diff) / (float)(b + c);
+
+    /* p-value: 1 - CDF_chi2(chi2, df=1) = erfc(sqrt(chi2/2)) */
+    float p = (float)erfc(sqrt((double)chi2 / 2.0));
+
+    *chi2_out   = chi2;
+    *p_value_out = p;
+}
+
 static int cmp_float(const void *a, const void *b)
 {
     float fa = *(const float *)a;
@@ -195,11 +228,13 @@ void metrics_bootstrap_ci(const int *y_true, const int *y_pred, int n_samples,
         MetricsResult mr;
         metrics_compute(bt, bp, n_samples, &mr);
 
-        dist[CI_ACCURACY][b]     = mr.accuracy;
-        dist[CI_MACRO_F1][b]     = mr.macro_f1;
-        dist[CI_F1_NORMAL][b]    = mr.f1[0];
-        dist[CI_F1_LARYNGITE][b] = mr.f1[1];
-        dist[CI_F1_DISFONIA][b]  = mr.f1[2];
+        dist[CI_ACCURACY][b]         = mr.accuracy;
+        dist[CI_MACRO_F1][b]         = mr.macro_f1;
+        dist[CI_F1_NORMAL][b]        = mr.f1[0];
+        dist[CI_F1_LARYNGITE][b]     = mr.f1[1];
+        dist[CI_F1_DISFONIA][b]      = mr.f1[2];
+        dist[CI_F1_FUNC_DISFONIA][b] = mr.f1[3];
+        dist[CI_F1_REINKE][b]        = mr.f1[4];
     }
 
     free(bt);

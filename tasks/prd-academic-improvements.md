@@ -26,10 +26,10 @@ The current vocal anomaly detection pipeline achieves 80.6% accuracy and Macro F
 **Description:** As a researcher, I want to persist which features were selected in each fold so that I can run inference on new patients without re-running the full pipeline.
 
 **Acceptance Criteria:**
-- [ ] After `select_features()` in each fold, save `models/selected_fold{k}.bin` with format `[int n_selected][int idx_0]...[int idx_{n-1}]`
-- [ ] Functions `selected_save(path, indices, n)` and `selected_load(path, indices, n)` implemented (in `src/feature_select.c` or `src/normalize.c`)
-- [ ] Running `make train` produces 5 files: `models/selected_fold0.bin` … `models/selected_fold4.bin`
-- [ ] `make` compiles with 0 errors and 0 relevant warnings
+- [x] After `select_features()` in each fold, save `models/selected_fold{k}.bin` with format `[int n_selected][int idx_0]...[int idx_{n-1}]`
+- [x] Functions `selected_save(path, indices, n)` and `selected_load(path, indices, n)` implemented (in `src/feature_select.c` or `src/normalize.c`)
+- [x] Running `make train` produces 5 files: `models/selected_fold0.bin` … `models/selected_fold4.bin`
+- [x] `make` compiles with 0 errors and 0 relevant warnings
 
 ---
 
@@ -37,13 +37,13 @@ The current vocal anomaly detection pipeline achieves 80.6% accuracy and Macro F
 **Description:** As a researcher, I want per-class ROC and Precision-Recall curves so that I can report AUC in publications and assess model discrimination on imbalanced classes.
 
 **Acceptance Criteria:**
-- [ ] Softmax probabilities `all_y_prob[N][3]` accumulated across all folds (parallel to `all_y_pred`)
-- [ ] `metrics_roc_auc(y_true, y_prob, n_samples, auc_out)` implemented in `src/metrics.c` using one-vs-rest + trapezoidal rule
-- [ ] `metrics_pr_curve(y_true, y_prob, n_samples)` implemented in `src/metrics.c`
-- [ ] `results/roc_curves.csv` written with columns: `class,threshold,tpr,fpr`
-- [ ] `results/pr_curves.csv` written with columns: `class,threshold,precision,recall`
-- [ ] AUC per class printed to stdout after final evaluation
-- [ ] `make` compiles with 0 errors and 0 relevant warnings
+- [x] Softmax probabilities `all_y_prob[N][3]` accumulated across all folds (parallel to `all_y_pred`)
+- [x] `metrics_roc_auc(y_true, y_prob, n_samples, auc_out)` implemented in `src/metrics.c` using one-vs-rest + trapezoidal rule
+- [x] `metrics_pr_curve(y_true, y_prob, n_samples)` implemented in `src/metrics.c`
+- [x] `results/roc_curves.csv` written with columns: `class,threshold,tpr,fpr`
+- [x] `results/pr_curves.csv` written with columns: `class,threshold,precision,recall`
+- [x] AUC per class printed to stdout after final evaluation
+- [x] `make` compiles with 0 errors and 0 relevant warnings
 
 ---
 
@@ -51,12 +51,12 @@ The current vocal anomaly detection pipeline achieves 80.6% accuracy and Macro F
 **Description:** As a researcher, I want 95% confidence intervals on accuracy, Macro F1, and per-class F1 so that I can report statistically valid results.
 
 **Acceptance Criteria:**
-- [ ] `struct ConfidenceInterval { float mean; float lower; float upper; }` added to `include/metrics.h`
-- [ ] `metrics_bootstrap_ci(y_true, y_pred, n_samples, n_bootstrap, results)` implemented in `src/metrics.c`; resamples with replacement N=1000 times, computes percentiles 2.5 and 97.5
-- [ ] CI section appended to `results/metrics_global.csv` with columns: `metric,mean,ci_lower,ci_upper`
-- [ ] Metrics covered: accuracy, macro_f1, f1_normal, f1_laryngite, f1_disfonia
-- [ ] Runtime overhead < 500ms (no re-training)
-- [ ] `make` compiles with 0 errors and 0 relevant warnings
+- [x] `struct ConfidenceInterval { float mean; float lower; float upper; }` added to `include/metrics.h`
+- [x] `metrics_bootstrap_ci(y_true, y_pred, n_samples, n_bootstrap, results)` implemented in `src/metrics.c`; resamples with replacement N=1000 times, computes percentiles 2.5 and 97.5
+- [x] CI section appended to `results/metrics_global.csv` with columns: `metric,mean,ci_lower,ci_upper`
+- [x] Metrics covered: accuracy, macro_f1, f1_normal, f1_laryngite, f1_disfonia
+- [x] Runtime overhead < 500ms (no re-training)
+- [x] `make` compiles with 0 errors and 0 relevant warnings
 
 ---
 
@@ -64,11 +64,11 @@ The current vocal anomaly detection pipeline achieves 80.6% accuracy and Macro F
 **Description:** As a researcher, I want to know which acoustic features most affect diagnosis so I can provide clinical interpretability in publications.
 
 **Acceptance Criteria:**
-- [ ] `metrics_permutation_importance(X_val, y_true, net, norm, selected, n_selected, importance_out)` implemented in `src/metrics.c`; for each feature j, shuffles column j, re-evaluates accuracy and Macro F1, records `importance[j] = accuracy_original - accuracy_permuted`
-- [ ] Group-level permutation computed for 3 groups: Temporal (features 0–29), Spectral (30–95), Wavelet (96–149)
-- [ ] `results/feature_importance.csv` written with columns: `feature_idx,importance_acc,importance_f1`
-- [ ] Group summary printed to stdout after each fold
-- [ ] `make` compiles with 0 errors and 0 relevant warnings
+- [x] `metrics_permutation_importance(X_val, y_true, net, norm, selected, n_selected, importance_out)` implemented in `src/metrics.c`; for each feature j, shuffles column j, re-evaluates accuracy and Macro F1, records `importance[j] = accuracy_original - accuracy_permuted`
+- [x] Group-level permutation computed for 3 groups: Temporal (features 0–29), Spectral (30–95), Wavelet (96–149)
+- [x] `results/feature_importance.csv` written with columns: `feature_idx,importance_acc,importance_f1`
+- [x] Group summary printed to stdout after each fold
+- [x] `make` compiles with 0 errors and 0 relevant warnings
 
 ---
 
@@ -76,13 +76,13 @@ The current vocal anomaly detection pipeline achieves 80.6% accuracy and Macro F
 **Description:** As a researcher, I want to compare the MLP against simple baselines so that I can contextualize the 80.6% result in a publication.
 
 **Acceptance Criteria:**
-- [ ] **Majority class baseline**: always predicts class 0 (Normal); accuracy, Macro F1, per-class F1 computed in `metrics.c`
-- [ ] **Logistic Regression baseline**: MLP with 0 hidden layers (Input → Dense(3) + Softmax); use `mlp_init_dynamic` with `n_hidden=0`; trained with same Adam + early stopping as main model
-- [ ] **kNN (k=5) baseline**: implemented in `src/knn.c` + `include/knn.h`; Euclidean distance on normalized features; majority vote among 5 nearest neighbors
-- [ ] Comparison table printed to stdout: `Method | Accuracy | Macro F1 | F1_Normal | F1_Laryngite | F1_Disfonia`
-- [ ] Results saved to `results/baselines.csv` with same columns
-- [ ] All baselines use same train/val splits, same normalization, same feature selection as main model
-- [ ] `make` compiles with 0 errors and 0 relevant warnings
+- [x] **Majority class baseline**: always predicts class 0 (Normal); accuracy, Macro F1, per-class F1 computed in `metrics.c`
+- [x] **Logistic Regression baseline**: MLP with 0 hidden layers (Input → Dense(3) + Softmax); use `mlp_init_dynamic` with `n_hidden=0`; trained with same Adam + early stopping as main model
+- [x] **kNN (k=5) baseline**: implemented in `src/knn.c` + `include/knn.h`; Euclidean distance on normalized features; majority vote among 5 nearest neighbors
+- [x] Comparison table printed to stdout: `Method | Accuracy | Macro F1 | F1_Normal | F1_Laryngite | F1_Disfonia`
+- [x] Results saved to `results/baselines.csv` with same columns
+- [x] All baselines use same train/val splits, same normalization, same feature selection as main model
+- [x] `make` compiles with 0 errors and 0 relevant warnings
 
 ---
 
@@ -90,12 +90,12 @@ The current vocal anomaly detection pipeline achieves 80.6% accuracy and Macro F
 **Description:** As a researcher, I want to select feature selection thresholds via inner CV so that hyperparameter choices are unbiased and defensible to reviewers.
 
 **Acceptance Criteria:**
-- [ ] `inner_cv_select_thresholds(train_data, n_train, best_var_thresh, best_corr_thresh)` implemented in `src/main.c`
-- [ ] Inner grid: `var_threshold ∈ {0.005, 0.01, 0.02}`, `corr_threshold ∈ {0.90, 0.95, 0.98}` (9 combinations)
-- [ ] Inner loop: 3-fold CV on the outer fold's training set; selects combination maximizing inner val Macro F1
-- [ ] Selected thresholds logged per outer fold: `Fold k: var=X corr=Y → n_features=Z`
-- [ ] `select_features()` already accepts thresholds as parameters — use those, do not hardcode
-- [ ] `make` compiles with 0 errors and 0 relevant warnings
+- [x] `inner_cv_select_thresholds(train_data, n_train, best_var_thresh, best_corr_thresh)` implemented in `src/main.c`
+- [x] Inner grid: `var_threshold ∈ {0.005, 0.01, 0.02}`, `corr_threshold ∈ {0.90, 0.95, 0.98}` (9 combinations)
+- [x] Inner loop: 3-fold CV on the outer fold's training set; selects combination maximizing inner val Macro F1
+- [x] Selected thresholds logged per outer fold: `Fold k: var=X corr=Y → n_features=Z`
+- [x] `select_features()` already accepts thresholds as parameters — use those, do not hardcode
+- [x] `make` compiles with 0 errors and 0 relevant warnings
 
 ---
 
@@ -103,16 +103,16 @@ The current vocal anomaly detection pipeline achieves 80.6% accuracy and Macro F
 **Description:** As a researcher, I want to generate augmented WAV samples from minority classes using physical audio transformations so that my augmentation methodology is more scientifically sound than feature-space SMOTE.
 
 **Acceptance Criteria:**
-- [ ] `src/wav_augment.c` and `include/wav_augment.h` created with 4 functions:
+- [x] `src/wav_augment.c` and `include/wav_augment.h` created with 4 functions:
   - `wav_add_noise(samples, n, snr_db)` — additive white Gaussian noise at specified SNR
   - `wav_pitch_shift(samples, n, sample_rate, semitones)` — ±1–2 semitone shift
   - `wav_time_stretch(samples, n, factor)` — ±5–10% duration change preserving spectrum
   - `wav_gain_perturb(samples, n, db)` — ±3 dB amplitude scaling
-- [ ] Augmentation applied **only** to Laryngite and Disfonia patients in each fold's training set
-- [ ] Augmented samples fed into feature extraction pipeline, not stored as WAV files (to preserve feature caching)
-- [ ] `main.c` calls augmentation before feature extraction in training folds
-- [ ] No data leakage: augmented samples never appear in validation sets
-- [ ] `make` compiles with 0 errors and 0 relevant warnings
+- [x] Augmentation applied **only** to Laryngite and Disfonia patients in each fold's training set
+- [x] Augmented samples fed into feature extraction pipeline, not stored as WAV files (to preserve feature caching)
+- [x] `main.c` calls augmentation before feature extraction in training folds
+- [x] No data leakage: augmented samples never appear in validation sets
+- [x] `make` compiles with 0 errors and 0 relevant warnings
 
 ---
 
