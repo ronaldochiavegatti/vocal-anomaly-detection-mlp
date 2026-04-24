@@ -81,6 +81,12 @@ static int extract_vowel_features(const char *wav_path, float *out)
     out[idx++] = sf.cpp_std;
     out[idx++] = sf.cpp_slope;
 
+    /* Glottal Source Features (US-028) */
+    out[idx++] = sf.glottal_oq;
+    out[idx++] = sf.glottal_sq;
+    out[idx++] = sf.glottal_naq;
+    out[idx++] = sf.glottal_h1h2;
+
     /* Features wavelet (sinal original) */
     WaveletFeatures wf;
     wavelet_extract(wav.samples, wav.num_samples, &wf);
@@ -116,6 +122,11 @@ int features_extract_all(const Dataset *ds, FeatureMatrix *fm)
                 errors++;
             }
         }
+
+        /* Extrair metadados */
+        int meta_start = NUM_VOWELS * FEATURES_PER_VOWEL;
+        fm->features[i * fm->num_features + meta_start]     = (float)p->age;
+        fm->features[i * fm->num_features + meta_start + 1] = (p->sex == 'm' ? 1.0f : (p->sex == 'w' ? 0.0f : 0.5f));
     }
 
     double total_time = timer_now() - t_start;
@@ -162,6 +173,8 @@ int features_export_csv(const FeatureMatrix *fm, const char *path)
         "d2mfcc_6", "d2mfcc_7", "d2mfcc_8", "d2mfcc_9", "d2mfcc_10", "d2mfcc_11", "d2mfcc_12",
         /* CPP */
         "cpp_mean", "cpp_std", "cpp_slope",
+        /* Glottal Source */
+        "gl_oq", "gl_sq", "gl_naq", "gl_h1h2",
         "wl_mean_1", "wl_mean_2", "wl_mean_3", "wl_mean_4", "wl_mean_5", "wl_mean_6",
         "wl_var_1", "wl_var_2", "wl_var_3", "wl_var_4", "wl_var_5", "wl_var_6",
         "wl_energy_1", "wl_energy_2", "wl_energy_3", "wl_energy_4", "wl_energy_5", "wl_energy_6"
@@ -173,7 +186,7 @@ int features_export_csv(const FeatureMatrix *fm, const char *path)
             fprintf(f, "%s_%s", vowels[v], feat_names[j]);
         }
     }
-    fprintf(f, ",label\n");
+    fprintf(f, ",meta_age,meta_sex,label\n");
 
     /* Dados */
     for (int i = 0; i < fm->count; i++) {

@@ -22,6 +22,12 @@ typedef struct {
     float cpp_mean;           /* CPP medio (Cepstral Peak Prominence) - Boersma/Hillenbrand */
     float cpp_std;            /* desvio-padrao do CPP (variabilidade da regularidade glotal) */
     float cpp_slope;          /* inclinacao temporal do CPP (tendencia de regularizacao) */
+    
+    /* Features da Fonte Glotica (Glottal Source) - US-028 */
+    float glottal_oq;         /* Open Quotient (tempo de glote aberta / periodo) */
+    float glottal_sq;         /* Speed Quotient (tempo subida / tempo descida) */
+    float glottal_naq;        /* Normalized Amplitude Quotient (pico fluxo / periodo) */
+    float glottal_h1h2;       /* Diferenca de amplitude entre 1o e 2o harmonicos */
 } SpectralFeatures;
 
 /*

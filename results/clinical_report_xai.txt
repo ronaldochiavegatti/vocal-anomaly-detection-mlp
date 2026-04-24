@@ -1,0 +1,34 @@
+========================================================
+      RELATORIO DE EXPLICABILIDADE CLINICA (XAI)        
+========================================================
+
+Este relatorio mapeia a importancia das caracteristicas da IA
+para conceitos da fisiologia laringea e qualidade vocal.
+
+### Instabilidade de Frequencia (Jitter)
+    Importancia Relativa: 0.0000
+    Descricao: Relacionado ao controle motor das pregas vocais e irregularidade vibratoria.
+
+### Instabilidade de Amplitude (Shimmer)
+    Importancia Relativa: 0.0000
+    Descricao: Relacionado a variacao da forca de fechamento glotico e soprosidade.
+
+### Ruido e Qualidade (HNR, CPP, Entropia)
+    Importancia Relativa: 0.0000
+    Descricao: Indicativo de presenca de ruido turbulento e perda de periodicidade.
+
+### Trato Vocal e Ressonancia (MFCC, Formantes)
+    Importancia Relativa: 0.0000
+    Descricao: Reflete a configuracao do trato vocal e cavidades de ressonancia.
+
+### Micro-dinamica de Energia (Wavelets)
+    Importancia Relativa: 0.0000
+    Descricao: Captura variacoes de energia em multiplas escalas de tempo.
+
+### Metadados Demograficos (Idade, Sexo)
+    Importancia Relativa: 0.0000
+    Descricao: Considera variacoes anatomicas naturais ligadas ao envelhecimento e genero.
+
+Interpretacao: Pesos altos em Jitter/Shimmer indicam que o modelo
+esta focando em instabilidades vibratorias gloticas. Pesos altos
+em MFCCs sugerem compensacoes no trato vocal (supra-glote).

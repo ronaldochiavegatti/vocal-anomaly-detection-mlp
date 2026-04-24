@@ -105,6 +105,12 @@ int csv_parse(const char *path, CsvData *data)
         rec->recording_id = atoi(fields[0]);
         rec->speaker_id = atoi(fields[4]);
         rec->sex = fields[6][0];
+
+        /* Calculate age: year(AufnahmeDatum) - year(Geburtsdatum) */
+        int record_year = atoi(fields[2]);  /* Extracts first 4 digits as int */
+        int birth_year = atoi(fields[5]);
+        rec->age = (record_year > 0 && birth_year > 0) ? (record_year - birth_year) : 0;
+
         strncpy(rec->pathology, fields[7], sizeof(rec->pathology) - 1);
         rec->pathology[sizeof(rec->pathology) - 1] = '\0';
 

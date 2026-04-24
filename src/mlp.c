@@ -214,21 +214,21 @@ static void layer_forward(Layer *l, const float *input)
 
 void mlp_init(MLP *net)
 {
-    mlp_init_dynamic(net, MLP_INPUT_SIZE);
+    mlp_init_dynamic(net, MLP_INPUT_SIZE, MLP_OUTPUT_SIZE);
 }
 
-void mlp_init_dynamic(MLP *net, int input_size)
+void mlp_init_dynamic(MLP *net, int input_size, int output_size)
 {
     net->num_layers = MLP_NUM_LAYERS;
     net->timestep = 0;
 
 #if MLP_NUM_LAYERS == 3
-    int sizes[] = { input_size, MLP_HIDDEN1_SIZE, MLP_HIDDEN2_SIZE, MLP_OUTPUT_SIZE };
+    int sizes[] = { input_size, MLP_HIDDEN1_SIZE, MLP_HIDDEN2_SIZE, output_size };
     float dropout_rates[] = { DROPOUT_RATE_HIDDEN1, DROPOUT_RATE_HIDDEN2, 0.0f };
     int use_bn[] = { 0, 0, 0 };
 #else
     int sizes[] = { input_size, MLP_HIDDEN1_SIZE, MLP_HIDDEN2_SIZE,
-                    MLP_HIDDEN3_SIZE, MLP_OUTPUT_SIZE };
+                    MLP_HIDDEN3_SIZE, output_size };
     float dropout_rates[] = { DROPOUT_RATE_HIDDEN1, DROPOUT_RATE_HIDDEN2,
                               DROPOUT_RATE_HIDDEN3, 0.0f };
     int use_bn[] = { 0, 0, 0, 0 };
@@ -276,7 +276,7 @@ void mlp_forward(MLP *net, const float *input, float *output, int training)
     }
 
     memcpy(output, net->layers[net->num_layers - 1].a,
-           MLP_OUTPUT_SIZE * sizeof(float));
+           net->layers[net->num_layers - 1].output_size * sizeof(float));
 }
 
 void mlp_backward(MLP *net, const float *target, float class_weight)
@@ -292,8 +292,18 @@ void mlp_backward(MLP *net, const float *target, float class_weight)
     Layer *out_layer = &net->layers[nl - 1];
     float *out_delta = (float *)safe_malloc(out_layer->output_size * sizeof(float));
 
+    /* Find correct class probability for Focal Loss scaling */
+    float p_target = 0.0f;
     for (int i = 0; i < out_layer->output_size; i++) {
-        out_delta[i] = class_weight * (out_layer->a[i] - target[i]);
+        if (target[i] > 0.5f) { /* Ground truth class */
+            p_target = out_layer->a[i];
+            break;
+        }
+    }
+    float focal_scale = powf(1.0f - p_target, FOCAL_LOSS_GAMMA);
+
+    for (int i = 0; i < out_layer->output_size; i++) {
+        out_delta[i] = class_weight * focal_scale * (out_layer->a[i] - target[i]);
     }
 
     /* Accumulate output layer gradients */
@@ -470,14 +480,18 @@ void mlp_adam_update(MLP *net, float lr)
     }
 }
 
-float mlp_loss(const float *output, const float *target, float class_weight)
+float mlp_loss(const float *output, const float *target, float class_weight, int output_size)
 {
     float loss = 0.0f;
-    for (int i = 0; i < MLP_OUTPUT_SIZE; i++) {
+    for (int i = 0; i < output_size; i++) {
         if (target[i] > 0.0f) {
             float p = output[i];
             if (p < 1e-7f) p = 1e-7f;
-            loss -= class_weight * target[i] * logf(p);
+            if (p > 0.999999f) p = 0.999999f;
+            
+            /* Focal Loss factor: (1-p)^gamma */
+            float focal_factor = powf(1.0f - p, FOCAL_LOSS_GAMMA);
+            loss -= class_weight * focal_factor * target[i] * logf(p);
         }
     }
     return loss;

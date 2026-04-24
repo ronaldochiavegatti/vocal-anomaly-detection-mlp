@@ -13,6 +13,7 @@ typedef struct {
     int recording_id;      /* AufnahmeID */
     int speaker_id;        /* SprecherID */
     char sex;              /* 'm' ou 'w' (Geschlecht) */
+    int age;               /* Age calculated from AufnahmeDatum and Geburtsdatum */
     char pathology[64];    /* Pathologien */
 } CsvRecord;
 

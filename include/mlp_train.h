@@ -46,14 +46,15 @@ typedef struct {
 int mlp_train(MLP *net,
               const float *train_x, const int *train_y, int n_train,
               const float *val_x, const int *val_y, int n_val,
-              int num_features, TrainHistory *history);
+              int num_features, int num_classes, const float *class_weights,
+              TrainHistory *history);
 
 /*
  * Avalia o MLP num conjunto de dados.
  * Retorna a acuracia.
  */
 float mlp_evaluate(MLP *net, const float *x, const int *y, int n,
-                   int num_features, float *loss_out);
+                   int num_features, int num_classes, float *loss_out);
 
 /*
  * Libera a memoria do historico.
