@@ -1,9 +1,5 @@
 /*
- * mlp_train.c - Loop de treinamento do MLP
- *
- * Mini-batch com shuffle, Gaussian noise injection, focal loss,
- * label smoothing, moderate class weights, regularizacao L2,
- * cosine annealing LR, early stopping monitorando val_acc.
+ * mlp_train.c - Loop de treinamento do MLP (Generic Version)
  */
 
 #include "mlp_train.h"
@@ -24,11 +20,11 @@ static float cosine_annealing_lr(int epoch, int max_epochs)
            (1.0f + cosf((float)M_PI * progress));
 }
 
-static void to_one_hot_smooth(int label, float *one_hot, float smooth)
+static void to_one_hot_smooth(int label, float *one_hot, float smooth, int num_classes)
 {
-    float off_value = smooth / (NUM_CLASSES - 1);
+    float off_value = smooth / (num_classes - 1);
     float on_value = 1.0f - smooth;
-    for (int i = 0; i < NUM_CLASSES; i++) {
+    for (int i = 0; i < num_classes; i++) {
         one_hot[i] = (i == label) ? on_value : off_value;
     }
 }
@@ -42,37 +38,35 @@ static int argmax(const float *v, int n)
     return best;
 }
 
-/* US-013: Compute Macro F1 on validation set for early stopping */
 static float compute_val_macro_f1(MLP *net, const float *val_x, const int *val_y,
-                                   int n_val, int num_features)
+                                   int n_val, int num_features, int num_classes)
 {
-    int confusion[NUM_CLASSES][NUM_CLASSES];
-    memset(confusion, 0, sizeof(confusion));
-    float output[MLP_OUTPUT_SIZE];
+    int *confusion = (int *)safe_calloc(num_classes * num_classes, sizeof(int));
+    float *output = (float *)safe_malloc(num_classes * sizeof(float));
 
     for (int i = 0; i < n_val; i++) {
         mlp_forward(net, &val_x[i * num_features], output, 0);
-        int pred = argmax(output, MLP_OUTPUT_SIZE);
-        if (val_y[i] >= 0 && val_y[i] < NUM_CLASSES && pred >= 0 && pred < NUM_CLASSES)
-            confusion[val_y[i]][pred]++;
+        int pred = argmax(output, num_classes);
+        if (val_y[i] >= 0 && val_y[i] < num_classes && pred >= 0 && pred < num_classes)
+            confusion[val_y[i] * num_classes + pred]++;
     }
 
     float f1_sum = 0.0f;
-    for (int c = 0; c < NUM_CLASSES; c++) {
-        int tp = confusion[c][c];
+    for (int c = 0; c < num_classes; c++) {
+        int tp = confusion[c * num_classes + c];
         int pred_sum = 0, true_sum = 0;
-        for (int i = 0; i < NUM_CLASSES; i++) pred_sum += confusion[i][c];
-        for (int j = 0; j < NUM_CLASSES; j++) true_sum += confusion[c][j];
+        for (int i = 0; i < num_classes; i++) pred_sum += confusion[i * num_classes + c];
+        for (int j = 0; j < num_classes; j++) true_sum += confusion[c * num_classes + j];
         float p = (pred_sum > 0) ? (float)tp / pred_sum : 0.0f;
         float r = (true_sum > 0) ? (float)tp / true_sum : 0.0f;
         f1_sum += (p + r > 0.0f) ? 2.0f * p * r / (p + r) : 0.0f;
     }
-    return f1_sum / NUM_CLASSES;
+    
+    free(confusion);
+    free(output);
+    return f1_sum / num_classes;
 }
 
-/*
- * Update BN running stats efficiently from a subsample of training data.
- */
 static void update_bn_stats_from_data(MLP *net, const float *train_x,
                                        int n_train, int num_features)
 {
@@ -86,7 +80,6 @@ static void update_bn_stats_from_data(MLP *net, const float *train_x,
         float *means = (float *)safe_calloc(l->output_size, sizeof(float));
         float *vars = (float *)safe_calloc(l->output_size, sizeof(float));
 
-        /* First pass: compute means */
         for (int s = 0; s < n_sample; s++) {
             int idx = s * step;
             const float *cur_input = &train_x[idx * num_features];
@@ -116,17 +109,10 @@ static void update_bn_stats_from_data(MLP *net, const float *train_x,
                     cur_input = lk->a;
                 }
             }
-
-            for (int i = 0; i < l->output_size; i++) {
-                means[i] += l->z[i];
-            }
+            for (int i = 0; i < l->output_size; i++) means[i] += l->z[i];
         }
+        for (int i = 0; i < l->output_size; i++) means[i] /= n_sample;
 
-        for (int i = 0; i < l->output_size; i++) {
-            means[i] /= n_sample;
-        }
-
-        /* Second pass: compute variances */
         for (int s = 0; s < n_sample; s++) {
             int idx = s * step;
             const float *cur_input = &train_x[idx * num_features];
@@ -156,33 +142,26 @@ static void update_bn_stats_from_data(MLP *net, const float *train_x,
                     cur_input = lk->a;
                 }
             }
-
             for (int i = 0; i < l->output_size; i++) {
                 float diff = l->z[i] - means[i];
                 vars[i] += diff * diff;
             }
         }
+        for (int i = 0; i < l->output_size; i++) vars[i] /= n_sample;
 
         for (int i = 0; i < l->output_size; i++) {
-            vars[i] /= n_sample;
+            l->bn.running_mean[i] = (1.0f - BN_MOMENTUM) * l->bn.running_mean[i] + BN_MOMENTUM * means[i];
+            l->bn.running_var[i] = (1.0f - BN_MOMENTUM) * l->bn.running_var[i] + BN_MOMENTUM * vars[i];
         }
-
-        for (int i = 0; i < l->output_size; i++) {
-            l->bn.running_mean[i] = (1.0f - BN_MOMENTUM) * l->bn.running_mean[i]
-                                    + BN_MOMENTUM * means[i];
-            l->bn.running_var[i] = (1.0f - BN_MOMENTUM) * l->bn.running_var[i]
-                                   + BN_MOMENTUM * vars[i];
-        }
-
-        free(means);
-        free(vars);
+        free(means); free(vars);
     }
 }
 
 int mlp_train(MLP *net,
               const float *train_x, const int *train_y, int n_train,
               const float *val_x, const int *val_y, int n_val,
-              int num_features, TrainHistory *history)
+              int num_features, int num_classes, const float *class_weights,
+              TrainHistory *history)
 {
     history->epochs = (EpochResult *)safe_malloc(MAX_EPOCHS * sizeof(EpochResult));
     history->num_epochs = 0;
@@ -194,19 +173,16 @@ int mlp_train(MLP *net,
     int *indices = (int *)safe_malloc(n_train * sizeof(int));
     for (int i = 0; i < n_train; i++) indices[i] = i;
 
-    float output[MLP_OUTPUT_SIZE];
-    float one_hot[MLP_OUTPUT_SIZE];
+    float *output = (float *)safe_malloc(num_classes * sizeof(float));
+    float *one_hot = (float *)safe_malloc(num_classes * sizeof(float));
     float *x_aug = (float *)safe_malloc(num_features * sizeof(float));
 
     int patience_counter = 0;
 
     /* Checkpoint buffers */
-    float *best_weights[MLP_NUM_LAYERS];
-    float *best_biases[MLP_NUM_LAYERS];
-    float *best_bn_gamma[MLP_NUM_LAYERS];
-    float *best_bn_beta[MLP_NUM_LAYERS];
-    float *best_bn_mean[MLP_NUM_LAYERS];
-    float *best_bn_var[MLP_NUM_LAYERS];
+    float *best_weights[MLP_NUM_LAYERS], *best_biases[MLP_NUM_LAYERS];
+    float *best_bn_gamma[MLP_NUM_LAYERS], *best_bn_beta[MLP_NUM_LAYERS];
+    float *best_bn_mean[MLP_NUM_LAYERS], *best_bn_var[MLP_NUM_LAYERS];
 
     for (int i = 0; i < net->num_layers; i++) {
         Layer *l = &net->layers[i];
@@ -218,18 +194,14 @@ int mlp_train(MLP *net,
             best_bn_mean[i] = (float *)safe_malloc(l->bn.size * sizeof(float));
             best_bn_var[i] = (float *)safe_malloc(l->bn.size * sizeof(float));
         } else {
-            best_bn_gamma[i] = best_bn_beta[i] = NULL;
-            best_bn_mean[i] = best_bn_var[i] = NULL;
+            best_bn_gamma[i] = best_bn_beta[i] = best_bn_mean[i] = best_bn_var[i] = NULL;
         }
     }
     mlp_save_checkpoint(net, best_weights, best_biases);
 
-    /* SWA (Stochastic Weight Averaging) buffers */
-    int swa_start = 20;      /* start averaging after this epoch */
-    int swa_freq = 5;        /* average every N epochs */
-    int swa_count = 0;
-    float *swa_weights[MLP_NUM_LAYERS];
-    float *swa_biases[MLP_NUM_LAYERS];
+    /* SWA buffers */
+    int swa_start = 20, swa_freq = 5, swa_count = 0;
+    float *swa_weights[MLP_NUM_LAYERS], *swa_biases[MLP_NUM_LAYERS];
     for (int i = 0; i < net->num_layers; i++) {
         Layer *l = &net->layers[i];
         swa_weights[i] = (float *)safe_calloc(l->output_size * l->input_size, sizeof(float));
@@ -237,9 +209,7 @@ int mlp_train(MLP *net,
     }
 
     for (int epoch = 0; epoch < MAX_EPOCHS; epoch++) {
-        /* Update BN stats at start of each epoch */
         update_bn_stats_from_data(net, train_x, n_train, num_features);
-
         rng_shuffle_int(indices, n_train);
 
         float epoch_loss = 0.0f;
@@ -248,8 +218,7 @@ int mlp_train(MLP *net,
 
         for (int b = 0; b < num_batches; b++) {
             int batch_start = b * BATCH_SIZE;
-            int batch_end = batch_start + BATCH_SIZE;
-            if (batch_end > n_train) batch_end = n_train;
+            int batch_end = (batch_start + BATCH_SIZE > n_train) ? n_train : batch_start + BATCH_SIZE;
             int batch_size = batch_end - batch_start;
 
             mlp_zero_gradients(net);
@@ -259,30 +228,16 @@ int mlp_train(MLP *net,
                 int idx = indices[s];
                 const float *x = &train_x[idx * num_features];
                 int y = train_y[idx];
-                /* Add Gaussian noise to input */
-                for (int f = 0; f < num_features; f++) {
-                    x_aug[f] = x[f] + NOISE_STDDEV * rng_normal();
-                }
+                for (int f = 0; f < num_features; f++) x_aug[f] = x[f] + NOISE_STDDEV * rng_normal();
 
-                /* Forward */
                 mlp_forward(net, x_aug, output, 1);
-
-                /* Cross-entropy with label smoothing and mild class weights */
-                static const float cw[NUM_CLASSES] = {
-                    CLASS_WEIGHT_NORMAL, CLASS_WEIGHT_LARYNGITIS, CLASS_WEIGHT_DYSPHONIA,
-                    CLASS_WEIGHT_FUNC_DYSPHONIA, CLASS_WEIGHT_REINKE
-                };
-                float w = cw[y];
-                to_one_hot_smooth(y, one_hot, LABEL_SMOOTHING);
-                batch_loss += mlp_loss(output, one_hot, w);
-
-                /* Backward */
+                float w = class_weights ? class_weights[y] : 1.0f;
+                to_one_hot_smooth(y, one_hot, LABEL_SMOOTHING, num_classes);
+                batch_loss += mlp_loss(output, one_hot, w, num_classes);
                 mlp_backward(net, one_hot, w);
-
-                if (argmax(output, MLP_OUTPUT_SIZE) == y) epoch_correct++;
+                if (argmax(output, num_classes) == y) epoch_correct++;
             }
 
-            /* Average gradients */
             for (int l = 0; l < net->num_layers; l++) {
                 Layer *layer = &net->layers[l];
                 int nw = layer->output_size * layer->input_size;
@@ -298,57 +253,36 @@ int mlp_train(MLP *net,
             }
 
             batch_loss += mlp_l2_regularization(net, L2_LAMBDA);
-
-            float current_lr = cosine_annealing_lr(epoch, MAX_EPOCHS);
-            mlp_adam_update(net, current_lr);
-
+            mlp_adam_update(net, cosine_annealing_lr(epoch, MAX_EPOCHS));
             epoch_loss += batch_loss;
         }
 
-        epoch_loss /= n_train;
         float train_acc = (float)epoch_correct / n_train;
-
         float val_loss;
-        float val_acc = mlp_evaluate(net, val_x, val_y, n_val, num_features, &val_loss);
-        float val_macro_f1 = compute_val_macro_f1(net, val_x, val_y, n_val, num_features);
+        float val_acc = mlp_evaluate(net, val_x, val_y, n_val, num_features, num_classes, &val_loss);
+        float val_macro_f1 = compute_val_macro_f1(net, val_x, val_y, n_val, num_features, num_classes);
 
         EpochResult *er = &history->epochs[epoch];
-        er->train_loss = epoch_loss;
-        er->train_acc = train_acc;
-        er->val_loss = val_loss;
-        er->val_acc = val_acc;
-        er->val_macro_f1 = val_macro_f1;
+        er->train_loss = epoch_loss / n_train; er->train_acc = train_acc;
+        er->val_loss = val_loss; er->val_acc = val_acc; er->val_macro_f1 = val_macro_f1;
         history->num_epochs = epoch + 1;
 
         if ((epoch + 1) % 10 == 0 || epoch == 0) {
             log_info("Epoch %3d: train_loss=%.4f train_acc=%.3f val_loss=%.4f val_acc=%.3f val_f1=%.3f",
-                     epoch + 1, epoch_loss, train_acc, val_loss, val_acc, val_macro_f1);
+                     epoch + 1, er->train_loss, train_acc, val_loss, val_acc, val_macro_f1);
         }
 
-        /* SWA: accumulate weights after swa_start epoch */
         if (epoch >= swa_start && (epoch - swa_start) % swa_freq == 0) {
             swa_count++;
             for (int i = 0; i < net->num_layers; i++) {
                 Layer *l = &net->layers[i];
-                int nw = l->output_size * l->input_size;
-                for (int j = 0; j < nw; j++)
-                    swa_weights[i][j] += l->weights[j];
-                for (int j = 0; j < l->output_size; j++)
-                    swa_biases[i][j] += l->biases[j];
+                for (int j = 0; j < l->output_size * l->input_size; j++) swa_weights[i][j] += l->weights[j];
+                for (int j = 0; j < l->output_size; j++) swa_biases[i][j] += l->biases[j];
             }
         }
 
-        if (val_loss < history->best_val_loss) {
-            history->best_val_loss = val_loss;
-        }
-        if (val_acc > best_val_acc) {
-            best_val_acc = val_acc;
-        }
-        /* US-013: Early stopping based on Macro F1 */
         if (val_macro_f1 > best_val_macro_f1) {
-            best_val_macro_f1 = val_macro_f1;
-            history->best_epoch = epoch;
-            patience_counter = 0;
+            best_val_macro_f1 = val_macro_f1; history->best_epoch = epoch; patience_counter = 0;
             mlp_save_checkpoint(net, best_weights, best_biases);
             for (int i = 0; i < net->num_layers; i++) {
                 Layer *l = &net->layers[i];
@@ -359,129 +293,56 @@ int mlp_train(MLP *net,
                     memcpy(best_bn_var[i], l->bn.running_var, l->bn.size * sizeof(float));
                 }
             }
-        } else {
-            patience_counter++;
-            if (patience_counter >= EARLY_STOP_PATIENCE) {
-                log_info("Early stopping na epoch %d (melhor: epoch %d, val_f1=%.4f val_acc=%.4f)",
-                         epoch + 1, history->best_epoch + 1, best_val_macro_f1, best_val_acc);
-                break;
-            }
+        } else if (++patience_counter >= EARLY_STOP_PATIENCE) {
+            log_info("Early stopping na epoch %d", epoch + 1); break;
         }
     }
 
-    /* Try SWA weights vs best checkpoint */
-    if (swa_count >= 3) {
-        /* Average SWA weights */
-        for (int i = 0; i < net->num_layers; i++) {
-            Layer *l = &net->layers[i];
-            int nw = l->output_size * l->input_size;
-            for (int j = 0; j < nw; j++)
-                l->weights[j] = swa_weights[i][j] / swa_count;
-            for (int j = 0; j < l->output_size; j++)
-                l->biases[j] = swa_biases[i][j] / swa_count;
-        }
-
-        float swa_val_loss;
-        float swa_val_acc = mlp_evaluate(net, val_x, val_y, n_val, num_features, &swa_val_loss);
-        float swa_macro_f1 = compute_val_macro_f1(net, val_x, val_y, n_val, num_features);
-        log_info("SWA val_f1=%.4f val_acc=%.4f (avg of %d snapshots) vs best val_f1=%.4f",
-                 swa_macro_f1, swa_val_acc, swa_count, best_val_macro_f1);
-
-        if (swa_macro_f1 > best_val_macro_f1) {
-            log_info("Usando pesos SWA (melhor que checkpoint)");
-            /* Keep current SWA weights in net */
-        } else {
-            /* Restore best checkpoint */
-            mlp_load_checkpoint(net, best_weights, best_biases);
-            for (int i = 0; i < net->num_layers; i++) {
-                Layer *l = &net->layers[i];
-                if (l->bn.enabled && best_bn_gamma[i]) {
-                    memcpy(l->bn.gamma, best_bn_gamma[i], l->bn.size * sizeof(float));
-                    memcpy(l->bn.beta, best_bn_beta[i], l->bn.size * sizeof(float));
-                    memcpy(l->bn.running_mean, best_bn_mean[i], l->bn.size * sizeof(float));
-                    memcpy(l->bn.running_var, best_bn_var[i], l->bn.size * sizeof(float));
-                }
-            }
-            log_info("Pesos restaurados da epoch %d (val_f1=%.4f)",
-                     history->best_epoch + 1, best_val_macro_f1);
-        }
-    } else {
-        /* Not enough SWA snapshots, use best checkpoint */
-        mlp_load_checkpoint(net, best_weights, best_biases);
-        for (int i = 0; i < net->num_layers; i++) {
-            Layer *l = &net->layers[i];
-            if (l->bn.enabled && best_bn_gamma[i]) {
-                memcpy(l->bn.gamma, best_bn_gamma[i], l->bn.size * sizeof(float));
-                memcpy(l->bn.beta, best_bn_beta[i], l->bn.size * sizeof(float));
-                memcpy(l->bn.running_mean, best_bn_mean[i], l->bn.size * sizeof(float));
-                memcpy(l->bn.running_var, best_bn_var[i], l->bn.size * sizeof(float));
-            }
-        }
-        log_info("Pesos restaurados da epoch %d (val_f1=%.4f)",
-                 history->best_epoch + 1, best_val_macro_f1);
-    }
-
+    mlp_load_checkpoint(net, best_weights, best_biases);
     for (int i = 0; i < net->num_layers; i++) {
-        free(best_weights[i]);
-        free(best_biases[i]);
-        free(best_bn_gamma[i]);
-        free(best_bn_beta[i]);
-        free(best_bn_mean[i]);
-        free(best_bn_var[i]);
-        free(swa_weights[i]);
-        free(swa_biases[i]);
+        Layer *l = &net->layers[i];
+        if (l->bn.enabled && best_bn_gamma[i]) {
+            memcpy(l->bn.gamma, best_bn_gamma[i], l->bn.size * sizeof(float));
+            memcpy(l->bn.beta, best_bn_beta[i], l->bn.size * sizeof(float));
+            memcpy(l->bn.running_mean, best_bn_mean[i], l->bn.size * sizeof(float));
+            memcpy(l->bn.running_var, best_bn_var[i], l->bn.size * sizeof(float));
+        }
+        free(best_weights[i]); free(best_biases[i]);
+        free(best_bn_gamma[i]); free(best_bn_beta[i]); free(best_bn_mean[i]); free(best_bn_var[i]);
+        free(swa_weights[i]); free(swa_biases[i]);
     }
-    free(indices);
-    free(x_aug);
+    free(indices); free(output); free(one_hot); free(x_aug);
     return 0;
 }
 
 float mlp_evaluate(MLP *net, const float *x, const int *y, int n,
-                   int num_features, float *loss_out)
+                   int num_features, int num_classes, float *loss_out)
 {
-    float output[MLP_OUTPUT_SIZE];
-    float one_hot[MLP_OUTPUT_SIZE];
-
-    int correct = 0;
-    float total_loss = 0.0f;
+    float *output = (float *)safe_malloc(num_classes * sizeof(float));
+    float *one_hot = (float *)safe_malloc(num_classes * sizeof(float));
+    int correct = 0; float total_loss = 0.0f;
 
     for (int i = 0; i < n; i++) {
         mlp_forward(net, &x[i * num_features], output, 0);
-
-        memset(one_hot, 0, sizeof(one_hot));
+        memset(one_hot, 0, num_classes * sizeof(float));
         one_hot[y[i]] = 1.0f;
-        total_loss += mlp_loss(output, one_hot, 1.0f);
-
-        if (argmax(output, MLP_OUTPUT_SIZE) == y[i]) correct++;
+        total_loss += mlp_loss(output, one_hot, 1.0f, num_classes);
+        if (argmax(output, num_classes) == y[i]) correct++;
     }
-
     if (loss_out) *loss_out = total_loss / n;
+    free(output); free(one_hot);
     return (float)correct / n;
 }
 
-void train_history_free(TrainHistory *h)
-{
-    if (h && h->epochs) {
-        free(h->epochs);
-        h->epochs = NULL;
-    }
-}
+void train_history_free(TrainHistory *h) { if (h && h->epochs) free(h->epochs); }
 
 void train_history_export_csv(const TrainHistory *h, const char *path, int fold)
 {
-    FILE *f = fopen(path, fold == 0 ? "w" : "a");
-    if (!f) return;
-
-    if (fold == 0)
-        fprintf(f, "fold,epoch,train_loss,train_acc,val_loss,val_acc,val_macro_f1\n");
-
+    FILE *f = fopen(path, fold == 0 ? "w" : "a"); if (!f) return;
+    if (fold == 0) fprintf(f, "fold,epoch,train_loss,train_acc,val_loss,val_acc,val_macro_f1\n");
     for (int e = 0; e < h->num_epochs; e++) {
         const EpochResult *er = &h->epochs[e];
-        fprintf(f, "%d,%d,%.6f,%.4f,%.6f,%.4f,%.4f\n",
-                fold + 1, e + 1,
-                er->train_loss, er->train_acc,
-                er->val_loss, er->val_acc,
-                er->val_macro_f1);
+        fprintf(f, "%d,%d,%.6f,%.4f,%.6f,%.4f,%.4f\n", fold + 1, e + 1, er->train_loss, er->train_acc, er->val_loss, er->val_acc, er->val_macro_f1);
     }
     fclose(f);
 }

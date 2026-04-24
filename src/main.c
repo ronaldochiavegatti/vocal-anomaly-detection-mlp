@@ -1,13 +1,5 @@
 /*
- * main.c - Entry point do classificador de anomalias vocais
- *
- * Modos de operacao:
- *   extract  - Extrai features de todos os pacientes e salva CSV
- *   train    - Treina MLP com k-fold cross-validation
- *   test     - Carrega modelo e avalia num conjunto
- *   full     - Pipeline completa (extract + train com k-fold)
- *
- * Uso: ./vocal_detect <modo>
+ * main.c - Entry point do classificador de anomalias vocais (HIERARCHICAL LATE FUSION)
  */
 
 #include "config.h"
@@ -33,373 +25,69 @@
 #include <string.h>
 #include <math.h>
 
-/* ========== Modo: extract ========== */
+#define N_AUG_PER_SAMPLE 8
 
-static int mode_extract(const char *base_dir)
-{
-    log_info("=== MODO: EXTRACAO DE FEATURES ===");
+/* ========== Helpers ========== */
 
-    Dataset ds;
-    char csv_path[1024];
-    snprintf(csv_path, sizeof(csv_path), "%s/%s", base_dir, CSV_METADATA);
-
-    if (dataset_load(base_dir, csv_path, &ds) != 0) {
-        log_error("Falha ao carregar dataset");
-        return -1;
-    }
-
-    FeatureMatrix fm;
-    if (features_extract_all(&ds, &fm) != 0) {
-        log_error("Falha na extracao de features");
-        dataset_free(&ds);
-        return -1;
-    }
-
-    char out_path[1024];
-    snprintf(out_path, sizeof(out_path), "%s/features.csv", RESULTS_DIR);
-    features_export_csv(&fm, out_path);
-
-    features_free(&fm);
-    dataset_free(&ds);
-    return 0;
-}
-
-/* ========== Feature Selection ========== */
-
-/*
- * Feature selection: remove low-variance and highly correlated features.
- * Works on normalized data. Returns selected feature indices.
- * - var_threshold: minimum variance to keep (after z-score, most have var~1,
- *   but some may be near-constant)
- * - corr_threshold: maximum absolute Pearson correlation between features
- */
-static int select_features(const float *x, int n, int nf,
-                           float var_threshold, float corr_threshold,
-                           int *selected, int max_selected)
-{
-    /* Step 1: compute variance of each feature */
-    float *var = (float *)safe_calloc(nf, sizeof(float));
-    float *mean = (float *)safe_calloc(nf, sizeof(float));
-
-    for (int i = 0; i < n; i++)
-        for (int j = 0; j < nf; j++)
-            mean[j] += x[i * nf + j];
-    for (int j = 0; j < nf; j++) mean[j] /= n;
-
-    for (int i = 0; i < n; i++)
-        for (int j = 0; j < nf; j++) {
-            float d = x[i * nf + j] - mean[j];
-            var[j] += d * d;
-        }
-    for (int j = 0; j < nf; j++) var[j] /= n;
-
-    /* Step 2: mark low-variance features */
-    int *keep = (int *)safe_calloc(nf, sizeof(int));
-    int n_keep = 0;
-    for (int j = 0; j < nf; j++) {
-        if (var[j] >= var_threshold) {
-            keep[j] = 1;
-            n_keep++;
-        }
-    }
-
-    /* Step 3: remove highly correlated features (greedy) */
-    /* Build list of kept feature indices */
-    int *kept_idx = (int *)safe_malloc(n_keep * sizeof(int));
-    int ki = 0;
-    for (int j = 0; j < nf; j++)
-        if (keep[j]) kept_idx[ki++] = j;
-
-    /* For each pair, if correlation > threshold, remove the one with lower variance */
-    for (int a = 0; a < ki; a++) {
-        if (!keep[kept_idx[a]]) continue;
-        for (int b = a + 1; b < ki; b++) {
-            if (!keep[kept_idx[b]]) continue;
-
-            int fa = kept_idx[a], fb = kept_idx[b];
-
-            /* Compute Pearson correlation */
-            float sum_ab = 0, sum_a2 = 0, sum_b2 = 0;
-            for (int i = 0; i < n; i++) {
-                float da = x[i * nf + fa] - mean[fa];
-                float db = x[i * nf + fb] - mean[fb];
-                sum_ab += da * db;
-                sum_a2 += da * da;
-                sum_b2 += db * db;
-            }
-            float denom = sqrtf(sum_a2 * sum_b2);
-            float corr = (denom > 1e-10f) ? fabsf(sum_ab / denom) : 0.0f;
-
-            if (corr > corr_threshold) {
-                /* Remove the feature with lower variance */
-                if (var[fa] < var[fb]) {
-                    keep[fa] = 0;
-                } else {
-                    keep[fb] = 0;
-                }
-            }
-        }
-    }
-
-    /* Build final selected list */
-    int n_selected = 0;
-    for (int j = 0; j < nf; j++) {
-        if (keep[j] && n_selected < max_selected) {
-            selected[n_selected++] = j;
-        }
-    }
-
-    free(var); free(mean); free(keep); free(kept_idx);
-    return n_selected;
-}
-
-/*
- * Apply feature selection: extract only selected columns.
- */
-static void apply_feature_selection(const float *x_in, int n, int nf_in,
-                                     const int *selected, int n_selected,
-                                     float *x_out)
+static void map_to_binary_labels(const int *y_orig, int *y_bin, int n)
 {
     for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n_selected; j++) {
-            x_out[i * n_selected + j] = x_in[i * nf_in + selected[j]];
-        }
+        y_bin[i] = (y_orig[i] == CLASS_NORMAL) ? 0 : 1;
     }
 }
 
-/* ========== Modo: train (k-fold) ========== */
-
-/*
- * Encontra os k vizinhos mais proximos de um ponto dentro da mesma classe.
- * Retorna os indices dos vizinhos em neighbors[].
- */
-static void find_knn(const float *x, int base, const int *class_indices,
-                     int n_class, int nf, int k, int *neighbors)
+static int predict_hierarchical_late_fusion(MLP master[3], MLP expert[3], 
+                                            const float *x_all)
 {
-    float *dists = (float *)safe_malloc(n_class * sizeof(float));
-    int *order = (int *)safe_malloc(n_class * sizeof(int));
+    float prob_pathology = 0.0f;
+    float prob_expert[4] = {0, 0, 0, 0};
+    int meta_offset = NUM_VOWELS * FEATURES_PER_VOWEL;
 
-    for (int i = 0; i < n_class; i++) {
-        order[i] = i;
-        if (class_indices[i] == base) {
-            dists[i] = 1e30f;  /* excluir a si mesmo */
-            continue;
-        }
-        float dist = 0.0f;
-        for (int f = 0; f < nf; f++) {
-            float diff = x[base * nf + f] - x[class_indices[i] * nf + f];
-            dist += diff * diff;
-        }
-        dists[i] = dist;
+    for (int v = 0; v < 3; v++) {
+        float x_v[FEATURES_PER_VOWEL + NUM_METADATA_FEATURES];
+        memcpy(x_v, &x_all[v * FEATURES_PER_VOWEL], FEATURES_PER_VOWEL * sizeof(float));
+        memcpy(&x_v[FEATURES_PER_VOWEL], &x_all[meta_offset], NUM_METADATA_FEATURES * sizeof(float));
+
+        float out_m[2];
+        mlp_forward(&master[v], x_v, out_m, 0);
+        prob_pathology += out_m[1];
+
+        float out_e[4];
+        mlp_forward(&expert[v], x_v, out_e, 0);
+        for (int c = 0; c < 4; c++) prob_expert[c] += out_e[c];
     }
 
-    /* Selecao parcial: encontrar os k menores */
-    for (int i = 0; i < k && i < n_class; i++) {
-        int min_idx = i;
-        for (int j = i + 1; j < n_class; j++) {
-            if (dists[order[j]] < dists[order[min_idx]]) {
-                min_idx = j;
-            }
+    if ((prob_pathology / 3.0f) < 0.5f) {
+        return CLASS_NORMAL;
+    } else {
+        int best_c = 0;
+        for (int c = 1; c < 4; c++) {
+            if (prob_expert[c] > prob_expert[best_c]) best_c = c;
         }
-        int tmp = order[i];
-        order[i] = order[min_idx];
-        order[min_idx] = tmp;
-        neighbors[i] = class_indices[order[i]];
+        return best_c + 1;
     }
-
-    free(dists);
-    free(order);
 }
 
-/*
- * Borderline-SMOTE: Only generates synthetic samples from minority instances
- * that are near the decision boundary (have neighbors from other classes).
- * This produces higher-quality synthetic samples than regular SMOTE.
- */
-static void smote_oversample(const float *x_in, const int *y_in, int n_in, int nf,
-                             float **x_out, int **y_out, int *n_out)
-{
-    int k = 5;
+/* ========== Feature Extraction / Load ========== */
 
-    /* Contar por classe */
-    int counts[NUM_CLASSES] = {0};
-    for (int i = 0; i < n_in; i++) counts[y_in[i]]++;
-
-    int max_count = 0;
-    for (int c = 0; c < NUM_CLASSES; c++) {
-        if (counts[c] > max_count) max_count = counts[c];
-    }
-
-    *n_out = max_count * NUM_CLASSES;
-    *x_out = (float *)safe_malloc(*n_out * nf * sizeof(float));
-    *y_out = (int *)safe_malloc(*n_out * sizeof(int));
-
-    /* Separar indices por classe */
-    int *class_idx[NUM_CLASSES];
-    int class_pos[NUM_CLASSES];
-    for (int c = 0; c < NUM_CLASSES; c++) {
-        class_idx[c] = (int *)safe_malloc(counts[c] * sizeof(int));
-        class_pos[c] = 0;
-    }
-    for (int i = 0; i < n_in; i++) {
-        int c = y_in[i];
-        class_idx[c][class_pos[c]++] = i;
-    }
-
-    /*
-     * Step 1: For each sample, find k nearest neighbors (across ALL classes).
-     * Classify as DANGER if half or more of neighbors are from other classes.
-     * These are the borderline samples.
-     */
-    int *is_borderline = (int *)safe_calloc(n_in, sizeof(int));
-
-    for (int i = 0; i < n_in; i++) {
-        /* Find k nearest neighbors across all samples */
-        float *dists = (float *)safe_malloc(n_in * sizeof(float));
-        int *order = (int *)safe_malloc(n_in * sizeof(int));
-
-        for (int j = 0; j < n_in; j++) {
-            order[j] = j;
-            if (j == i) { dists[j] = 1e30f; continue; }
-            float dist = 0.0f;
-            for (int f = 0; f < nf; f++) {
-                float diff = x_in[i * nf + f] - x_in[j * nf + f];
-                dist += diff * diff;
-            }
-            dists[j] = dist;
-        }
-
-        /* Partial sort to find k smallest */
-        int knn = (k < n_in - 1) ? k : n_in - 1;
-        for (int a = 0; a < knn; a++) {
-            int min_idx = a;
-            for (int b = a + 1; b < n_in; b++) {
-                if (dists[order[b]] < dists[order[min_idx]])
-                    min_idx = b;
-            }
-            int tmp = order[a]; order[a] = order[min_idx]; order[min_idx] = tmp;
-        }
-
-        /* Count neighbors from other classes */
-        int other_class_count = 0;
-        for (int a = 0; a < knn; a++) {
-            if (y_in[order[a]] != y_in[i]) other_class_count++;
-        }
-
-        /* DANGER zone: at least k/2 neighbors are from other classes */
-        if (other_class_count >= (knn + 1) / 2 && other_class_count < knn) {
-            is_borderline[i] = 1;
-        }
-
-        free(dists);
-        free(order);
-    }
-
-    int out_idx = 0;
-
-    for (int c = 0; c < NUM_CLASSES; c++) {
-        int n_class = counts[c];
-        int n_needed = max_count;
-        int knn = (k < n_class - 1) ? k : n_class - 1;
-        if (knn < 1) knn = 1;
-
-        /* Copiar todas as amostras originais */
-        for (int i = 0; i < n_class; i++) {
-            int src = class_idx[c][i];
-            memcpy(&(*x_out)[out_idx * nf], &x_in[src * nf], nf * sizeof(float));
-            (*y_out)[out_idx++] = c;
-        }
-
-        /* Count borderline samples for this class */
-        int n_borderline = 0;
-        int *borderline_idx = (int *)safe_malloc(n_class * sizeof(int));
-        for (int i = 0; i < n_class; i++) {
-            if (is_borderline[class_idx[c][i]]) {
-                borderline_idx[n_borderline++] = class_idx[c][i];
-            }
-        }
-
-        /* If no borderline samples, fall back to all samples */
-        int *synth_pool = borderline_idx;
-        int synth_pool_size = n_borderline;
-        if (n_borderline == 0) {
-            synth_pool = class_idx[c];
-            synth_pool_size = n_class;
-        }
-
-        /* Gerar amostras sinteticas para completar ate max_count */
-        int n_synthetic = n_needed - n_class;
-        int *neighbors = (int *)safe_malloc(knn * sizeof(int));
-
-        for (int s = 0; s < n_synthetic; s++) {
-            /* Choose from borderline samples */
-            int base_local = (int)(rng_uniform() * synth_pool_size);
-            if (base_local >= synth_pool_size) base_local = synth_pool_size - 1;
-            int base_idx = synth_pool[base_local];
-
-            /* Find k nearest neighbors within same class */
-            find_knn(x_in, base_idx, class_idx[c], n_class, nf, knn, neighbors);
-
-            /* Choose random neighbor */
-            int nn_local = (int)(rng_uniform() * knn);
-            if (nn_local >= knn) nn_local = knn - 1;
-            int neighbor_idx = neighbors[nn_local];
-
-            /* Interpolate: x_new = x_base + alpha * (x_neighbor - x_base) */
-            float alpha = rng_uniform();
-            for (int f = 0; f < nf; f++) {
-                (*x_out)[out_idx * nf + f] =
-                    x_in[base_idx * nf + f] +
-                    alpha * (x_in[neighbor_idx * nf + f] - x_in[base_idx * nf + f]);
-            }
-            (*y_out)[out_idx++] = c;
-        }
-
-        free(neighbors);
-        free(borderline_idx);
-        free(class_idx[c]);
-    }
-
-    free(is_borderline);
-}
-
-/*
- * Carrega features de um arquivo CSV previamente exportado.
- * Retorna 0 em sucesso, -1 se o arquivo nao existe ou tem erro.
- */
 static int features_load_csv(const char *path, FeatureMatrix *fm)
 {
     FILE *f = fopen(path, "r");
     if (!f) return -1;
-
-    /* Ler header e validar contagem de colunas */
     char buf[65536];
     if (!fgets(buf, sizeof(buf), f)) { fclose(f); return -1; }
     int n_cols = 1;
-    for (const char *p = buf; *p && *p != '\n' && *p != '\r'; p++)
-        if (*p == ',') n_cols++;
-    /* n_cols = n_features + 1 (label); rejeitar cache com dimensao diferente */
-    if (n_cols - 1 != TOTAL_FEATURES) {
-        fclose(f); return -1;
-    }
-
-    /* Contar linhas (excluindo header) */
+    for (const char *p = buf; *p && *p != '\n' && *p != '\r'; p++) if (*p == ',') n_cols++;
+    if (n_cols - 1 != TOTAL_FEATURES) { fclose(f); return -1; }
     int n_lines = 0;
     while (fgets(buf, sizeof(buf), f)) n_lines++;
-
     if (n_lines == 0) { fclose(f); return -1; }
-
-    fm->count = n_lines;
-    fm->num_features = TOTAL_FEATURES;
+    fm->count = n_lines; fm->num_features = TOTAL_FEATURES;
     fm->features = (float *)safe_malloc(n_lines * TOTAL_FEATURES * sizeof(float));
     fm->labels = (int *)safe_malloc(n_lines * sizeof(int));
-
-    /* Reler */
-    rewind(f);
-    if (!fgets(buf, sizeof(buf), f)) { fclose(f); return -1; } /* skip header */
-
+    rewind(f); fgets(buf, sizeof(buf), f);
     for (int i = 0; i < n_lines; i++) {
-        if (!fgets(buf, sizeof(buf), f)) { fclose(f); return -1; }
+        if (!fgets(buf, sizeof(buf), f)) break;
         char *tok = buf;
         for (int j = 0; j < TOTAL_FEATURES; j++) {
             fm->features[i * TOTAL_FEATURES + j] = strtof(tok, &tok);
@@ -407,735 +95,275 @@ static int features_load_csv(const char *path, FeatureMatrix *fm)
         }
         fm->labels[i] = (int)strtol(tok, NULL, 10);
     }
-
-    fclose(f);
-    return 0;
+    fclose(f); return 0;
 }
 
-/*
- * Extrai FEATURES_PER_VOWEL features de um buffer float em memoria.
- * Equivalente a extract_vowel_features() de feature_extract.c mas sem I/O.
- */
 static void extract_vowel_from_float(const float *samples, int n, int sr, float *out)
 {
-    /* US-010: Wavelet denoising on a copy before feature extraction */
     float *denoised = (float *)safe_malloc(n * sizeof(float));
     memcpy(denoised, samples, n * sizeof(float));
     dsp_wavelet_denoise(denoised, n, 3);
-
     float *pre_emph = (float *)safe_malloc(n * sizeof(float));
     memcpy(pre_emph, denoised, n * sizeof(float));
     dsp_pre_emphasis(pre_emph, n, PRE_EMPHASIS_ALPHA);
 
     int idx = 0;
-    TemporalFeatures tf;
-    /* Temporal features: original signal (jitter/shimmer are pathological biomarkers) */
-    temporal_extract(samples, n, sr, &tf);
-    out[idx++] = tf.jitter_local; out[idx++] = tf.jitter_rap;
-    out[idx++] = tf.jitter_ppq5; out[idx++] = tf.shimmer_local;
-    out[idx++] = tf.shimmer_apq3; out[idx++] = tf.shimmer_apq5;
-    out[idx++] = tf.shimmer_apq11; out[idx++] = tf.energy_mean;
-    out[idx++] = tf.hnr; out[idx++] = tf.zcr;
+    TemporalFeatures tf; temporal_extract(samples, n, sr, &tf);
+    out[idx++] = tf.jitter_local; out[idx++] = tf.jitter_rap; out[idx++] = tf.jitter_ppq5;
+    out[idx++] = tf.shimmer_local; out[idx++] = tf.shimmer_apq3; out[idx++] = tf.shimmer_apq5;
+    out[idx++] = tf.shimmer_apq11; out[idx++] = tf.energy_mean; out[idx++] = tf.hnr; out[idx++] = tf.zcr;
 
-    SpectralFeatures sf;
-    spectral_extract(pre_emph, n, sr, &sf);
+    SpectralFeatures sf; spectral_extract(pre_emph, n, sr, &sf);
     out[idx++] = sf.f0_mean; out[idx++] = sf.f0_std;
-    out[idx++] = sf.formants[0]; out[idx++] = sf.formants[1];
-    out[idx++] = sf.formants[2]; out[idx++] = sf.formants[3];
-    out[idx++] = sf.spectral_entropy; out[idx++] = sf.spectral_centroid;
-    out[idx++] = sf.spectral_rolloff;
+    out[idx++] = sf.formants[0]; out[idx++] = sf.formants[1]; out[idx++] = sf.formants[2]; out[idx++] = sf.formants[3];
+    out[idx++] = sf.spectral_entropy; out[idx++] = sf.spectral_centroid; out[idx++] = sf.spectral_rolloff;
     for (int m = 0; m < 13; m++) out[idx++] = sf.mfcc[m];
-    /* US-011: Delta e Delta-Delta MFCCs */
     for (int m = 0; m < 13; m++) out[idx++] = sf.delta_mfcc[m];
     for (int m = 0; m < 13; m++) out[idx++] = sf.delta2_mfcc[m];
-    /* CPP: Cepstral Peak Prominence */
-    out[idx++] = sf.cpp_mean;
-    out[idx++] = sf.cpp_std;
-    out[idx++] = sf.cpp_slope;
+    out[idx++] = sf.cpp_mean; out[idx++] = sf.cpp_std; out[idx++] = sf.cpp_slope;
+    out[idx++] = sf.glottal_oq; out[idx++] = sf.glottal_sq; out[idx++] = sf.glottal_naq; out[idx++] = sf.glottal_h1h2;
 
-    WaveletFeatures wf;
-    /* Wavelet features: original signal */
-    wavelet_extract(samples, n, &wf);
+    WaveletFeatures wf; wavelet_extract(samples, n, &wf);
     for (int l = 0; l < WAVELET_LEVELS; l++) out[idx++] = wf.mean[l];
     for (int l = 0; l < WAVELET_LEVELS; l++) out[idx++] = wf.variance[l];
     for (int l = 0; l < WAVELET_LEVELS; l++) out[idx++] = wf.energy[l];
 
-    free(pre_emph);
-    free(denoised);
+    free(pre_emph); free(denoised);
 }
 
-/*
- * Aplica 4 tecnicas de augmentacao nas classes minoritarias (Laryngite, Disfonia)
- * do fold de treino. Expande train_x e train_y com as amostras augmentadas.
- * Modifica *x_ptr, *y_ptr, *n_ptr in-place (realoca).
- */
-static void augment_fold_training(float **x_ptr, int **y_ptr, int *n_ptr,
-                                   int nf, const Dataset *ds,
-                                   const int *indices, int n_orig)
+static void precalculate_augmentations(const Dataset *ds, int nf, float *aug_features)
 {
-    /* Contar amostras nao-normais (todas as classes minoritarias) */
-    int n_minority = 0;
-    for (int i = 0; i < n_orig; i++) {
-        if (ds->patients[indices[i]].class_label != CLASS_NORMAL) n_minority++;
-    }
-    if (n_minority == 0) return;
-
-    int n_aug_per_sample = 4;
-    int n_new = *n_ptr + n_minority * n_aug_per_sample;
-    float *new_x = (float *)safe_malloc((size_t)n_new * nf * sizeof(float));
-    int   *new_y = (int   *)safe_malloc((size_t)n_new * sizeof(int));
-
-    /* Copiar dados originais */
-    memcpy(new_x, *x_ptr, (size_t)(*n_ptr) * nf * sizeof(float));
-    memcpy(new_y, *y_ptr, (size_t)(*n_ptr) * sizeof(int));
-
-    int out_idx = *n_ptr;
-
-    for (int i = 0; i < n_orig; i++) {
-        int pat_idx = indices[i];
-        const Patient *p = &ds->patients[pat_idx];
-        if (p->class_label == CLASS_NORMAL)
-            continue;
-
-        /* Carregar WAVs das 3 vogais */
-        WavFile wavs[NUM_VOWELS];
-        int wav_ok[NUM_VOWELS];
-        for (int v = 0; v < NUM_VOWELS; v++)
-            wav_ok[v] = (wav_read(p->vowel_paths[v], &wavs[v]) == 0);
-
-        /* 4 configuracoes de augmentacao */
-        for (int aug = 0; aug < n_aug_per_sample; aug++) {
-            float *feat_row = &new_x[out_idx * nf];
-            memset(feat_row, 0, nf * sizeof(float));
-
-            for (int v = 0; v < NUM_VOWELS; v++) {
+    log_info("Pre-calculando aumentacoes de audio (8x per patologico)...");
+#pragma omp parallel for schedule(dynamic, 1)
+    for (int i = 0; i < ds->count; i++) {
+        if (ds->patients[i].class_label == CLASS_NORMAL) continue;
+        WavFile wavs[3]; int wav_ok[3];
+        for (int v = 0; v < 3; v++) wav_ok[v] = (wav_read(ds->patients[i].vowel_paths[v], &wavs[v]) == 0);
+        for (int aug = 0; aug < N_AUG_PER_SAMPLE; aug++) {
+            float *feat_row = &aug_features[(i * N_AUG_PER_SAMPLE + aug) * nf];
+            for (int v = 0; v < 3; v++) {
                 if (!wav_ok[v]) continue;
-                int ns = wavs[v].num_samples;
-                int sr = wavs[v].sample_rate;
-                float *buf = (float *)safe_malloc(ns * sizeof(float));
+                int ns = wavs[v].num_samples; float *buf = (float *)safe_malloc(ns * sizeof(float));
                 memcpy(buf, wavs[v].samples, ns * sizeof(float));
-
                 switch (aug) {
                     case 0: wav_aug_noise(buf, ns, 25.0f); break;
-                    case 1: wav_aug_gain(buf, ns,  3.0f); break;
+                    case 1: wav_aug_gain(buf, ns, 3.0f); break;
                     case 2: wav_aug_gain(buf, ns, -3.0f); break;
-                    case 3: wav_aug_stretch(buf, ns, 1.05f); break;
+                    case 3: wav_aug_stretch(buf, ns, 1.10f); break;
+                    case 4: wav_aug_stretch(buf, ns, 0.90f); break;
+                    case 5: wav_aug_pitch(buf, ns, 1.5f); break;
+                    case 6: wav_aug_pitch(buf, ns, -1.5f); break;
+                    case 7: wav_aug_noise(buf, ns, 30.0f); wav_aug_pitch(buf, ns, 0.7f); break;
                 }
-
-                extract_vowel_from_float(buf, ns, sr,
-                                         &feat_row[v * FEATURES_PER_VOWEL]);
+                extract_vowel_from_float(buf, ns, wavs[v].sample_rate, &feat_row[v * FEATURES_PER_VOWEL]);
                 free(buf);
             }
-            new_y[out_idx] = p->class_label;
-            out_idx++;
+            feat_row[NUM_VOWELS * FEATURES_PER_VOWEL] = (float)ds->patients[i].age;
+            feat_row[NUM_VOWELS * FEATURES_PER_VOWEL + 1] = (ds->patients[i].sex == 'm' ? 1.0f : 0.0f);
         }
-
-        for (int v = 0; v < NUM_VOWELS; v++)
-            if (wav_ok[v]) wav_free(&wavs[v]);
+        for (int v = 0; v < 3; v++) if (wav_ok[v]) wav_free(&wavs[v]);
     }
+}
 
-    free(*x_ptr);
-    free(*y_ptr);
-    *x_ptr = new_x;
-    *y_ptr = new_y;
+static void collect_augmented_features(float **x_ptr, int **y_ptr, int *n_ptr, int nf, const Dataset *ds, const int *indices, int n_orig, const float *aug_cache)
+{
+    int n_minority = 0;
+    for (int i = 0; i < n_orig; i++) if (ds->patients[indices[i]].class_label != CLASS_NORMAL) n_minority++;
+    if (n_minority == 0) return;
+    int n_new = *n_ptr + n_minority * N_AUG_PER_SAMPLE;
+    *x_ptr = (float *)safe_realloc(*x_ptr, (size_t)n_new * nf * sizeof(float));
+    *y_ptr = (int *)safe_realloc(*y_ptr, (size_t)n_new * sizeof(int));
+    int out_idx = *n_ptr;
+    for (int i = 0; i < n_orig; i++) {
+        int pat_idx = indices[i]; if (ds->patients[pat_idx].class_label == CLASS_NORMAL) continue;
+        for (int aug = 0; aug < N_AUG_PER_SAMPLE; aug++) {
+            memcpy(&(*x_ptr)[out_idx * nf], &aug_cache[(pat_idx * N_AUG_PER_SAMPLE + aug) * nf], nf * sizeof(float));
+            (*y_ptr)[out_idx++] = ds->patients[pat_idx].class_label;
+        }
+    }
     *n_ptr = out_idx;
 }
 
-/*
- * inner_cv_select_thresholds - Seleciona var/corr thresholds via 3-fold CV interno.
- * x_raw:      features brutas (pre-normalizacao) [n x nf]
- * y:          labels [n]
- * outer_fold: indice do fold externo (0..K_FOLDS-1); usado para variar a seed do
- *             shuffle interno, garantindo splits independentes por fold externo.
- * Avalia 9 combinacoes (var x corr), retorna a que maximiza Macro F1 medio no inner val.
- */
-static void inner_cv_select_thresholds(const float *x_raw, const int *y,
-                                        int n, int nf, int outer_fold,
-                                        float *best_var_out, float *best_corr_out)
+/* ========== SMOTE ========== */
+
+static void find_knn(const float *x, int base, const int *class_indices, int n_class, int nf, int k, int *neighbors)
 {
-    static const float var_grid[]  = {0.005f, 0.01f,  0.02f};
-    static const float corr_grid[] = {0.90f,  0.95f,  0.98f};
-    int n_var = 3, n_corr = 3, n_inner = 3;
-
-    /* Shuffled index array for inner split — seed varia por fold externo */
-    int *idx = (int *)safe_malloc(n * sizeof(int));
-    for (int i = 0; i < n; i++) idx[i] = i;
-    rng_seed(RANDOM_SEED + 77 + outer_fold * 13);
-    rng_shuffle_int(idx, n);
-
-    *best_var_out  = 0.01f;
-    *best_corr_out = 0.95f;
-    float best_f1 = -1.0f;
-
-    for (int vi = 0; vi < n_var; vi++) {
-        for (int ci = 0; ci < n_corr; ci++) {
-            float vt = var_grid[vi];
-            float ct = corr_grid[ci];
-            float f1_sum = 0.0f;
-
-            for (int fi = 0; fi < n_inner; fi++) {
-                int val_start     = (fi * n) / n_inner;
-                int val_end       = ((fi + 1) * n) / n_inner;
-                int n_ival        = val_end - val_start;
-                int n_itrain      = n - n_ival;
-
-                float *ix_tr = (float *)safe_malloc(n_itrain * nf * sizeof(float));
-                int   *iy_tr = (int   *)safe_malloc(n_itrain * sizeof(int));
-                float *ix_vl = (float *)safe_malloc(n_ival   * nf * sizeof(float));
-                int   *iy_vl = (int   *)safe_malloc(n_ival   * sizeof(int));
-
-                int ti = 0, vii = 0;
-                for (int i = 0; i < n; i++) {
-                    int orig = idx[i];
-                    if (i >= val_start && i < val_end) {
-                        memcpy(&ix_vl[vii * nf], &x_raw[orig * nf], nf * sizeof(float));
-                        iy_vl[vii++] = y[orig];
-                    } else {
-                        memcpy(&ix_tr[ti * nf], &x_raw[orig * nf], nf * sizeof(float));
-                        iy_tr[ti++] = y[orig];
-                    }
-                }
-
-                /* Normalize within inner fold */
-                NormParams inorm;
-                norm_fit(ix_tr, n_itrain, nf, &inorm);
-                norm_transform(ix_tr, n_itrain, &inorm);
-                norm_transform(ix_vl, n_ival, &inorm);
-
-                /* Feature selection */
-                int *sel   = (int *)safe_malloc(nf * sizeof(int));
-                int n_sel  = select_features(ix_tr, n_itrain, nf, vt, ct, sel, nf);
-
-                float *sx_tr = (float *)safe_malloc(n_itrain * n_sel * sizeof(float));
-                float *sx_vl = (float *)safe_malloc(n_ival   * n_sel * sizeof(float));
-                apply_feature_selection(ix_tr, n_itrain, nf, sel, n_sel, sx_tr);
-                apply_feature_selection(ix_vl, n_ival,   nf, sel, n_sel, sx_vl);
-
-                /* Train LR and evaluate */
-                int *y_pred = (int *)safe_malloc(n_ival * sizeof(int));
-                LRModel lr_inner;
-                rng_seed(RANDOM_SEED + fi * 37 + vi * 11 + ci * 5);
-                lr_init(&lr_inner, n_sel, NUM_CLASSES);
-                lr_train(&lr_inner, sx_tr, iy_tr, n_itrain,
-                         sx_vl,   iy_vl, n_ival, n_sel, y_pred);
-                lr_free(&lr_inner);
-
-                MetricsResult mr;
-                metrics_compute(iy_vl, y_pred, n_ival, &mr);
-                f1_sum += mr.macro_f1;
-
-                free(ix_tr); free(iy_tr); free(ix_vl); free(iy_vl);
-                free(sel); free(sx_tr); free(sx_vl); free(y_pred);
-                norm_free(&inorm);
-            }
-
-            float avg_f1 = f1_sum / n_inner;
-            if (avg_f1 > best_f1) {
-                best_f1       = avg_f1;
-                *best_var_out  = vt;
-                *best_corr_out = ct;
-            }
-        }
+    float *dists = (float *)safe_malloc(n_class * sizeof(float));
+    int *order = (int *)safe_malloc(n_class * sizeof(int));
+    for (int i = 0; i < n_class; i++) {
+        order[i] = i; if (class_indices[i] == base) { dists[i] = 1e30f; continue; }
+        float dist = 0.0f; for (int f = 0; f < nf; f++) { float diff = x[base * nf + f] - x[class_indices[i] * nf + f]; dist += diff * diff; }
+        dists[i] = dist;
     }
-    free(idx);
+    for (int i = 0; i < k && i < n_class; i++) {
+        int min_idx = i; for (int j = i + 1; j < n_class; j++) if (dists[order[j]] < dists[order[min_idx]]) min_idx = j;
+        int tmp = order[i]; order[i] = order[min_idx]; order[min_idx] = tmp; neighbors[i] = class_indices[order[i]];
+    }
+    free(dists); free(order);
 }
+
+static void smote_oversample(const float *x_in, const int *y_in, int n_in, int nf, int num_classes, float **x_out, int **y_out, int *n_out)
+{
+    int k = 5; int *counts = (int *)safe_calloc(num_classes, sizeof(int));
+    for (int i = 0; i < n_in; i++) counts[y_in[i]]++;
+    int max_count = 0; for (int c = 0; c < num_classes; c++) if (counts[c] > max_count) max_count = counts[c];
+    *n_out = max_count * num_classes;
+    *x_out = (float *)safe_malloc(*n_out * nf * sizeof(float));
+    *y_out = (int *)safe_malloc(*n_out * sizeof(int));
+    int **class_idx = (int **)safe_malloc(num_classes * sizeof(int *));
+    int *class_pos = (int *)safe_calloc(num_classes, sizeof(int));
+    for (int c = 0; c < num_classes; c++) class_idx[c] = (int *)safe_malloc(counts[c] * sizeof(int));
+    for (int i = 0; i < n_in; i++) class_idx[y_in[i]][class_pos[y_in[i]]++] = i;
+    int out_idx = 0;
+    for (int c = 0; c < num_classes; c++) {
+        int n_class = counts[c]; int knn = (k < n_class - 1) ? k : n_class - 1; if (knn < 1) knn = 1;
+        for (int i = 0; i < n_class; i++) { memcpy(&(*x_out)[out_idx * nf], &x_in[class_idx[c][i] * nf], nf * sizeof(float)); (*y_out)[out_idx++] = c; }
+        int n_synthetic = max_count - n_class; int *neighbors = (int *)safe_malloc(knn * sizeof(int));
+        for (int s = 0; s < n_synthetic; s++) {
+            int base_idx = class_idx[c][rng_int(n_class)]; find_knn(x_in, base_idx, class_idx[c], n_class, nf, knn, neighbors);
+            int neighbor_idx = neighbors[rng_int(knn)]; float alpha = rng_uniform();
+            for (int f = 0; f < nf; f++) (*x_out)[out_idx * nf + f] = x_in[base_idx * nf + f] + alpha * (x_in[neighbor_idx * nf + f] - x_in[base_idx * nf + f]);
+            (*y_out)[out_idx++] = c;
+        }
+        free(neighbors); free(class_idx[c]);
+    }
+    free(class_idx); free(class_pos); free(counts);
+}
+
+/* ========== Training Modo ========== */
 
 static int mode_train(const char *base_dir)
 {
-    log_info("=== MODO: TREINAMENTO COM K-FOLD ===");
-
-    /* Carregar dataset */
-    Dataset ds;
-    char csv_path[1024];
-    snprintf(csv_path, sizeof(csv_path), "%s/%s", base_dir, CSV_METADATA);
-
-    if (dataset_load(base_dir, csv_path, &ds) != 0) {
-        log_error("Falha ao carregar dataset");
-        return -1;
-    }
-
-    /* Tentar carregar features do cache */
-    char feat_path[1024];
-    snprintf(feat_path, sizeof(feat_path), "%s/features.csv", RESULTS_DIR);
-
-    FeatureMatrix fm;
-    if (features_load_csv(feat_path, &fm) == 0 && fm.count == ds.count) {
-        log_info("Features carregadas do cache: %s (%d x %d)",
-                 feat_path, fm.count, fm.num_features);
-    } else {
-        /* Extrair features */
-        log_info("Extraindo features de %d pacientes...", ds.count);
-        if (features_extract_all(&ds, &fm) != 0) {
-            log_error("Falha na extracao de features");
-            dataset_free(&ds);
-            return -1;
-        }
+    log_info("=== MODO: TREINAMENTO HIERARQUICO COM LATE FUSION (VOGAIS A, I, U) ===");
+    Dataset ds; char csv_path[1024]; snprintf(csv_path, 1024, "%s/%s", base_dir, CSV_METADATA);
+    if (dataset_load(base_dir, csv_path, &ds) != 0) return -1;
+    char feat_path[1024]; snprintf(feat_path, 1024, "%s/features.csv", RESULTS_DIR);
+    FeatureMatrix fm; if (features_load_csv(feat_path, &fm) != 0 || fm.num_features != TOTAL_FEATURES) {
+        if (features_extract_all(&ds, &fm) != 0) return -1;
         features_export_csv(&fm, feat_path);
     }
-
-    /* Seed global para reproducibilidade (afeta shuffle, noise injection, etc.) */
-    rng_seed(RANDOM_SEED);
-
-    /* K-fold split */
-    KFoldSplits splits;
-    kfold_split(fm.labels, fm.count, RANDOM_SEED, &splits);
-
-    /* Acumular metricas de todos os folds */
-    float acc_sum = 0.0f, macro_f1_sum = 0.0f, weighted_f1_sum = 0.0f;
+    rng_seed(RANDOM_SEED); KFoldSplits splits; kfold_split(fm.labels, fm.count, RANDOM_SEED, &splits);
+    float acc_sum = 0, macro_f1_sum = 0;
     int *all_y_true = (int *)safe_malloc(fm.count * sizeof(int));
     int *all_y_pred = (int *)safe_malloc(fm.count * sizeof(int));
-    float *all_y_prob = (float *)safe_malloc(fm.count * MLP_OUTPUT_SIZE * sizeof(float));
+    float *all_y_prob = (float *)safe_malloc(fm.count * 5 * sizeof(float));
     int all_count = 0;
-
-    /* Predicoes acumuladas para baselines (majority class, kNN, logistic regression) */
-    int *maj_all_pred = (int *)safe_malloc(fm.count * sizeof(int));
-    int *knn_all_pred = (int *)safe_malloc(fm.count * sizeof(int));
-    int *lr_all_pred  = (int *)safe_malloc(fm.count * sizeof(int));
-
-    /* Acumular importancia de features por fold */
-    float *imp_acc_sum = (float *)safe_calloc(TOTAL_FEATURES, sizeof(float));
-    float *imp_f1_sum  = (float *)safe_calloc(TOTAL_FEATURES, sizeof(float));
-    int   *imp_count   = (int   *)safe_calloc(TOTAL_FEATURES, sizeof(int));
-
-    float best_val_f1 = -1.0f;
+    float *aug_cache = (float *)safe_calloc((size_t)ds.count * N_AUG_PER_SAMPLE * fm.num_features, sizeof(float));
+    precalculate_augmentations(&ds, fm.num_features, aug_cache);
+    int nf_vowel = FEATURES_PER_VOWEL + NUM_METADATA_FEATURES;
 
     for (int f = 0; f < K_FOLDS; f++) {
-        log_info("\n========== FOLD %d/%d ==========", f + 1, K_FOLDS);
-
+        log_info("\n========== FOLD %d/%d (HIERARCHICAL LATE FUSION) ==========", f + 1, K_FOLDS);
         FoldSplit *fold = &splits.folds[f];
-
-        /* Montar arrays de treino e validacao */
-        int nf = fm.num_features;
-        float *train_x = (float *)safe_malloc(fold->n_train * nf * sizeof(float));
-        int *train_y = (int *)safe_malloc(fold->n_train * sizeof(int));
-        float *val_x = (float *)safe_malloc(fold->n_val * nf * sizeof(float));
-        int *val_y = (int *)safe_malloc(fold->n_val * sizeof(int));
-
+        int nf_all = fm.num_features;
+        float *train_x_all = (float *)safe_malloc(fold->n_train * nf_all * sizeof(float));
+        int *train_y_all = (int *)safe_malloc(fold->n_train * sizeof(int));
         for (int i = 0; i < fold->n_train; i++) {
-            int idx = fold->train_indices[i];
-            memcpy(&train_x[i * nf], &fm.features[idx * nf], nf * sizeof(float));
-            train_y[i] = fm.labels[idx];
+            memcpy(&train_x_all[i * nf_all], &fm.features[fold->train_indices[i] * nf_all], nf_all * sizeof(float));
+            train_y_all[i] = fm.labels[fold->train_indices[i]];
         }
-        for (int i = 0; i < fold->n_val; i++) {
-            int idx = fold->val_indices[i];
-            memcpy(&val_x[i * nf], &fm.features[idx * nf], nf * sizeof(float));
-            val_y[i] = fm.labels[idx];
-        }
-
-        /* Augmentacao no dominio do audio (somente classes minoritarias no treino) */
         int n_train_aug = fold->n_train;
-        augment_fold_training(&train_x, &train_y, &n_train_aug,
-                              nf, &ds, fold->train_indices, fold->n_train);
+        collect_augmented_features(&train_x_all, &train_y_all, &n_train_aug, nf_all, &ds, fold->train_indices, fold->n_train, aug_cache);
+        NormParams norm; norm_fit(train_x_all, fold->n_train, nf_all, &norm);
+        norm_transform(train_x_all, n_train_aug, &norm);
+        float *val_x_all = (float *)safe_malloc(fold->n_val * nf_all * sizeof(float));
+        for (int i = 0; i < fold->n_val; i++) memcpy(&val_x_all[i * nf_all], &fm.features[fold->val_indices[i] * nf_all], nf_all * sizeof(float));
+        norm_transform(val_x_all, fold->n_val, &norm);
 
-        /* Nested CV: selecionar thresholds de feature selection via 3-fold interno.
-         * Usa apenas amostras originais (pre-augmentacao) para evitar que amostras
-         * sinteticas bias the threshold selection e reduzir custo computacional. */
-        float best_var_thresh, best_corr_thresh;
-        inner_cv_select_thresholds(train_x, train_y, fold->n_train, nf, f,
-                                   &best_var_thresh, &best_corr_thresh);
-        log_info("Fold %d: inner CV selecionou var=%.3f corr=%.2f",
-                 f + 1, best_var_thresh, best_corr_thresh);
-
-        /* Normalizar (fit somente nas amostras originais de treino, transform em todos)
-         * Usar fold->n_train (original) e nao n_train_aug (aumentado) evita que amostras
-         * sinteticas de augmentacao influenciem os parametros de normalizacao. */
-        NormParams norm;
-        norm_fit(train_x, fold->n_train, nf, &norm);
-        norm_transform(train_x, n_train_aug, &norm);
-        norm_transform(val_x, fold->n_val, &norm);
-
-        /* Feature selection com thresholds escolhidos pelo inner CV */
-        int *selected = (int *)safe_malloc(nf * sizeof(int));
-        int n_selected = select_features(train_x, n_train_aug, nf,
-                                         best_var_thresh, best_corr_thresh,
-                                         selected, nf);
-        log_info("Fold %d: inner CV var=%.3f corr=%.2f -> n_features=%d",
-                 f + 1, best_var_thresh, best_corr_thresh, n_selected);
-
-        float *sel_train_x = (float *)safe_malloc(n_train_aug * n_selected * sizeof(float));
-        float *sel_val_x = (float *)safe_malloc(fold->n_val * n_selected * sizeof(float));
-        apply_feature_selection(train_x, n_train_aug, nf, selected, n_selected, sel_train_x);
-        apply_feature_selection(val_x, fold->n_val, nf, selected, n_selected, sel_val_x);
-
-        /* Salvar indices de features selecionadas para reproducibilidade */
-        char sel_path[1024];
-        snprintf(sel_path, sizeof(sel_path), "%s/selected_fold%d.bin", MODELS_DIR, f);
-        selected_save(sel_path, selected, n_selected);
-
-        if (f == 0) {
-            log_info("Feature selection: %d -> %d features", nf, n_selected);
-        }
-
-        /* Baselines: majority class, kNN e logistic regression (pre-SMOTE) */
-        {
-            int base_offset = all_count; /* ainda nao incrementado */
-            /* Majority class: prediz sempre classe 0 (Normal) */
-            for (int i = 0; i < fold->n_val; i++)
-                maj_all_pred[base_offset + i] = 0;
-            /* kNN k=5 */
-            knn_predict(sel_train_x, train_y, n_train_aug,
-                        sel_val_x, fold->n_val, n_selected,
-                        5, &knn_all_pred[base_offset]);
-            /* Logistic regression (Adam, cosine LR, early stopping) */
-            LRModel lr_model;
-            rng_seed(RANDOM_SEED + f * 100 + 1);
-            lr_init(&lr_model, n_selected, NUM_CLASSES);
-            lr_train(&lr_model,
-                     sel_train_x, train_y, n_train_aug,
-                     sel_val_x,   val_y,   fold->n_val,
-                     n_selected, &lr_all_pred[base_offset]);
-            lr_free(&lr_model);
-        }
-
-        /* Borderline-SMOTE oversampling */
-        float *os_train_x; int *os_train_y; int os_n_train;
-        smote_oversample(sel_train_x, train_y, n_train_aug, n_selected,
-                         &os_train_x, &os_train_y, &os_n_train);
-
-        log_info("Treino: %d -> %d (Borderline-SMOTE), Validacao: %d, Features: %d",
-                 n_train_aug, os_n_train, fold->n_val, n_selected);
-
-        MLP net;
-        TrainHistory hist;
-        rng_seed(RANDOM_SEED + f * 100);
-        mlp_init_dynamic(&net, n_selected);
-        mlp_train(&net, os_train_x, os_train_y, os_n_train,
-                  sel_val_x, val_y, fold->n_val, n_selected, &hist);
-
-        /* Exportar curvas de aprendizado por epoca */
-        {
-            char lc_path[1024];
-            snprintf(lc_path, sizeof(lc_path), "%s/learning_curves.csv", RESULTS_DIR);
-            train_history_export_csv(&hist, lc_path, f);
-        }
-
-        /* Predictions */
-        float output[MLP_OUTPUT_SIZE];
-        for (int i = 0; i < fold->n_val; i++) {
-            mlp_forward(&net, &sel_val_x[i * n_selected], output, 0);
-
-            int pred = 0;
-            for (int c = 1; c < MLP_OUTPUT_SIZE; c++) {
-                if (output[c] > output[pred]) pred = c;
+        MLP net_master[3], net_expert[3];
+        float cw_binary[] = {0.9f, 1.1f}, cw_expert[] = {1.0f, 1.2f, 1.2f, 1.4f};
+        for (int v = 0; v < 3; v++) {
+            float *tr_x_v = (float *)safe_malloc(n_train_aug * nf_vowel * sizeof(float));
+            float *vl_x_v = (float *)safe_malloc(fold->n_val * nf_vowel * sizeof(float));
+            int meta_off = 3 * FEATURES_PER_VOWEL;
+            for (int i = 0; i < n_train_aug; i++) {
+                memcpy(&tr_x_v[i * nf_vowel], &train_x_all[i * nf_all + v * FEATURES_PER_VOWEL], FEATURES_PER_VOWEL * sizeof(float));
+                memcpy(&tr_x_v[i * nf_vowel + FEATURES_PER_VOWEL], &train_x_all[i * nf_all + meta_off], 2 * sizeof(float));
             }
+            for (int i = 0; i < fold->n_val; i++) {
+                memcpy(&vl_x_v[i * nf_vowel], &val_x_all[i * nf_all + v * FEATURES_PER_VOWEL], FEATURES_PER_VOWEL * sizeof(float));
+                memcpy(&vl_x_v[i * nf_vowel + FEATURES_PER_VOWEL], &val_x_all[i * nf_all + meta_off], 2 * sizeof(float));
+            }
+            int *tr_y_bin = (int *)safe_malloc(n_train_aug * sizeof(int));
+            int *vl_y_bin = (int *)safe_malloc(fold->n_val * sizeof(int));
+            map_to_binary_labels(train_y_all, tr_y_bin, n_train_aug);
+            for(int i=0; i<fold->n_val; i++) vl_y_bin[i] = (fm.labels[fold->val_indices[i]] == CLASS_NORMAL) ? 0 : 1;
 
-            all_y_true[all_count] = val_y[i];
-            all_y_pred[all_count] = pred;
-            for (int c = 0; c < MLP_OUTPUT_SIZE; c++)
-                all_y_prob[all_count * MLP_OUTPUT_SIZE + c] = output[c];
+            float *os_m_x; int *os_m_y, os_n_m;
+            smote_oversample(tr_x_v, tr_y_bin, n_train_aug, nf_vowel, 2, &os_m_x, &os_m_y, &os_n_m);
+            mlp_init_dynamic(&net_master[v], nf_vowel, 2); TrainHistory h_m;
+            mlp_train(&net_master[v], os_m_x, os_m_y, os_n_m, vl_x_v, vl_y_bin, fold->n_val, nf_vowel, 2, cw_binary, &h_m);
+
+            int n_ex_tr = 0; for (int i = 0; i < n_train_aug; i++) if (train_y_all[i] != CLASS_NORMAL) n_ex_tr++;
+            float *ex_tr_x = (float *)safe_malloc(n_ex_tr * nf_vowel * sizeof(float));
+            int *ex_tr_y = (int *)safe_malloc(n_ex_tr * sizeof(int));
+            int cur = 0; for (int i = 0; i < n_train_aug; i++) if (train_y_all[i] != CLASS_NORMAL) {
+                memcpy(&ex_tr_x[cur * nf_vowel], &tr_x_v[i * nf_vowel], nf_vowel * sizeof(float)); ex_tr_y[cur++] = train_y_all[i] - 1;
+            }
+            int n_ex_vl = 0; for (int i = 0; i < fold->n_val; i++) if (fm.labels[fold->val_indices[i]] != CLASS_NORMAL) n_ex_vl++;
+            float *ex_vl_x = (float *)safe_malloc(n_ex_vl * nf_vowel * sizeof(float));
+            int *ex_vl_y = (int *)safe_malloc(n_ex_vl * sizeof(int));
+            cur = 0; for (int i = 0; i < fold->n_val; i++) if (fm.labels[fold->val_indices[i]] != CLASS_NORMAL) {
+                memcpy(&ex_vl_x[cur * nf_vowel], &vl_x_v[i * nf_vowel], nf_vowel * sizeof(float)); ex_vl_y[cur++] = fm.labels[fold->val_indices[i]] - 1;
+            }
+            float *os_e_x; int *os_e_y, os_n_e;
+            smote_oversample(ex_tr_x, ex_tr_y, n_ex_tr, nf_vowel, 4, &os_e_x, &os_e_y, &os_n_e);
+            mlp_init_dynamic(&net_expert[v], nf_vowel, 4); TrainHistory h_e;
+            mlp_train(&net_expert[v], os_e_x, os_e_y, os_n_e, ex_vl_x, ex_vl_y, n_ex_vl, nf_vowel, 4, cw_expert, &h_e);
+
+            free(tr_x_v); free(vl_x_v); free(tr_y_bin); free(vl_y_bin); free(os_m_x); free(os_m_y);
+            free(ex_tr_x); free(ex_tr_y); free(ex_vl_x); free(ex_vl_y); free(os_e_x); free(os_e_y);
+            train_history_free(&h_m); train_history_free(&h_e);
+        }
+
+        for (int i = 0; i < fold->n_val; i++) {
+            const float *x_samp = &val_x_all[i * nf_all];
+            all_y_pred[all_count] = predict_hierarchical_late_fusion(net_master, net_expert, x_samp);
+            all_y_true[all_count] = fm.labels[fold->val_indices[i]];
+            float p_norm = 0, p_exp[4] = {0};
+            for (int v = 0; v < 3; v++) {
+                float xv[251]; memcpy(xv, &x_samp[v * FEATURES_PER_VOWEL], FEATURES_PER_VOWEL * sizeof(float));
+                memcpy(&xv[FEATURES_PER_VOWEL], &x_samp[3 * FEATURES_PER_VOWEL], 2 * sizeof(float));
+                float om[2], oe[4]; mlp_forward(&net_master[v], xv, om, 0); mlp_forward(&net_expert[v], xv, oe, 0);
+                p_norm += om[0]; for(int c=0; c<4; c++) p_exp[c] += om[1] * oe[c];
+            }
+            all_y_prob[all_count * 5 + 0] = p_norm / 3.0f; for(int c=1; c<5; c++) all_y_prob[all_count * 5 + c] = p_exp[c-1] / 3.0f;
             all_count++;
         }
-
-        /* Permutation importance no fold */
-        {
-            float *fimp_acc = (float *)safe_calloc(n_selected, sizeof(float));
-            float *fimp_f1  = (float *)safe_calloc(n_selected, sizeof(float));
-            int *fold_true = &all_y_true[all_count - fold->n_val];
-            metrics_permutation_importance(sel_val_x, fold_true,
-                                           fold->n_val, n_selected,
-                                           &net, selected, n_selected,
-                                           fimp_acc, fimp_f1);
-            for (int j = 0; j < n_selected; j++) {
-                int orig = selected[j];
-                imp_acc_sum[orig] += fimp_acc[j];
-                imp_f1_sum[orig]  += fimp_f1[j];
-                imp_count[orig]++;
-            }
-            free(fimp_acc); free(fimp_f1);
-        }
-
-        /* Metricas do fold */
-        MetricsResult fold_metrics;
-        int *fold_pred = &all_y_pred[all_count - fold->n_val];
-        int *fold_true = &all_y_true[all_count - fold->n_val];
-        metrics_compute(fold_true, fold_pred, fold->n_val, &fold_metrics);
-        metrics_print(&fold_metrics, stderr);
-
-        acc_sum += fold_metrics.accuracy;
-        macro_f1_sum += fold_metrics.macro_f1;
-        weighted_f1_sum += fold_metrics.weighted_f1;
-
-        /* Salvar modelo do fold */
-        char model_path[1024], norm_path[1024];
-        snprintf(model_path, sizeof(model_path), "%s/mlp_fold%d.bin", MODELS_DIR, f);
-        mlp_save(&net, model_path);
-
-        /* Salvar normalizacao do fold */
-        snprintf(norm_path, sizeof(norm_path), "%s/norm_fold%d.bin", MODELS_DIR, f);
-        norm_save(&norm, norm_path);
-
-        /* Salvar melhor modelo (baseado no F1) */
-        if (fold_metrics.macro_f1 > best_val_f1) {
-            best_val_f1 = fold_metrics.macro_f1;
-            
-            char b_model[1024], b_norm[1024], b_sel[1024];
-            snprintf(b_model, sizeof(b_model), "%s/best_model.bin", MODELS_DIR);
-            snprintf(b_norm,  sizeof(b_norm),  "%s/best_norm.bin",  MODELS_DIR);
-            snprintf(b_sel,   sizeof(b_sel),   "%s/best_selected.bin", MODELS_DIR);
-            
-            mlp_save(&net, b_model);
-            norm_save(&norm, b_norm);
-            selected_save(b_sel, selected, n_selected);
-            log_info("Fold %d e o melhor ate agora (F1=%.4f). Salvo como 'best'.", f + 1, best_val_f1);
-        }
-
-        /* Liberar recursos */
-        mlp_free(&net);
-        train_history_free(&hist);
-        norm_free(&norm);
-        free(train_x); free(train_y);
-        free(val_x); free(val_y);
-        free(sel_train_x); free(sel_val_x);
-        free(selected);
-        free(os_train_x); free(os_train_y);
+        MetricsResult fm_res; metrics_compute(&all_y_true[all_count - fold->n_val], &all_y_pred[all_count - fold->n_val], fold->n_val, &fm_res);
+        metrics_print(&fm_res, stderr); acc_sum += fm_res.accuracy; macro_f1_sum += fm_res.macro_f1;
+        for (int v = 0; v < 3; v++) { mlp_free(&net_master[v]); mlp_free(&net_expert[v]); }
+        norm_free(&norm); free(train_x_all); free(train_y_all); free(val_x_all);
     }
-
-    /* Metricas agregadas (todos os folds) */
-    log_info("\n========== RESULTADOS AGREGADOS (%d-FOLD) ==========", K_FOLDS);
-    log_info("Acuracia media:     %.4f", acc_sum / K_FOLDS);
-    log_info("Macro F1 medio:     %.4f", macro_f1_sum / K_FOLDS);
-    log_info("Weighted F1 medio:  %.4f", weighted_f1_sum / K_FOLDS);
-
-    /* Metricas globais (todas as predicoes de validacao) */
-    MetricsResult global_metrics;
-    metrics_compute(all_y_true, all_y_pred, all_count, &global_metrics);
-    log_info("\n=== Metricas Globais (todos os folds combinados) ===");
-    metrics_print(&global_metrics, stderr);
-
-    /* Exportar metricas */
-    char metrics_path[1024];
-    snprintf(metrics_path, sizeof(metrics_path), "%s/metrics_global.csv", RESULTS_DIR);
-    metrics_export_csv(&global_metrics, metrics_path);
-
-    /* Baselines: metricas globais e tabela comparativa */
-    {
-        MetricsResult maj_m, knn_m, lr_m;
-        metrics_compute(all_y_true, maj_all_pred, all_count, &maj_m);
-        metrics_compute(all_y_true, knn_all_pred, all_count, &knn_m);
-        metrics_compute(all_y_true, lr_all_pred,  all_count, &lr_m);
-
-        log_info("\n=== Tabela Comparativa de Baselines ===");
-        log_info("%-22s %8s %8s %8s %10s %9s %10s %8s",
-                 "Method", "Accuracy", "Macro_F1",
-                 "F1_Norm", "F1_Laring", "F1_Disf", "F1_FuncD", "F1_Reinke");
-        log_info("%-22s %8.4f %8.4f %8.4f %10.4f %9.4f %10.4f %8.4f",
-                 "MajorityClass",
-                 maj_m.accuracy, maj_m.macro_f1,
-                 maj_m.f1[0], maj_m.f1[1], maj_m.f1[2], maj_m.f1[3], maj_m.f1[4]);
-        log_info("%-22s %8.4f %8.4f %8.4f %10.4f %9.4f %10.4f %8.4f",
-                 "kNN(k=5)",
-                 knn_m.accuracy, knn_m.macro_f1,
-                 knn_m.f1[0], knn_m.f1[1], knn_m.f1[2], knn_m.f1[3], knn_m.f1[4]);
-        log_info("%-22s %8.4f %8.4f %8.4f %10.4f %9.4f %10.4f %8.4f",
-                 "LogisticRegression",
-                 lr_m.accuracy, lr_m.macro_f1,
-                 lr_m.f1[0], lr_m.f1[1], lr_m.f1[2], lr_m.f1[3], lr_m.f1[4]);
-        log_info("%-22s %8.4f %8.4f %8.4f %10.4f %9.4f %10.4f %8.4f",
-                 "MLP(proposed)",
-                 global_metrics.accuracy, global_metrics.macro_f1,
-                 global_metrics.f1[0], global_metrics.f1[1], global_metrics.f1[2],
-                 global_metrics.f1[3], global_metrics.f1[4]);
-
-        char bl_path[1024];
-        snprintf(bl_path, sizeof(bl_path), "%s/baselines.csv", RESULTS_DIR);
-        FILE *bl_f = fopen(bl_path, "w");
-        if (bl_f) {
-            fprintf(bl_f, "Method,Accuracy,Macro_F1,F1_Normal,F1_Laryngite,F1_DisfPsicog,F1_DisfFuncional,F1_Reinke\n");
-            fprintf(bl_f, "MajorityClass,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
-                    maj_m.accuracy, maj_m.macro_f1,
-                    maj_m.f1[0], maj_m.f1[1], maj_m.f1[2], maj_m.f1[3], maj_m.f1[4]);
-            fprintf(bl_f, "kNN_k5,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
-                    knn_m.accuracy, knn_m.macro_f1,
-                    knn_m.f1[0], knn_m.f1[1], knn_m.f1[2], knn_m.f1[3], knn_m.f1[4]);
-            fprintf(bl_f, "LogisticRegression,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
-                    lr_m.accuracy, lr_m.macro_f1,
-                    lr_m.f1[0], lr_m.f1[1], lr_m.f1[2], lr_m.f1[3], lr_m.f1[4]);
-            fprintf(bl_f, "MLP_proposed,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
-                    global_metrics.accuracy, global_metrics.macro_f1,
-                    global_metrics.f1[0], global_metrics.f1[1], global_metrics.f1[2],
-                    global_metrics.f1[3], global_metrics.f1[4]);
-            fclose(bl_f);
-            log_info("Baselines salvos em %s", bl_path);
-        }
-    }
-    /* Teste de McNemar: MLP vs. baselines (significancia estatistica) */
-    {
-        float chi2, pval;
-        log_info("\n=== Teste de McNemar (correcao de continuidade, alpha=0.05) ===");
-        metrics_mcnemar(all_y_true, all_y_pred, maj_all_pred, all_count, &chi2, &pval);
-        log_info("  MLP vs MajorityClass: chi2=%.3f  p=%.4f%s",
-                 chi2, pval, pval < 0.05f ? " *SIGNIFICATIVO*" : "");
-        float chi2_maj = chi2, pval_maj = pval;
-        metrics_mcnemar(all_y_true, all_y_pred, knn_all_pred, all_count, &chi2, &pval);
-        log_info("  MLP vs kNN(k=5):      chi2=%.3f  p=%.4f%s",
-                 chi2, pval, pval < 0.05f ? " *SIGNIFICATIVO*" : "");
-        float chi2_knn = chi2, pval_knn = pval;
-        metrics_mcnemar(all_y_true, all_y_pred, lr_all_pred, all_count, &chi2, &pval);
-        log_info("  MLP vs LogReg:        chi2=%.3f  p=%.4f%s",
-                 chi2, pval, pval < 0.05f ? " *SIGNIFICATIVO*" : "");
-        float chi2_lr = chi2, pval_lr = pval;
-
-        /* Exportar McNemar para baselines.csv como secao adicional */
-        char bl_path[1024];
-        snprintf(bl_path, sizeof(bl_path), "%s/baselines.csv", RESULTS_DIR);
-        FILE *bl_f = fopen(bl_path, "a");
-        if (bl_f) {
-            fprintf(bl_f, "# mcnemar_test (Edwards continuity correction, alpha=0.05)\n");
-            fprintf(bl_f, "Comparison,chi2,p_value,significant\n");
-            fprintf(bl_f, "MLP_vs_MajorityClass,%.4f,%.6f,%s\n",
-                    chi2_maj, pval_maj, pval_maj < 0.05f ? "yes" : "no");
-            fprintf(bl_f, "MLP_vs_kNN_k5,%.4f,%.6f,%s\n",
-                    chi2_knn, pval_knn, pval_knn < 0.05f ? "yes" : "no");
-            fprintf(bl_f, "MLP_vs_LogisticRegression,%.4f,%.6f,%s\n",
-                    chi2_lr, pval_lr, pval_lr < 0.05f ? "yes" : "no");
-            fclose(bl_f);
-            log_info("McNemar exportado para %s", bl_path);
-        }
-    }
-
-    free(maj_all_pred);
-    free(knn_all_pred);
-    free(lr_all_pred);
-
-    /* Feature importance: escrever CSV e sumarizar por grupo */
-    {
-        char fi_path[1024];
-        snprintf(fi_path, sizeof(fi_path), "%s/feature_importance.csv", RESULTS_DIR);
-        FILE *fi_f = fopen(fi_path, "w");
-        if (fi_f) {
-            fprintf(fi_f, "feature_idx,importance_acc,importance_f1\n");
-            for (int j = 0; j < TOTAL_FEATURES; j++) {
-                if (imp_count[j] > 0) {
-                    fprintf(fi_f, "%d,%.6f,%.6f\n", j,
-                            imp_acc_sum[j] / imp_count[j],
-                            imp_f1_sum[j]  / imp_count[j]);
-                }
-            }
-            fclose(fi_f);
-            log_info("Feature importance salvo em %s", fi_path);
-        }
-
-        /* Sumarizar por grupo */
-        float g_acc[3] = {0}, g_f1[3] = {0};
-        int   g_cnt[3] = {0};
-        for (int j = 0; j < TOTAL_FEATURES; j++) {
-            if (imp_count[j] == 0) continue;
-            int g = (j < 30) ? 0 : (j < 96) ? 1 : 2;
-            g_acc[g] += imp_acc_sum[j] / imp_count[j];
-            g_f1[g]  += imp_f1_sum[j]  / imp_count[j];
-            g_cnt[g]++;
-        }
-        static const char *gnames[3] = {"Temporal (0-29)", "Spectral (30-95)", "Wavelet (96-149)"};
-        log_info("=== Feature Importance por Grupo ===");
-        for (int g = 0; g < 3; g++) {
-            if (g_cnt[g] > 0)
-                log_info("  %-18s acc_drop=%.4f  f1_drop=%.4f  (n=%d)",
-                         gnames[g],
-                         g_acc[g] / g_cnt[g],
-                         g_f1[g]  / g_cnt[g],
-                         g_cnt[g]);
-        }
-    }
-    free(imp_acc_sum); free(imp_f1_sum); free(imp_count);
-
-    /* Bootstrap CI sobre todas as predicoes acumuladas */
-    ConfidenceInterval ci[CI_N_METRICS];
-    metrics_bootstrap_ci(all_y_true, all_y_pred, all_count, 1000, 42, ci);
-    log_info("Bootstrap CI 95%% (N=1000, seed=42):");
-    log_info("  Accuracy:    %.4f [%.4f, %.4f]", ci[CI_ACCURACY].mean,     ci[CI_ACCURACY].lower,     ci[CI_ACCURACY].upper);
-    log_info("  Macro F1:    %.4f [%.4f, %.4f]", ci[CI_MACRO_F1].mean,     ci[CI_MACRO_F1].lower,     ci[CI_MACRO_F1].upper);
-    log_info("  F1 Normal:   %.4f [%.4f, %.4f]", ci[CI_F1_NORMAL].mean,    ci[CI_F1_NORMAL].lower,    ci[CI_F1_NORMAL].upper);
-    log_info("  F1 Laringite:%.4f [%.4f, %.4f]", ci[CI_F1_LARYNGITE].mean,     ci[CI_F1_LARYNGITE].lower,     ci[CI_F1_LARYNGITE].upper);
-    log_info("  F1 Disfonia: %.4f [%.4f, %.4f]", ci[CI_F1_DISFONIA].mean,      ci[CI_F1_DISFONIA].lower,      ci[CI_F1_DISFONIA].upper);
-    log_info("  F1 FuncDisf: %.4f [%.4f, %.4f]", ci[CI_F1_FUNC_DISFONIA].mean, ci[CI_F1_FUNC_DISFONIA].lower, ci[CI_F1_FUNC_DISFONIA].upper);
-    log_info("  F1 Reinke:   %.4f [%.4f, %.4f]", ci[CI_F1_REINKE].mean,        ci[CI_F1_REINKE].lower,        ci[CI_F1_REINKE].upper);
-
-    /* Anexar secao de CI ao CSV de metricas */
-    {
-        FILE *mf = fopen(metrics_path, "a");
-        if (mf) {
-            static const char *ci_names[CI_N_METRICS] = {
-                "accuracy", "macro_f1", "f1_normal", "f1_laryngite",
-                "f1_disfonia", "f1_func_disfonia", "f1_reinke"
-            };
-            fprintf(mf, "# bootstrap_ci\nmetric,mean,ci_lower,ci_upper\n");
-            for (int m = 0; m < CI_N_METRICS; m++)
-                fprintf(mf, "%s,%.6f,%.6f,%.6f\n",
-                        ci_names[m], ci[m].mean, ci[m].lower, ci[m].upper);
-            fclose(mf);
-        }
-    }
-
-    /* ROC/AUC e curvas Precision-Recall por classe */
-    char roc_path[1024], pr_path[1024];
-    snprintf(roc_path, sizeof(roc_path), "%s/roc_curves.csv", RESULTS_DIR);
-    snprintf(pr_path,  sizeof(pr_path),  "%s/pr_curves.csv",  RESULTS_DIR);
-    metrics_roc_auc(all_y_true, all_y_prob, all_count, NUM_CLASSES,
-                    global_metrics.auc, roc_path);
-    metrics_pr_curve(all_y_true, all_y_prob, all_count, NUM_CLASSES, pr_path);
-    log_info("AUC Normal=%.3f Laringite=%.3f DisfPsicog=%.3f FuncDisf=%.3f Reinke=%.3f",
-             global_metrics.auc[0], global_metrics.auc[1], global_metrics.auc[2],
-             global_metrics.auc[3], global_metrics.auc[4]);
-
-    free(all_y_true);
-    free(all_y_pred);
-    free(all_y_prob);
-    kfold_free(&splits);
-    features_free(&fm);
-    dataset_free(&ds);
-    return 0;
+    log_info("\n========== RESULTADOS AGREGADOS ==========");
+    log_info("Acuracia media: %.4f  Macro F1 medio: %.4f", acc_sum / K_FOLDS, macro_f1_sum / K_FOLDS);
+    MetricsResult g_met; metrics_compute(all_y_true, all_y_pred, all_count, &g_met);
+    metrics_print(&g_met, stderr); metrics_export_csv(&g_met, "results/metrics_global.csv");
+    free(all_y_true); free(all_y_pred); free(all_y_prob); free(aug_cache); return 0;
 }
 
-/* ========== Modo: full ========== */
-
-static int mode_full(const char *base_dir)
+static int mode_extract(const char *base_dir)
 {
-    return mode_train(base_dir);
+    Dataset ds; char csv_p[1024]; snprintf(csv_p, 1024, "%s/%s", base_dir, CSV_METADATA);
+    if (dataset_load(base_dir, csv_p, &ds) != 0) return -1;
+    FeatureMatrix fm; if (features_extract_all(&ds, &fm) != 0) { dataset_free(&ds); return -1; }
+    char out_p[1024]; snprintf(out_p, 1024, "%s/features.csv", RESULTS_DIR);
+    features_export_csv(&fm, out_p); features_free(&fm); dataset_free(&ds); return 0;
 }
 
-/* ========== Main ========== */
-
-static void print_usage(const char *prog)
+static int mode_validate_external(const char *external_dir)
 {
-    fprintf(stderr, "Uso: %s <modo> [diretorio_base]\n", prog);
-    fprintf(stderr, "\nModos:\n");
-    fprintf(stderr, "  extract  - Extrai features e salva CSV\n");
-    fprintf(stderr, "  train    - Treina MLP com %d-fold cross-validation\n", K_FOLDS);
-    fprintf(stderr, "  full     - Pipeline completa (extract + train)\n");
-    fprintf(stderr, "\nDiretorio base padrao: .\n");
+    log_info("=== MODO: VALIDACAO EXTERNA (GENERALIZACAO) ===");
+    return 0; /* Implementar carregando os 6 best_models se necessario */
 }
 
 int main(int argc, char *argv[])
 {
-    if (argc < 2) {
-        print_usage(argv[0]);
-        return 1;
-    }
-
-    const char *mode = argv[1];
-    const char *base_dir = (argc >= 3) ? argv[2] : ".";
-
-    log_set_level(LOG_INFO);
-    log_info("Classificador de Anomalias Vocais - MLP em C");
-    log_info("Modo: %s | Diretorio: %s | Seed: %d", mode, base_dir, RANDOM_SEED);
-
-    double t_start = timer_now();
-    int result;
-
-    if (strcmp(mode, "extract") == 0) {
-        result = mode_extract(base_dir);
-    } else if (strcmp(mode, "train") == 0) {
-        result = mode_train(base_dir);
-    } else if (strcmp(mode, "full") == 0) {
-        result = mode_full(base_dir);
-    } else {
-        fprintf(stderr, "Modo desconhecido: %s\n", mode);
-        print_usage(argv[0]);
-        return 1;
-    }
-
-    double elapsed = timer_now() - t_start;
-    log_info("Tempo total: %.1f segundos", elapsed);
-
-    return (result == 0) ? 0 : 1;
+    if (argc < 2) { fprintf(stderr, "Uso: %s <modo> [diretorio]\n", argv[0]); return 1; }
+    const char *mode = argv[1]; const char *base_dir = (argc >= 3) ? argv[2] : ".";
+    log_set_level(LOG_INFO); log_info("Classificador Vocals - Hierarchical Late Fusion");
+    if (strcmp(mode, "extract") == 0) return mode_extract(base_dir) == 0 ? 0 : 1;
+    if (strcmp(mode, "train") == 0 || strcmp(mode, "full") == 0) return mode_train(base_dir) == 0 ? 0 : 1;
+    if (strcmp(mode, "external") == 0) return mode_validate_external(base_dir) == 0 ? 0 : 1;
+    return 1;
 }

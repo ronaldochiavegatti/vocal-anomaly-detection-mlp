@@ -72,25 +72,17 @@ typedef struct {
 void mlp_init(MLP *net);
 
 /*
- * Inicializa MLP com tamanho de entrada dinamico (para feature selection).
+ * Inicializa MLP com tamanho de entrada e saida dinamicos.
  */
-void mlp_init_dynamic(MLP *net, int input_size);
+void mlp_init_dynamic(MLP *net, int input_size, int output_size);
 
 /*
  * Forward pass: calcula a saida da rede para uma entrada.
- * input: vetor de entrada [MLP_INPUT_SIZE]
- * output: vetor de saida (probabilidades) [MLP_OUTPUT_SIZE]
- * training: 1 para modo treino (com dropout), 0 para inferencia
  */
 void mlp_forward(MLP *net, const float *input, float *output, int training);
 
 /*
  * Backward pass: calcula gradientes via backpropagation.
- * target: vetor one-hot da classe verdadeira [MLP_OUTPUT_SIZE]
- * class_weight: peso da classe (para weighted cross-entropy)
- *
- * Os gradientes sao ACUMULADOS (nao zerados).
- * Chamar mlp_zero_gradients() antes de cada batch.
  */
 void mlp_backward(MLP *net, const float *target, float class_weight);
 
@@ -101,17 +93,13 @@ void mlp_zero_gradients(MLP *net);
 
 /*
  * Atualiza pesos via Adam optimizer.
- * lr: learning rate
  */
 void mlp_adam_update(MLP *net, float lr);
 
 /*
- * Calcula a weighted cross-entropy loss para uma saida.
- * output: probabilidades da rede [MLP_OUTPUT_SIZE]
- * target: one-hot [MLP_OUTPUT_SIZE]
- * class_weight: peso da classe
+ * Calcula a weighted Focal Loss para uma saida.
  */
-float mlp_loss(const float *output, const float *target, float class_weight);
+float mlp_loss(const float *output, const float *target, float class_weight, int output_size);
 
 /*
  * Adiciona regularizacao L2 aos gradientes e retorna o termo de loss.

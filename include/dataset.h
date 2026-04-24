@@ -15,6 +15,7 @@ typedef struct {
     int id;                           /* ID do paciente (nome do diretorio) */
     int class_label;                  /* CLASS_NORMAL, CLASS_LARYNGITIS, CLASS_DYSPHONIA */
     char sex;                         /* 'm' ou 'w', ou '?' se desconhecido */
+    int age;                          /* Idade na epoca da gravacao */
     char vowel_paths[NUM_VOWELS][4096]; /* caminhos dos 3 WAVs (a_n, i_n, u_n) */
 } Patient;
 

@@ -101,6 +101,7 @@ static int enumerate_class(const char *base_dir, const char *class_dir,
         p->id = patient_id;
         p->class_label = class_label;
         p->sex = '?';
+        p->age = 0;
         for (int v = 0; v < NUM_VOWELS; v++) {
             snprintf(p->vowel_paths[v], sizeof(p->vowel_paths[v]), "%s", wav_paths[v]);
         }
@@ -123,6 +124,7 @@ static void associate_csv_metadata(Patient *patients, int count,
         for (int j = 0; j < csv->count; j++) {
             if (csv->records[j].recording_id == patients[i].id) {
                 patients[i].sex = csv->records[j].sex;
+                patients[i].age = csv->records[j].age;
                 break;
             }
         }

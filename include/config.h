@@ -51,7 +51,7 @@
 #define NUM_TEMPORAL_FEATURES 10  /* jitter_local, jitter_rap, jitter_ppq5, shimmer_local, shimmer_apq3/5/11, energia, hnr, zcr */
 
 /* Features espectrais por vogal */
-#define NUM_SPECTRAL_FEATURES 51  /* f0_mean, f0_std, F1-F4, entropia, centroid, rolloff, mfcc[13], delta_mfcc[13], delta2_mfcc[13], cpp_mean, cpp_std, cpp_slope */
+#define NUM_SPECTRAL_FEATURES 55  /* f0_mean, f0_std, F1-F4, entropia, centroid, rolloff, mfcc[13], dmfcc[13], d2mfcc[13], cpp[3], glottal[4] */
 
 /* Features wavelet por vogal */
 #define WAVELET_LEVELS        6
@@ -59,8 +59,9 @@
 #define NUM_WAVELET_FEATURES  (WAVELET_LEVELS * WAVELET_STATS)  /* 18 */
 
 /* Total de features por vogal e por paciente */
-#define FEATURES_PER_VOWEL    (NUM_TEMPORAL_FEATURES + NUM_SPECTRAL_FEATURES + NUM_WAVELET_FEATURES)  /* 79 */
-#define TOTAL_FEATURES        (NUM_VOWELS * FEATURES_PER_VOWEL)  /* 237 */
+#define FEATURES_PER_VOWEL    (NUM_TEMPORAL_FEATURES + NUM_SPECTRAL_FEATURES + NUM_WAVELET_FEATURES)  /* 83 */
+#define NUM_METADATA_FEATURES 2   /* idade, sexo */
+#define TOTAL_FEATURES        (NUM_VOWELS * FEATURES_PER_VOWEL + NUM_METADATA_FEATURES)  /* 251 */
 
 /* Parametros DSP */
 #define FRAME_SIZE_MS         30      /* tamanho do frame em ms */
@@ -72,12 +73,16 @@
 #define LPC_ORDER             12
 
 /* ========== Arquitetura MLP ========== */
-#define MLP_INPUT_SIZE        TOTAL_FEATURES  /* 237 (pre-selection; runtime input may differ) */
+#define MLP_INPUT_SIZE        TOTAL_FEATURES
 #define MLP_HIDDEN1_SIZE      128
 #define MLP_HIDDEN2_SIZE      64
-#define MLP_HIDDEN3_SIZE      32   /* unused when MLP_NUM_LAYERS=3 */
-#define MLP_OUTPUT_SIZE       NUM_CLASSES      /* 5 */
-#define MLP_NUM_LAYERS        3                /* 2 hidden + 1 output */
+#define MLP_HIDDEN3_SIZE      32
+#define MLP_OUTPUT_SIZE       NUM_CLASSES      /* 5 - Para o modo legacy */
+#define MLP_NUM_LAYERS        3
+
+/* Classificacao Hierarquica */
+#define MLP_BINARY_OUTPUT     2                /* Normal vs Patologico */
+#define MLP_EXPERT_OUTPUT     4                /* Laringite, Psicog, Funcional, Reinke */
 
 /* ========== Dropout ========== */
 #define DROPOUT_RATE_HIDDEN1  0.5f
@@ -89,12 +94,12 @@
 #define BN_EPSILON            1e-5f
 
 /* ========== Treinamento ========== */
-#define LEARNING_RATE         0.001f
+#define LEARNING_RATE         0.0005f
 #define LR_MIN                0.00001f
 #define BATCH_SIZE            32
 #define MAX_EPOCHS            500
 #define EARLY_STOP_PATIENCE   30
-#define L2_LAMBDA             0.003f
+#define L2_LAMBDA             0.001f
 #define N_ENSEMBLE            1
 #define ADAM_BETA1            0.9f
 #define ADAM_BETA2            0.999f
@@ -109,15 +114,11 @@
 #define K_FOLDS               5
 #define RANDOM_SEED           42
 
-/* ========== Pesos de classe (5 classes, v27 — US-026 tuning) ========== */
-/* v26 results: Normal=0.822, Laringite=0.360, DisfPsicog=0.273, DisfFunc=0.240, Reinke=0.362
- * v27 adjustments: Normal reduced (doing well), Laringite/DisfFunc significantly increased,
- * DisfPsicog and DisfFunc equalized (acoustically similar classes), Reinke boosted.
- * Paired with Macro F1 early stopping to prevent over-correction. */
-#define CLASS_WEIGHT_NORMAL         0.65f
-#define CLASS_WEIGHT_LARYNGITIS     1.35f
-#define CLASS_WEIGHT_DYSPHONIA      1.70f
-#define CLASS_WEIGHT_FUNC_DYSPHONIA 1.70f
-#define CLASS_WEIGHT_REINKE         2.10f
+/* ========== Pesos de classe (Adjusted for Focal Loss) ========== */
+#define CLASS_WEIGHT_NORMAL         0.80f
+#define CLASS_WEIGHT_LARYNGITIS     1.10f
+#define CLASS_WEIGHT_DYSPHONIA      1.20f
+#define CLASS_WEIGHT_FUNC_DYSPHONIA 1.20f
+#define CLASS_WEIGHT_REINKE         1.40f
 
 #endif /* CONFIG_H */

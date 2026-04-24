@@ -30,6 +30,9 @@ void rng_seed(unsigned int seed);
 /* Retorna float uniforme em [0, 1) */
 float rng_uniform(void);
 
+/* Retorna inteiro uniforme em [0, n-1] */
+int rng_int(int n);
+
 /* Retorna float com distribuicao normal (media 0, desvio 1) via Box-Muller */
 float rng_normal(void);
 

@@ -73,6 +73,12 @@ float rng_uniform(void)
     return (float)(xorshift32() & 0x7FFFFFFF) / (float)0x7FFFFFFF;
 }
 
+int rng_int(int n)
+{
+    if (n <= 0) return 0;
+    return (int)(xorshift32() % (unsigned int)n);
+}
+
 float rng_normal(void)
 {
     /* Box-Muller: gera 2 normais, retorna 1 */
