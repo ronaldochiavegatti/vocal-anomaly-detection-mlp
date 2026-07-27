@@ -20,7 +20,7 @@ inspeção visual) e atualização do `CLAUDE.md`, terminando em uma tabela cons
 - Integer phases (0, 1, 2, 3): Planned milestone work, in strict dependency order
 - Decimal phases (X.1, X.2): Urgent insertions (marked with INSERTED), none currently planned
 
-- [ ] **Phase 0: Statistical Infrastructure & RNG Reproducibility** - Bootstrap CI/McNemar wired into `mode_train()`, RNG race documented/mitigated, baseline reconfirmed with a fresh log
+- [x] **Phase 0: Statistical Infrastructure & RNG Reproducibility** - Bootstrap CI/McNemar wired into `mode_train()`, RNG race documented/mitigated, baseline reconfirmed with a fresh log (completed 2026-07-27)
 - [ ] **Phase 1: Gap 2 — Borderline-SMOTE** - `SmoteMode` (standard vs borderline) implemented and adopted/rejected via reproducible A/B comparison
 - [ ] **Phase 2: Gap 3 — Shallow vs Deep MLP Comparison** - Fold+vowel loop refactored into a reusable function; 4 architecture configs compared and the smallest non-inferior one adopted
 - [ ] **Phase 3: Gap 1 — Paraconsistent Feature Selection** - New paraconsistent selection module integrated per (fold, vowel, network); final consolidated Gap Adoption Status report produced
@@ -38,7 +38,7 @@ inspeção visual) e atualização do `CLAUDE.md`, terminando em uma tabela cons
   2. Running `make full` twice in a row (same `RANDOM_SEED=42`) produces identical augmented training inputs — the OpenMP RNG race in `precalculate_augmentations()` is fixed (per-thread RNG stream, or the loop is no longer parallel) rather than merely documented, unless a fix is explicitly judged infeasible and the caveat is recorded instead.
   3. `results/train_log_v29_baseline_reconfirmed.txt` exists with a freshly executed run's Macro F1/Accuracy, and either matches `results/metrics_global.csv` (Macro F1 0,4423 / Acc 69,4%) or the divergence is explicitly documented with a hypothesis for the cause.
 
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 Plans:
 **Wave 1**
 
@@ -50,7 +50,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 00-03-PLAN.md — Run a fresh full pipeline execution and produce `results/train_log_v29_baseline_reconfirmed.txt` with an explicit match/divergence verdict
+- [x] 00-03-PLAN.md — Run a fresh full pipeline execution and produce `results/train_log_v29_baseline_reconfirmed.txt` with an explicit match/divergence verdict
 
 ### Phase 1: Gap 2 — Borderline-SMOTE
 
@@ -106,7 +106,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Statistical Infrastructure & RNG Reproducibility | 2/3 | In Progress|  |
+| 0. Statistical Infrastructure & RNG Reproducibility | 3/3 | Complete   | 2026-07-27 |
 | 1. Gap 2 — Borderline-SMOTE | 0/TBD | Not started | - |
 | 2. Gap 3 — Shallow vs Deep MLP Comparison | 0/TBD | Not started | - |
 | 3. Gap 1 — Paraconsistent Feature Selection | 0/TBD | Not started | - |

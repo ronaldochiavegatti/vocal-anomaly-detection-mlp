@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 00-02-PLAN.md (Bootstrap CI + 3-way McNemar wired into mode_train)
-last_updated: "2026-07-27T19:28:21.549Z"
+status: verifying
+stopped_at: Completed 00-03-PLAN.md (fresh full-pipeline baseline reconfirmation; Phase 0 complete)
+last_updated: "2026-07-27T20:15:22.711Z"
 last_activity: 2026-07-27
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
-  percent: 0
+  completed_plans: 3
+  percent: 25
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-07-27)
 
 ## Current Position
 
-Phase: 00 (statistical-infrastructure-rng-reproducibility-prerequisite) — EXECUTING
+Phase: 00 (statistical-infrastructure-rng-reproducibility-prerequisite) — COMPLETE
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-27
 
-Progress: [███████░░░] 67%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Progress: [███████░░░] 67%
 *Updated after each plan completion*
 | Phase 00 P01 | 70min | 2 tasks | 3 files |
 | Phase 00 P02 | 25min | 2 tasks | 1 files |
+| Phase 00 P03 | 43min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,7 @@ Recent decisions affecting current work:
 - [Phase 00]: Fixed OpenMP RNG race in precalculate_augmentations() by removing #pragma omp parallel for (INFRA-02 sanctioned fallback), not merely documenting it — precalculate_augmentations() is not the pipeline's wall-clock bottleneck; verified deterministic via new verify-rng CLI mode (cmp exit code 0 across two runs)
 - [Phase 00]: Baseline computation (MajorityClass/kNN/LogReg) placed BEFORE the per-vowel SMOTE+MLP training loop in each fold — lr_train's internal RNG draws happen first, deliberately shifting the subsequent SMOTE/dropout RNG sequence; documented as accepted ordering, not a bug
 - [Phase 00]: Majority-class baseline counts only original (non-augmented) fold->n_train rows of train_y_all — Matches norm_fit's established precedent of fitting only on original training samples
+- [Phase 00]: Baseline reconfirmation run MATCHES the SPEC-cited reference (Macro F1 0.4423 / Accuracy 0.6940) -- both fall within this run's own 95% bootstrap CI, so no RNG-divergence hypothesis section was needed
 
 ### Pending Todos
 
@@ -75,8 +77,6 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 0: SPEC.md-cited baseline (Macro F1 0,4423 / Acc 69,4%) has no backing log in-repo yet — `results/train_log_v29_baseline_reconfirmed.txt` does not exist; must be produced fresh before any gap claims a delta against it.
-- Phase 0: Pre-existing OpenMP RNG race in `precalculate_augmentations()` may undermine "same seed" reproducibility for every subsequent gap's A/B comparison until fixed or explicitly mitigated.
 - Phase 3 (deferred until then): Domain-specific precedent papers for the paraconsistent μ/λ derivation (Costa et al. 2019 DPM; 2025 wavelet+paraconsistent; 2021 grid-fault paper) are paywalled — plan to proceed with the ANOVA-F/η² substitute unless institutional access is obtained.
 - Phase 2 (deferred until then): Whether a supplementary regularization-strength check across the 4 architecture configs is in scope, or the fixed-hyperparameter limitation is simply documented, needs an explicit decision during Phase 2 planning.
 
@@ -91,6 +91,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-27T19:28:21.544Z
-Stopped at: Completed 00-02-PLAN.md (Bootstrap CI + 3-way McNemar wired into mode_train)
+Last session: 2026-07-27T20:14:58.157Z
+Stopped at: Completed 00-03-PLAN.md (fresh full-pipeline baseline reconfirmation; Phase 0 complete)
 Resume file: None

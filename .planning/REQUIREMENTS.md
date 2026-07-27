@@ -9,7 +9,7 @@
 
 - [x] **INFRA-01**: `mode_train()` chama `metrics_bootstrap_ci()` e `metrics_mcnemar()` (já implementados em `metrics.c` mas hoje desconectados) sobre as predições out-of-fold agregadas, tornando o critério "adotar só se Macro F1 igual ou melhor" verificável estatisticamente
 - [x] **INFRA-02**: Race condition no RNG global sob OpenMP (`precalculate_augmentations()`) corrigida — cada thread usa seu próprio stream de RNG (ou o laço deixa de ser paralelo), garantindo que `RANDOM_SEED=42` produza entradas idênticas entre execuções repetidas
-- [ ] **INFRA-03**: Baseline v29 reconfirmado com execução fresca, log salvo em `results/train_log_v29_baseline_reconfirmed.txt` (o log citado pelo SPEC.md está vazio); valores devem bater com `results/metrics_global.csv` (Macro F1 0,4423 / Acc 69,4%) ou a divergência é documentada explicitamente
+- [x] **INFRA-03**: Baseline v29 reconfirmado com execução fresca, log salvo em `results/train_log_v29_baseline_reconfirmed.txt` (o log citado pelo SPEC.md está vazio); valores devem bater com `results/metrics_global.csv` (Macro F1 0,4423 / Acc 69,4%) ou a divergência é documentada explicitamente
 
 ### Gap 2 — Borderline-SMOTE (SMOTE) — Fase 1
 
@@ -73,7 +73,7 @@ Adiado explicitamente pelo usuário para depois do fechamento dos 3 gaps.
 |-------------|-------|--------|
 | INFRA-01 | Phase 0 | Complete |
 | INFRA-02 | Phase 0 | Complete |
-| INFRA-03 | Phase 0 | Pending |
+| INFRA-03 | Phase 0 | Complete |
 | SMOTE-01 | Phase 1 | Pending |
 | SMOTE-02 | Phase 1 | Pending |
 | SMOTE-03 | Phase 1 | Pending |
