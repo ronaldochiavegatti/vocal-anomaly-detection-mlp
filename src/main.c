@@ -657,6 +657,117 @@ static int mode_verify_rng(const char *base_dir)
     free(aug_cache); dataset_free(&ds); return 0;
 }
 
+/* Gera o relatorio de comparacao A/B (Gap 2, SMOTE-04) entre SMOTE padrao e
+ * Borderline-SMOTE1, sob a mesma seed/folds. A decisao de adocao e computada por
+ * uma unica regra fixa em codigo (nunca redigida manualmente) -- ver
+ * threat_model T-01-04 do plano 01-02. */
+static void write_smote_ab_report(const ABResult *std_res, const ABResult *bl_res,
+                                   const char *report_path, const char *csv_path)
+{
+    /* Comparacao McNemar direta entre os dois bracos (distinta do McNemar de cada
+     * braco vs seus 3 baselines, ja calculado dentro de mode_train_ex()). Valida
+     * porque std_res->y_true e a ordenacao das predicoes out-of-fold de ambos os
+     * bracos sao garantidamente identicas (mesma seed RANDOM_SEED, mesma ordem de
+     * fold/vogal via kfold_split()). */
+    float chi2_ab, p_ab;
+    metrics_mcnemar(std_res->y_true, bl_res->y_pred, std_res->y_pred, std_res->n, &chi2_ab, &p_ab);
+
+    FILE *f = fopen(report_path, "w");
+    if (!f) {
+        log_error("Falha ao abrir %s para escrita", report_path);
+    } else {
+        fprintf(f, "=== COMPARACAO A/B: SMOTE PADRAO vs BORDERLINE-SMOTE1 (Gap 2) ===\n");
+        fprintf(f, "Mesma seed (RANDOM_SEED=%d), mesmos %d folds\n\n", RANDOM_SEED, K_FOLDS);
+
+        fprintf(f, "%-28s %-32s %-32s\n", "Metrica", "Padrao [IC 95%%]", "Borderline [IC 95%%]");
+        fprintf(f, "%-28s %.4f [%.4f, %.4f]      %.4f [%.4f, %.4f]\n", "accuracy",
+                std_res->ci[CI_ACCURACY].mean, std_res->ci[CI_ACCURACY].lower, std_res->ci[CI_ACCURACY].upper,
+                bl_res->ci[CI_ACCURACY].mean, bl_res->ci[CI_ACCURACY].lower, bl_res->ci[CI_ACCURACY].upper);
+        fprintf(f, "%-28s %.4f [%.4f, %.4f]      %.4f [%.4f, %.4f]\n", "macro_f1",
+                std_res->ci[CI_MACRO_F1].mean, std_res->ci[CI_MACRO_F1].lower, std_res->ci[CI_MACRO_F1].upper,
+                bl_res->ci[CI_MACRO_F1].mean, bl_res->ci[CI_MACRO_F1].lower, bl_res->ci[CI_MACRO_F1].upper);
+        fprintf(f, "%-28s %.4f [%.4f, %.4f]      %.4f [%.4f, %.4f]\n", CLASS_NAME_NORMAL,
+                std_res->ci[CI_F1_NORMAL].mean, std_res->ci[CI_F1_NORMAL].lower, std_res->ci[CI_F1_NORMAL].upper,
+                bl_res->ci[CI_F1_NORMAL].mean, bl_res->ci[CI_F1_NORMAL].lower, bl_res->ci[CI_F1_NORMAL].upper);
+        fprintf(f, "%-28s %.4f [%.4f, %.4f]      %.4f [%.4f, %.4f]\n", CLASS_NAME_LARYNGITIS,
+                std_res->ci[CI_F1_LARYNGITE].mean, std_res->ci[CI_F1_LARYNGITE].lower, std_res->ci[CI_F1_LARYNGITE].upper,
+                bl_res->ci[CI_F1_LARYNGITE].mean, bl_res->ci[CI_F1_LARYNGITE].lower, bl_res->ci[CI_F1_LARYNGITE].upper);
+        fprintf(f, "%-28s %.4f [%.4f, %.4f]      %.4f [%.4f, %.4f]\n", CLASS_NAME_DYSPHONIA,
+                std_res->ci[CI_F1_DISFONIA].mean, std_res->ci[CI_F1_DISFONIA].lower, std_res->ci[CI_F1_DISFONIA].upper,
+                bl_res->ci[CI_F1_DISFONIA].mean, bl_res->ci[CI_F1_DISFONIA].lower, bl_res->ci[CI_F1_DISFONIA].upper);
+        fprintf(f, "%-28s %.4f [%.4f, %.4f]      %.4f [%.4f, %.4f]\n", CLASS_NAME_FUNC_DYSPHONIA,
+                std_res->ci[CI_F1_FUNC_DISFONIA].mean, std_res->ci[CI_F1_FUNC_DISFONIA].lower, std_res->ci[CI_F1_FUNC_DISFONIA].upper,
+                bl_res->ci[CI_F1_FUNC_DISFONIA].mean, bl_res->ci[CI_F1_FUNC_DISFONIA].lower, bl_res->ci[CI_F1_FUNC_DISFONIA].upper);
+        fprintf(f, "%-28s %.4f [%.4f, %.4f]      %.4f [%.4f, %.4f]\n\n", CLASS_NAME_REINKE,
+                std_res->ci[CI_F1_REINKE].mean, std_res->ci[CI_F1_REINKE].lower, std_res->ci[CI_F1_REINKE].upper,
+                bl_res->ci[CI_F1_REINKE].mean, bl_res->ci[CI_F1_REINKE].lower, bl_res->ci[CI_F1_REINKE].upper);
+
+        fprintf(f, "McNemar direto (Borderline vs Padrao): chi2=%.4f p=%.4f -- %s\n\n", chi2_ab, p_ab,
+                p_ab < 0.05f ? "diferenca estatisticamente significativa (p<0.05)"
+                             : "diferenca nao estatisticamente significativa (p>=0.05)");
+
+        fprintf(f, "Contagens completas de amostras seguras/borderline/ruido por fold/vogal/rede/classe: "
+                    "ver results/smote_borderline_counts.csv\n\n");
+
+        if (bl_res->macro_f1 >= std_res->macro_f1) {
+            fprintf(f, "DECISAO: Borderline-SMOTE ADOTADO (Macro F1 borderline=%.4f >= padrao=%.4f, delta=%+.4f, McNemar chi2=%.4f p=%.4f)\n",
+                    bl_res->macro_f1, std_res->macro_f1, bl_res->macro_f1 - std_res->macro_f1, chi2_ab, p_ab);
+        } else {
+            fprintf(f, "DECISAO: Borderline-SMOTE REJEITADO (Macro F1 borderline=%.4f < padrao=%.4f, delta=%+.4f, McNemar chi2=%.4f p=%.4f) -- mantendo SMOTE padrao em producao\n",
+                    bl_res->macro_f1, std_res->macro_f1, bl_res->macro_f1 - std_res->macro_f1, chi2_ab, p_ab);
+        }
+        fclose(f);
+    }
+
+    FILE *cf = fopen(csv_path, "w");
+    if (!cf) {
+        log_error("Falha ao abrir %s para escrita", csv_path);
+        return;
+    }
+    fprintf(cf, "metric,standard,standard_ci_lower,standard_ci_upper,borderline,borderline_ci_lower,borderline_ci_upper\n");
+    fprintf(cf, "accuracy,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+            std_res->ci[CI_ACCURACY].mean, std_res->ci[CI_ACCURACY].lower, std_res->ci[CI_ACCURACY].upper,
+            bl_res->ci[CI_ACCURACY].mean, bl_res->ci[CI_ACCURACY].lower, bl_res->ci[CI_ACCURACY].upper);
+    fprintf(cf, "macro_f1,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+            std_res->ci[CI_MACRO_F1].mean, std_res->ci[CI_MACRO_F1].lower, std_res->ci[CI_MACRO_F1].upper,
+            bl_res->ci[CI_MACRO_F1].mean, bl_res->ci[CI_MACRO_F1].lower, bl_res->ci[CI_MACRO_F1].upper);
+    fprintf(cf, "f1_normal,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+            std_res->ci[CI_F1_NORMAL].mean, std_res->ci[CI_F1_NORMAL].lower, std_res->ci[CI_F1_NORMAL].upper,
+            bl_res->ci[CI_F1_NORMAL].mean, bl_res->ci[CI_F1_NORMAL].lower, bl_res->ci[CI_F1_NORMAL].upper);
+    fprintf(cf, "f1_laringite,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+            std_res->ci[CI_F1_LARYNGITE].mean, std_res->ci[CI_F1_LARYNGITE].lower, std_res->ci[CI_F1_LARYNGITE].upper,
+            bl_res->ci[CI_F1_LARYNGITE].mean, bl_res->ci[CI_F1_LARYNGITE].lower, bl_res->ci[CI_F1_LARYNGITE].upper);
+    fprintf(cf, "f1_disfonia_psicogenica,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+            std_res->ci[CI_F1_DISFONIA].mean, std_res->ci[CI_F1_DISFONIA].lower, std_res->ci[CI_F1_DISFONIA].upper,
+            bl_res->ci[CI_F1_DISFONIA].mean, bl_res->ci[CI_F1_DISFONIA].lower, bl_res->ci[CI_F1_DISFONIA].upper);
+    fprintf(cf, "f1_disfonia_funcional,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+            std_res->ci[CI_F1_FUNC_DISFONIA].mean, std_res->ci[CI_F1_FUNC_DISFONIA].lower, std_res->ci[CI_F1_FUNC_DISFONIA].upper,
+            bl_res->ci[CI_F1_FUNC_DISFONIA].mean, bl_res->ci[CI_F1_FUNC_DISFONIA].lower, bl_res->ci[CI_F1_FUNC_DISFONIA].upper);
+    fprintf(cf, "f1_reinke,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+            std_res->ci[CI_F1_REINKE].mean, std_res->ci[CI_F1_REINKE].lower, std_res->ci[CI_F1_REINKE].upper,
+            bl_res->ci[CI_F1_REINKE].mean, bl_res->ci[CI_F1_REINKE].lower, bl_res->ci[CI_F1_REINKE].upper);
+    fclose(cf);
+}
+
+/* Orquestra a comparacao A/B (Gap 2, SMOTE-04): executa o pipeline hierarquico
+ * completo duas vezes, uma por modo SMOTE, sob a mesma seed/folds (garantido pelo
+ * reseed interno de kfold_split() -- ver RESEARCH.md Pattern 2), e produz o
+ * relatorio comparativo com decisao de adocao computada por regra fixa. */
+static int mode_smote_ab(const char *base_dir)
+{
+    log_info("=== MODO: A/B BORDERLINE-SMOTE (Gap 2) ===");
+    log_info("Atencao: modo de longa duracao (~60-180 min) -- executa o pipeline hierarquico completo duas vezes (uma por modo SMOTE)");
+    ABResult res_standard = {0}, res_borderline = {0};
+    if (mode_train_ex(base_dir, SMOTE_STANDARD, &res_standard) != 0) return -1;
+    if (mode_train_ex(base_dir, SMOTE_BORDERLINE, &res_borderline) != 0) return -1;
+    write_smote_ab_report(&res_standard, &res_borderline,
+                           "results/train_log_v32_gap2_smote_ab.txt",
+                           "results/smote_ab_comparison.csv");
+    free(res_standard.y_true); free(res_standard.y_pred);
+    free(res_borderline.y_true); free(res_borderline.y_pred);
+    return 0;
+}
+
 static int mode_validate_external(const char *external_dir)
 {
     log_info("=== MODO: VALIDACAO EXTERNA (GENERALIZACAO) ===");
@@ -672,5 +783,6 @@ int main(int argc, char *argv[])
     if (strcmp(mode, "train") == 0 || strcmp(mode, "full") == 0) return mode_train(base_dir) == 0 ? 0 : 1;
     if (strcmp(mode, "external") == 0) return mode_validate_external(base_dir) == 0 ? 0 : 1;
     if (strcmp(mode, "verify-rng") == 0) return mode_verify_rng(base_dir) == 0 ? 0 : 1;
+    if (strcmp(mode, "smote-ab") == 0) return mode_smote_ab(base_dir) == 0 ? 0 : 1;
     return 1;
 }
