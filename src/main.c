@@ -202,6 +202,65 @@ static void find_knn(const float *x, int base, const int *class_indices, int n_c
     free(dists); free(order);
 }
 
+/* Modo de operacao do SMOTE: padrao (todas as amostras da classe minoritaria sao
+ * elegiveis como ponto-base de sintese) ou Borderline-SMOTE1 (Han, Wang & Mao, 2005),
+ * que restringe o pool de sintese as amostras classificadas como BORDERLINE. */
+typedef enum { SMOTE_STANDARD = 0, SMOTE_BORDERLINE = 1 } SmoteMode;
+
+#define SMOTE_K_NEIGHBORS 5
+#define BORDERLINE_M_NEIGHBORS 5
+/* smote_oversample() e chamada apenas com num_classes=2 (Master, binario) ou
+ * num_classes=4 (Expert, 4 classes) -- nunca o NUM_CLASSES total (5) -- por isso
+ * este limite fixo e correto e suficiente para os arrays de contagem por classe. */
+#define MAX_SMOTE_CLASSES 4
+
+/* Contagem por classe de amostras classificadas como seguras/borderline/ruido
+ * durante a classificacao do Borderline-SMOTE1 (SMOTE-04 -- tabela de contagens
+ * do relatorio A/B). Struct de dados simples, sem metodos, no mesmo estilo de
+ * ConfidenceInterval/MetricsResult (include/metrics.h). */
+typedef struct {
+    int safe[MAX_SMOTE_CLASSES];
+    int borderline[MAX_SMOTE_CLASSES];
+    int noise[MAX_SMOTE_CLASSES];
+} SmoteBorderlineCounts;
+
+/* Busca k-NN sobre TODAS as n_in amostras (todas as classes), usada apenas para
+ * classificar cada amostra como segura/borderline/ruido (Borderline-SMOTE1, Passo 1).
+ * NAO faz nenhuma chamada rng_* -- isto preserva a paridade no numero de sorteios de
+ * RNG entre os modos SMOTE_STANDARD e SMOTE_BORDERLINE (ver RESEARCH.md Pitfall 4).
+ * NUNCA paralelizar com #pragma omp parallel for a menos que este invariante ("zero
+ * chamadas rng_*") seja reverificado antes -- mesmo cuidado ja documentado no
+ * comentario de precalculate_augmentations(). */
+static int find_knn_global(const float *x, int base, int n_in, int nf, int k, int *neighbors)
+{
+    float *dists = (float *)safe_malloc(n_in * sizeof(float));
+    int *order = (int *)safe_malloc(n_in * sizeof(int));
+    for (int i = 0; i < n_in; i++) {
+        order[i] = i; if (i == base) { dists[i] = 1e30f; continue; }
+        float dist = 0.0f; for (int f = 0; f < nf; f++) { float diff = x[base * nf + f] - x[i * nf + f]; dist += diff * diff; }
+        dists[i] = dist;
+    }
+    int kk = (k < n_in - 1) ? k : n_in - 1; if (kk < 1) kk = 1;
+    for (int i = 0; i < kk; i++) {
+        int min_idx = i; for (int j = i + 1; j < n_in; j++) if (dists[order[j]] < dists[order[min_idx]]) min_idx = j;
+        int tmp = order[i]; order[i] = order[min_idx]; order[min_idx] = tmp; neighbors[i] = order[i];
+    }
+    free(dists); free(order);
+    return kk;
+}
+
+/* Classificacao segura/borderline/ruido do Borderline-SMOTE1 (Han, Wang & Mao, 2005,
+ * Passo 1): m = numero de vizinhos (dentre os k globais) que NAO pertencem a mesma
+ * classe da amostra. Regra sem truncamento por divisao inteira: compara 2*m >= k,
+ * nunca m >= k/2. A verificacao m == k (ruido) vem PRIMEIRO, pois 2*m >= k tambem e
+ * verdadeiro quando m == k -- a ordem dos ramos e determinante. */
+static int classify_borderline(int m, int k)
+{
+    if (m == k) return 2;       /* RUIDO */
+    if (2 * m >= k) return 1;   /* BORDERLINE (perigo) */
+    return 0;                   /* SEGURO */
+}
+
 static void smote_oversample(const float *x_in, const int *y_in, int n_in, int nf, int num_classes, float **x_out, int **y_out, int *n_out)
 {
     int k = 5; int *counts = (int *)safe_calloc(num_classes, sizeof(int));
