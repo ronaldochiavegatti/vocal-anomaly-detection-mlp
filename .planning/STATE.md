@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: ready_to_plan
-stopped_at: Phase 00 complete (3/3) — ready to discuss Phase 1
-last_updated: 2026-07-27T20:19:46.554Z
+status: executing
+stopped_at: Completed 01-01-PLAN.md (Borderline-SMOTE1 classification/generation core)
+last_updated: "2026-07-27T23:02:47.309Z"
 last_activity: 2026-07-27
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 7
+  completed_plans: 4
   percent: 25
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-27)
 
 **Core value:** Fechar, com rigor metodológico comprovável por comparação A/B (mesma seed, mesmos 5-folds), os 3 gaps entre a implementação atual e a proposta PIBIC original — sem piorar o baseline de referência (Macro F1 0,4423 / Acurácia 69,4%).
-**Current focus:** Phase 1 — gap 2 — borderline smote
+**Current focus:** Phase 01 — gap-2-borderline-smote
 
 ## Current Position
 
-Phase: 1
-Plan: Not started
-Status: Ready to plan
+Phase: 01 (gap-2-borderline-smote) — EXECUTING
+Plan: 2 of 4
+Status: Ready to execute
 Last activity: 2026-07-27
 
-Progress: [██████████] 100%
+Progress: [██████░░░░] 57%
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Progress: [██████████] 100%
 | Phase 00 P01 | 70min | 2 tasks | 3 files |
 | Phase 00 P02 | 25min | 2 tasks | 1 files |
 | Phase 00 P03 | 43min | 2 tasks | 4 files |
+| Phase 01 P01 | 25min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-27T20:14:58.157Z
-Stopped at: Completed 00-03-PLAN.md (fresh full-pipeline baseline reconfirmation; Phase 0 complete)
+Last session: 2026-07-27T23:02:47.303Z
+Stopped at: Completed 01-01-PLAN.md (Borderline-SMOTE1 classification/generation core)
 Resume file: None
