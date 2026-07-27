@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 00-03-PLAN.md (fresh full-pipeline baseline reconfirmation; Phase 0 complete)
-last_updated: "2026-07-27T20:15:22.711Z"
+status: ready_to_plan
+stopped_at: Phase 00 complete (3/3) — ready to discuss Phase 1
+last_updated: 2026-07-27T20:19:46.554Z
 last_activity: 2026-07-27
 progress:
   total_phases: 4
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-27)
 
 **Core value:** Fechar, com rigor metodológico comprovável por comparação A/B (mesma seed, mesmos 5-folds), os 3 gaps entre a implementação atual e a proposta PIBIC original — sem piorar o baseline de referência (Macro F1 0,4423 / Acurácia 69,4%).
-**Current focus:** Phase 00 — statistical-infrastructure-rng-reproducibility-prerequisite
+**Current focus:** Phase 1 — gap 2 — borderline smote
 
 ## Current Position
 
-Phase: 00 (statistical-infrastructure-rng-reproducibility-prerequisite) — COMPLETE
-Plan: 3 of 3
-Status: Phase complete — ready for verification
+Phase: 1
+Plan: Not started
+Status: Ready to plan
 Last activity: 2026-07-27
 
 Progress: [██████████] 100%
@@ -36,7 +36,7 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total plans completed: 0
+- Total plans completed: 3
 - Average duration: - min
 - Total execution time: 0 hours
 
@@ -44,7 +44,7 @@ Progress: [██████████] 100%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 00 | 3 | - | - |
 
 **Recent Trend:**
 
