@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-01-PLAN.md (Borderline-SMOTE1 classification/generation core)
-last_updated: "2026-07-27T23:02:47.309Z"
+stopped_at: Completed 01-02-PLAN.md (mode_train_ex refactor + smote-ab CLI orchestration)
+last_updated: "2026-07-27T23:10:40.366Z"
 last_activity: 2026-07-27
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 7
-  completed_plans: 4
+  completed_plans: 5
   percent: 25
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-07-27)
 ## Current Position
 
 Phase: 01 (gap-2-borderline-smote) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-07-27
 
-Progress: [██████░░░░] 57%
+Progress: [███████░░░] 71%
 
 ## Performance Metrics
 
@@ -56,6 +56,7 @@ Progress: [██████░░░░] 57%
 | Phase 00 P02 | 25min | 2 tasks | 1 files |
 | Phase 00 P03 | 43min | 2 tasks | 4 files |
 | Phase 01 P01 | 25min | 2 tasks | 1 files |
+| Phase 01 P02 | 20min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,9 @@ Recent decisions affecting current work:
 - [Phase 00]: Baseline computation (MajorityClass/kNN/LogReg) placed BEFORE the per-vowel SMOTE+MLP training loop in each fold — lr_train's internal RNG draws happen first, deliberately shifting the subsequent SMOTE/dropout RNG sequence; documented as accepted ordering, not a bug
 - [Phase 00]: Majority-class baseline counts only original (non-augmented) fold->n_train rows of train_y_all — Matches norm_fit's established precedent of fitting only on original training samples
 - [Phase 00]: Baseline reconfirmation run MATCHES the SPEC-cited reference (Macro F1 0.4423 / Accuracy 0.6940) -- both fall within this run's own 95% bootstrap CI, so no RNG-divergence hypothesis section was needed
+- [Phase 01]: mode_train_ex()'s result parameter is a nullable ownership-transfer switch -- NULL preserves today's train/full CLI byte-for-byte output; non-NULL transfers y_true/y_pred ownership to mode_smote_ab() and suffixes artifact filenames by SMOTE mode
+- [Phase 01]: smote-ab A/B comparison runs both SMOTE arms sequentially in one process invocation (mode_smote_ab), relying on kfold_split()'s internal RNG reseed for identical fold assignments -- no manual RNG snapshot/restore
+- [Phase 01]: Adopt/reject decision for Borderline-SMOTE is computed by a single fixed rule in write_smote_ab_report() (adopt iff borderline Macro F1 >= standard Macro F1) -- never asserted manually, closing off selective/cherry-picked reporting
 
 ### Pending Todos
 
@@ -92,6 +96,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-27T23:02:47.303Z
-Stopped at: Completed 01-01-PLAN.md (Borderline-SMOTE1 classification/generation core)
+Last session: 2026-07-27T23:10:40.360Z
+Stopped at: Completed 01-02-PLAN.md (mode_train_ex refactor + smote-ab CLI orchestration)
 Resume file: None

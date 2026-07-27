@@ -16,7 +16,7 @@
 - [x] **SMOTE-01**: `smote_oversample()` ganha parâmetro `SmoteMode {SMOTE_STANDARD, SMOTE_BORDERLINE}`; modo borderline usa `find_knn_global()` (k-NN entre todas as classes) para classificar cada amostra minoritária em safe/borderline/noise usando `2*m >= k` (não `m >= k/2` truncado em inteiro)
 - [x] **SMOTE-02**: Interpolação dos sintéticos usa `find_knn()` (somente amostras da mesma classe) — nunca reaproveita a lista global de vizinhos usada para classificação, evitando ruído de rótulo cruzado
 - [x] **SMOTE-03**: Fallback para pool borderline vazio (e o caso pré-existente `n_class <= 1`) é tratado com log de aviso explícito, sem crash nem geração degenerada
-- [ ] **SMOTE-04**: Relatório A/B produzido: tabela Macro F1 + F1 por classe (SMOTE padrão vs. borderline), mesma seed/folds, com McNemar/bootstrap CI (via INFRA-01); tabela de contagem safe/borderline/noise por classe/fold; decisão explícita de adoção/rejeição
+- [x] **SMOTE-04**: Relatório A/B produzido: tabela Macro F1 + F1 por classe (SMOTE padrão vs. borderline), mesma seed/folds, com McNemar/bootstrap CI (via INFRA-01); tabela de contagem safe/borderline/noise por classe/fold; decisão explícita de adoção/rejeição
 - [ ] **SMOTE-05**: `CLAUDE.md` atualizado com o resultado do Gap 2 (Optimization History / What Worked / What Didn't Work), independente do resultado
 
 ### Gap 3 — Comparação Redes Rasas × Profundas (ARCH) — Fase 2
@@ -77,7 +77,7 @@ Adiado explicitamente pelo usuário para depois do fechamento dos 3 gaps.
 | SMOTE-01 | Phase 1 | Complete |
 | SMOTE-02 | Phase 1 | Complete |
 | SMOTE-03 | Phase 1 | Complete |
-| SMOTE-04 | Phase 1 | Pending |
+| SMOTE-04 | Phase 1 | Complete |
 | SMOTE-05 | Phase 1 | Pending |
 | ARCH-01 | Phase 2 | Pending |
 | ARCH-02 | Phase 2 | Pending |
