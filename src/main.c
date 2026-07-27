@@ -368,7 +368,70 @@ static int mode_train(const char *base_dir)
     log_info("Acuracia media: %.4f  Macro F1 medio: %.4f", acc_sum / K_FOLDS, macro_f1_sum / K_FOLDS);
     MetricsResult g_met; metrics_compute(all_y_true, all_y_pred, all_count, &g_met);
     metrics_print(&g_met, stderr); metrics_export_csv(&g_met, "results/metrics_global.csv");
-    free(all_y_true); free(all_y_pred); free(all_y_prob); free(aug_cache); return 0;
+
+    /* Intervalo de confianca 95% via bootstrap (N=1000, seed=RANDOM_SEED) sobre as
+     * predicoes out-of-fold agregadas. DEVE ser a ultima chamada consumidora de RNG
+     * em mode_train(), pois esta funcao re-semeia o RNG global internamente
+     * (src/metrics.c) -- nao adicionar nenhuma chamada rng_* apos este ponto. */
+    ConfidenceInterval ci[CI_N_METRICS];
+    metrics_bootstrap_ci(all_y_true, all_y_pred, all_count, 1000, RANDOM_SEED, ci);
+
+    /* Teste de McNemar (Edwards, 1948) do MLP hierarquico vs os 3 baselines,
+     * sobre as mesmas amostras de validacao out-of-fold. */
+    float chi2_maj, p_maj, chi2_knn, p_knn, chi2_lr, p_lr;
+    metrics_mcnemar(all_y_true, all_y_pred, all_y_pred_majority, all_count, &chi2_maj, &p_maj);
+    metrics_mcnemar(all_y_true, all_y_pred, all_y_pred_knn, all_count, &chi2_knn, &p_knn);
+    metrics_mcnemar(all_y_true, all_y_pred, all_y_pred_logreg, all_count, &chi2_lr, &p_lr);
+
+    log_info("\n========== BOOTSTRAP CI (95%%, N=1000, seed=%d) ==========", RANDOM_SEED);
+    log_info("CI_ACCURACY:         %.4f [%.4f, %.4f]", ci[CI_ACCURACY].mean, ci[CI_ACCURACY].lower, ci[CI_ACCURACY].upper);
+    log_info("CI_MACRO_F1:         %.4f [%.4f, %.4f]", ci[CI_MACRO_F1].mean, ci[CI_MACRO_F1].lower, ci[CI_MACRO_F1].upper);
+    log_info("CI_F1_NORMAL:        %.4f [%.4f, %.4f]", ci[CI_F1_NORMAL].mean, ci[CI_F1_NORMAL].lower, ci[CI_F1_NORMAL].upper);
+    log_info("CI_F1_LARYNGITE:     %.4f [%.4f, %.4f]", ci[CI_F1_LARYNGITE].mean, ci[CI_F1_LARYNGITE].lower, ci[CI_F1_LARYNGITE].upper);
+    log_info("CI_F1_DISFONIA:      %.4f [%.4f, %.4f]", ci[CI_F1_DISFONIA].mean, ci[CI_F1_DISFONIA].lower, ci[CI_F1_DISFONIA].upper);
+    log_info("CI_F1_FUNC_DISFONIA: %.4f [%.4f, %.4f]", ci[CI_F1_FUNC_DISFONIA].mean, ci[CI_F1_FUNC_DISFONIA].lower, ci[CI_F1_FUNC_DISFONIA].upper);
+    log_info("CI_F1_REINKE:        %.4f [%.4f, %.4f]", ci[CI_F1_REINKE].mean, ci[CI_F1_REINKE].lower, ci[CI_F1_REINKE].upper);
+
+    log_info("\n========== MCNEMAR: MLP vs BASELINES ==========");
+    log_info("MLP vs MajorityClass: chi2=%.4f p=%.4f -- %s", chi2_maj, p_maj,
+              p_maj < 0.05f ? "MLP significativamente melhor que MajorityClass (p<0.05)"
+                            : "MLP nao significativamente diferente de MajorityClass (p>=0.05)");
+    log_info("MLP vs kNN:           chi2=%.4f p=%.4f -- %s", chi2_knn, p_knn,
+              p_knn < 0.05f ? "MLP significativamente melhor que kNN (p<0.05)"
+                            : "MLP nao significativamente diferente de kNN (p>=0.05)");
+    log_info("MLP vs LogisticRegression: chi2=%.4f p=%.4f -- %s", chi2_lr, p_lr,
+              p_lr < 0.05f ? "MLP significativamente melhor que LogisticRegression (p<0.05)"
+                           : "MLP nao significativamente diferente de LogisticRegression (p>=0.05)");
+
+    FILE *ci_f = fopen("results/bootstrap_ci.csv", "w");
+    if (ci_f) {
+        fprintf(ci_f, "metric,mean,ci_lower,ci_upper\n");
+        fprintf(ci_f, "accuracy,%.6f,%.6f,%.6f\n", ci[CI_ACCURACY].mean, ci[CI_ACCURACY].lower, ci[CI_ACCURACY].upper);
+        fprintf(ci_f, "macro_f1,%.6f,%.6f,%.6f\n", ci[CI_MACRO_F1].mean, ci[CI_MACRO_F1].lower, ci[CI_MACRO_F1].upper);
+        fprintf(ci_f, "f1_normal,%.6f,%.6f,%.6f\n", ci[CI_F1_NORMAL].mean, ci[CI_F1_NORMAL].lower, ci[CI_F1_NORMAL].upper);
+        fprintf(ci_f, "f1_laringite,%.6f,%.6f,%.6f\n", ci[CI_F1_LARYNGITE].mean, ci[CI_F1_LARYNGITE].lower, ci[CI_F1_LARYNGITE].upper);
+        fprintf(ci_f, "f1_disfonia_psicogenica,%.6f,%.6f,%.6f\n", ci[CI_F1_DISFONIA].mean, ci[CI_F1_DISFONIA].lower, ci[CI_F1_DISFONIA].upper);
+        fprintf(ci_f, "f1_disfonia_funcional,%.6f,%.6f,%.6f\n", ci[CI_F1_FUNC_DISFONIA].mean, ci[CI_F1_FUNC_DISFONIA].lower, ci[CI_F1_FUNC_DISFONIA].upper);
+        fprintf(ci_f, "f1_reinke,%.6f,%.6f,%.6f\n", ci[CI_F1_REINKE].mean, ci[CI_F1_REINKE].lower, ci[CI_F1_REINKE].upper);
+        fclose(ci_f);
+    } else {
+        log_error("Falha ao abrir results/bootstrap_ci.csv para escrita");
+    }
+
+    FILE *mc_f = fopen("results/mcnemar_vs_baselines.csv", "w");
+    if (mc_f) {
+        fprintf(mc_f, "baseline,chi2,p_value\n");
+        fprintf(mc_f, "MajorityClass,%.6f,%.6f\n", chi2_maj, p_maj);
+        fprintf(mc_f, "kNN,%.6f,%.6f\n", chi2_knn, p_knn);
+        fprintf(mc_f, "LogisticRegression,%.6f,%.6f\n", chi2_lr, p_lr);
+        fclose(mc_f);
+    } else {
+        log_error("Falha ao abrir results/mcnemar_vs_baselines.csv para escrita");
+    }
+
+    free(all_y_true); free(all_y_pred); free(all_y_prob); free(aug_cache);
+    free(all_y_pred_majority); free(all_y_pred_knn); free(all_y_pred_logreg);
+    return 0;
 }
 
 static int mode_extract(const char *base_dir)
