@@ -336,7 +336,28 @@ static void smote_oversample(const float *x_in, const int *y_in, int n_in, int n
 
 /* ========== Training Modo ========== */
 
-static int mode_train(const char *base_dir)
+/* Resultado agregado de uma execucao completa do pipeline hierarquico (um dos dois
+ * bracos do A/B, SMOTE_STANDARD ou SMOTE_BORDERLINE) -- struct de dados simples, sem
+ * metodos, no mesmo estilo de MetricsResult/ConfidenceInterval (include/metrics.h).
+ * Usado por mode_smote_ab() para comparar os dois modos sob a mesma seed/folds. */
+typedef struct {
+    float accuracy;
+    float macro_f1;
+    float f1_per_class[NUM_CLASSES];
+    ConfidenceInterval ci[CI_N_METRICS];
+    int *y_true;
+    int *y_pred;
+    int n;
+} ABResult;
+
+/* mode_train_ex(): executa o pipeline hierarquico completo com o modo SMOTE indicado.
+ * result == NULL: execucao CLI simples (modos train/full) -- nomes de arquivo de saida
+ * sem sufixo, all_y_true/all_y_pred liberados ao final, comportamento identico ao
+ * mode_train() original.
+ * result != NULL: execucao de comparacao A/B (mode_smote_ab()) -- nomes de arquivo
+ * sufixados por modo, all_y_true/all_y_pred NAO sao liberados aqui (posse transferida
+ * para o chamador via *result), que deve libera-los apos o uso. */
+static int mode_train_ex(const char *base_dir, SmoteMode smote_mode, ABResult *result)
 {
     log_info("=== MODO: TREINAMENTO HIERARQUICO COM LATE FUSION (VOGAIS A, I, U) ===");
     Dataset ds; char csv_path[1024]; snprintf(csv_path, 1024, "%s/%s", base_dir, CSV_METADATA);
@@ -360,6 +381,19 @@ static int mode_train(const char *base_dir)
     float *aug_cache = (float *)safe_calloc((size_t)ds.count * N_AUG_PER_SAMPLE * fm.num_features, sizeof(float));
     precalculate_augmentations(&ds, fm.num_features, aug_cache);
     int nf_vowel = FEATURES_PER_VOWEL + NUM_METADATA_FEATURES;
+
+    /* SMOTE-04: contagem safe/borderline/ruido por fold/vogal/rede/classe -- so
+     * relevante no braco SMOTE_BORDERLINE (no braco SMOTE_STANDARD a classificacao e
+     * um no-op e as contagens seriam todas zero, nao vale a pena exportar). */
+    FILE *counts_f = NULL;
+    if (smote_mode == SMOTE_BORDERLINE) {
+        counts_f = fopen("results/smote_borderline_counts.csv", "w");
+        if (counts_f) {
+            fprintf(counts_f, "fold,vowel,network,class,safe,borderline,noise\n");
+        } else {
+            log_error("Falha ao abrir results/smote_borderline_counts.csv para escrita");
+        }
+    }
 
     for (int f = 0; f < K_FOLDS; f++) {
         log_info("\n========== FOLD %d/%d (HIERARCHICAL LATE FUSION) ==========", f + 1, K_FOLDS);
@@ -418,8 +452,15 @@ static int mode_train(const char *base_dir)
             map_to_binary_labels(train_y_all, tr_y_bin, n_train_aug);
             for(int i=0; i<fold->n_val; i++) vl_y_bin[i] = (fm.labels[fold->val_indices[i]] == CLASS_NORMAL) ? 0 : 1;
 
+            SmoteBorderlineCounts sbc_master = {0}, sbc_expert = {0};
             float *os_m_x; int *os_m_y, os_n_m;
-            smote_oversample(tr_x_v, tr_y_bin, n_train_aug, nf_vowel, 2, SMOTE_STANDARD, NULL, &os_m_x, &os_m_y, &os_n_m);
+            smote_oversample(tr_x_v, tr_y_bin, n_train_aug, nf_vowel, 2, smote_mode, &sbc_master, &os_m_x, &os_m_y, &os_n_m);
+            if (counts_f) {
+                for (int c = 0; c < 2; c++) {
+                    fprintf(counts_f, "%d,%d,master,%d,%d,%d,%d\n", f, v, c,
+                            sbc_master.safe[c], sbc_master.borderline[c], sbc_master.noise[c]);
+                }
+            }
             mlp_init_dynamic(&net_master[v], nf_vowel, 2); TrainHistory h_m;
             mlp_train(&net_master[v], os_m_x, os_m_y, os_n_m, vl_x_v, vl_y_bin, fold->n_val, nf_vowel, 2, cw_binary, &h_m);
 
@@ -436,7 +477,13 @@ static int mode_train(const char *base_dir)
                 memcpy(&ex_vl_x[cur * nf_vowel], &vl_x_v[i * nf_vowel], nf_vowel * sizeof(float)); ex_vl_y[cur++] = fm.labels[fold->val_indices[i]] - 1;
             }
             float *os_e_x; int *os_e_y, os_n_e;
-            smote_oversample(ex_tr_x, ex_tr_y, n_ex_tr, nf_vowel, 4, SMOTE_STANDARD, NULL, &os_e_x, &os_e_y, &os_n_e);
+            smote_oversample(ex_tr_x, ex_tr_y, n_ex_tr, nf_vowel, 4, smote_mode, &sbc_expert, &os_e_x, &os_e_y, &os_n_e);
+            if (counts_f) {
+                for (int c = 0; c < 4; c++) {
+                    fprintf(counts_f, "%d,%d,expert,%d,%d,%d,%d\n", f, v, c,
+                            sbc_expert.safe[c], sbc_expert.borderline[c], sbc_expert.noise[c]);
+                }
+            }
             mlp_init_dynamic(&net_expert[v], nf_vowel, 4); TrainHistory h_e;
             mlp_train(&net_expert[v], os_e_x, os_e_y, os_n_e, ex_vl_x, ex_vl_y, n_ex_vl, nf_vowel, 4, cw_expert, &h_e);
 
@@ -470,12 +517,34 @@ static int mode_train(const char *base_dir)
     }
     log_info("\n========== RESULTADOS AGREGADOS ==========");
     log_info("Acuracia media: %.4f  Macro F1 medio: %.4f", acc_sum / K_FOLDS, macro_f1_sum / K_FOLDS);
+
+    /* Nomes de arquivo de saida: sufixados por modo SMOTE apenas em execucoes de
+     * comparacao A/B (result != NULL) -- os modos train/full (result == NULL) mantem
+     * os nomes originais sem sufixo, garantindo que os artefatos canonicos da Fase 0
+     * permanecam byte-a-byte inalterados (garantia critica de nao-regressao). */
+    char metrics_path[128], ci_path[128], mcnemar_path[128];
+    if (result != NULL) {
+        if (smote_mode == SMOTE_BORDERLINE) {
+            snprintf(metrics_path, sizeof(metrics_path), "results/metrics_global_borderline.csv");
+            snprintf(ci_path, sizeof(ci_path), "results/bootstrap_ci_borderline.csv");
+            snprintf(mcnemar_path, sizeof(mcnemar_path), "results/mcnemar_vs_baselines_borderline.csv");
+        } else {
+            snprintf(metrics_path, sizeof(metrics_path), "results/metrics_global_standard.csv");
+            snprintf(ci_path, sizeof(ci_path), "results/bootstrap_ci_standard.csv");
+            snprintf(mcnemar_path, sizeof(mcnemar_path), "results/mcnemar_vs_baselines_standard.csv");
+        }
+    } else {
+        snprintf(metrics_path, sizeof(metrics_path), "results/metrics_global.csv");
+        snprintf(ci_path, sizeof(ci_path), "results/bootstrap_ci.csv");
+        snprintf(mcnemar_path, sizeof(mcnemar_path), "results/mcnemar_vs_baselines.csv");
+    }
+
     MetricsResult g_met; metrics_compute(all_y_true, all_y_pred, all_count, &g_met);
-    metrics_print(&g_met, stderr); metrics_export_csv(&g_met, "results/metrics_global.csv");
+    metrics_print(&g_met, stderr); metrics_export_csv(&g_met, metrics_path);
 
     /* Intervalo de confianca 95% via bootstrap (N=1000, seed=RANDOM_SEED) sobre as
      * predicoes out-of-fold agregadas. DEVE ser a ultima chamada consumidora de RNG
-     * em mode_train(), pois esta funcao re-semeia o RNG global internamente
+     * em mode_train_ex(), pois esta funcao re-semeia o RNG global internamente
      * (src/metrics.c) -- nao adicionar nenhuma chamada rng_* apos este ponto. */
     ConfidenceInterval ci[CI_N_METRICS];
     metrics_bootstrap_ci(all_y_true, all_y_pred, all_count, 1000, RANDOM_SEED, ci);
@@ -507,7 +576,7 @@ static int mode_train(const char *base_dir)
               p_lr < 0.05f ? "MLP significativamente melhor que LogisticRegression (p<0.05)"
                            : "MLP nao significativamente diferente de LogisticRegression (p>=0.05)");
 
-    FILE *ci_f = fopen("results/bootstrap_ci.csv", "w");
+    FILE *ci_f = fopen(ci_path, "w");
     if (ci_f) {
         fprintf(ci_f, "metric,mean,ci_lower,ci_upper\n");
         fprintf(ci_f, "accuracy,%.6f,%.6f,%.6f\n", ci[CI_ACCURACY].mean, ci[CI_ACCURACY].lower, ci[CI_ACCURACY].upper);
@@ -519,10 +588,10 @@ static int mode_train(const char *base_dir)
         fprintf(ci_f, "f1_reinke,%.6f,%.6f,%.6f\n", ci[CI_F1_REINKE].mean, ci[CI_F1_REINKE].lower, ci[CI_F1_REINKE].upper);
         fclose(ci_f);
     } else {
-        log_error("Falha ao abrir results/bootstrap_ci.csv para escrita");
+        log_error("Falha ao abrir %s para escrita", ci_path);
     }
 
-    FILE *mc_f = fopen("results/mcnemar_vs_baselines.csv", "w");
+    FILE *mc_f = fopen(mcnemar_path, "w");
     if (mc_f) {
         fprintf(mc_f, "baseline,chi2,p_value\n");
         fprintf(mc_f, "MajorityClass,%.6f,%.6f\n", chi2_maj, p_maj);
@@ -530,13 +599,32 @@ static int mode_train(const char *base_dir)
         fprintf(mc_f, "LogisticRegression,%.6f,%.6f\n", chi2_lr, p_lr);
         fclose(mc_f);
     } else {
-        log_error("Falha ao abrir results/mcnemar_vs_baselines.csv para escrita");
+        log_error("Falha ao abrir %s para escrita", mcnemar_path);
     }
 
-    free(all_y_true); free(all_y_pred); free(all_y_prob); free(aug_cache);
+    if (counts_f) fclose(counts_f);
+
+    /* Transferencia de posse: em execucao de comparacao A/B (result != NULL),
+     * all_y_true/all_y_pred NAO sao liberados aqui -- mode_smote_ab() e responsavel
+     * por libera-los apos consumir o ABResult (evita use-after-free/double-free,
+     * ver threat_model T-01-05 do plano 01-02). */
+    if (result != NULL) {
+        result->accuracy = g_met.accuracy;
+        result->macro_f1 = g_met.macro_f1;
+        memcpy(result->f1_per_class, g_met.f1, sizeof(g_met.f1));
+        memcpy(result->ci, ci, sizeof(ci));
+        result->y_true = all_y_true;
+        result->y_pred = all_y_pred;
+        result->n = all_count;
+    } else {
+        free(all_y_true); free(all_y_pred);
+    }
+    free(all_y_prob); free(aug_cache);
     free(all_y_pred_majority); free(all_y_pred_knn); free(all_y_pred_logreg);
     return 0;
 }
+
+static int mode_train(const char *base_dir) { return mode_train_ex(base_dir, SMOTE_STANDARD, NULL); }
 
 static int mode_extract(const char *base_dir)
 {
