@@ -261,9 +261,11 @@ static int classify_borderline(int m, int k)
     return 0;                   /* SEGURO */
 }
 
-static void smote_oversample(const float *x_in, const int *y_in, int n_in, int nf, int num_classes, float **x_out, int **y_out, int *n_out)
+static void smote_oversample(const float *x_in, const int *y_in, int n_in, int nf,
+    int num_classes, SmoteMode smote_mode, SmoteBorderlineCounts *bcounts, float **x_out,
+    int **y_out, int *n_out)
 {
-    int k = 5; int *counts = (int *)safe_calloc(num_classes, sizeof(int));
+    int k = SMOTE_K_NEIGHBORS; int *counts = (int *)safe_calloc(num_classes, sizeof(int));
     for (int i = 0; i < n_in; i++) counts[y_in[i]]++;
     int max_count = 0; for (int c = 0; c < num_classes; c++) if (counts[c] > max_count) max_count = counts[c];
     *n_out = max_count * num_classes;
@@ -277,16 +279,59 @@ static void smote_oversample(const float *x_in, const int *y_in, int n_in, int n
     for (int c = 0; c < num_classes; c++) {
         int n_class = counts[c]; int knn = (k < n_class - 1) ? k : n_class - 1; if (knn < 1) knn = 1;
         for (int i = 0; i < n_class; i++) { memcpy(&(*x_out)[out_idx * nf], &x_in[class_idx[c][i] * nf], nf * sizeof(float)); (*y_out)[out_idx++] = c; }
-        int n_synthetic = max_count - n_class; int *neighbors = (int *)safe_malloc(knn * sizeof(int));
+        int n_synthetic = max_count - n_class;
+        /* SMOTE-03: classe degenerada (n_class<=1) nao tem par valido da mesma classe
+         * para interpolar -- pula a sintese inteiramente ao inves de gerar uma
+         * duplicata disfarcada de amostra sintetica. */
+        if (n_class <= 1) {
+            if (n_synthetic > 0) {
+                log_warn("smote_oversample: classe %d com apenas %d amostra(s) -- sintese pulada (nenhum par valido da mesma classe para interpolar, zero amostras sinteticas geradas para esta classe)", c, n_class);
+            }
+            n_synthetic = 0;
+        }
+        int *neighbors = (int *)safe_malloc(knn * sizeof(int));
+
+        /* Bloco B: construcao do pool borderline (Han, Wang & Mao, 2005, Passo 1).
+         * So executa quando o modo e SMOTE_BORDERLINE e a classe realmente precisa
+         * sintetizar amostras (n_synthetic > 0) -- uma classe ja pulada pelo Bloco A
+         * nao precisa de pool algum. */
+        int *class_idx_borderline = NULL; int n_borderline = 0;
+        if (smote_mode == SMOTE_BORDERLINE && n_synthetic > 0) {
+            class_idx_borderline = (int *)safe_malloc(n_class * sizeof(int));
+            int neighbors_g[BORDERLINE_M_NEIGHBORS];
+            for (int i = 0; i < n_class; i++) {
+                int kk = find_knn_global(x_in, class_idx[c][i], n_in, nf, BORDERLINE_M_NEIGHBORS, neighbors_g);
+                int m = 0; for (int j = 0; j < kk; j++) if (y_in[neighbors_g[j]] != c) m++;
+                int cls = classify_borderline(m, kk);
+                if (bcounts != NULL) {
+                    if (cls == 0) bcounts->safe[c]++;
+                    else if (cls == 1) bcounts->borderline[c]++;
+                    else bcounts->noise[c]++;
+                }
+                if (cls == 1) class_idx_borderline[n_borderline++] = class_idx[c][i];
+            }
+            if (n_borderline == 0) {
+                log_warn("smote_oversample: classe %d sem amostras borderline (fold/vogal atual) -- usando class_idx[c] completo como fallback", c);
+            }
+        }
+
+        /* Pool de sintese: restrito ao subconjunto borderline quando aplicavel,
+         * caindo de volta ao class_idx[c] completo em SMOTE_STANDARD ou quando o
+         * pool borderline esta vazio (fallback do SMOTE-03). */
+        int *pool = class_idx[c]; int pool_size = n_class;
+        if (smote_mode == SMOTE_BORDERLINE && n_borderline > 0) { pool = class_idx_borderline; pool_size = n_borderline; }
+
         for (int s = 0; s < n_synthetic; s++) {
-            int base_idx = class_idx[c][rng_int(n_class)]; find_knn(x_in, base_idx, class_idx[c], n_class, nf, knn, neighbors);
+            int base_idx = pool[rng_int(pool_size)]; find_knn(x_in, base_idx, class_idx[c], n_class, nf, knn, neighbors);
             int neighbor_idx = neighbors[rng_int(knn)]; float alpha = rng_uniform();
             for (int f = 0; f < nf; f++) (*x_out)[out_idx * nf + f] = x_in[base_idx * nf + f] + alpha * (x_in[neighbor_idx * nf + f] - x_in[base_idx * nf + f]);
             (*y_out)[out_idx++] = c;
         }
         free(neighbors); free(class_idx[c]);
+        if (smote_mode == SMOTE_BORDERLINE && n_synthetic > 0) free(class_idx_borderline);
     }
     free(class_idx); free(class_pos); free(counts);
+    *n_out = out_idx;
 }
 
 /* ========== Training Modo ========== */
@@ -374,7 +419,7 @@ static int mode_train(const char *base_dir)
             for(int i=0; i<fold->n_val; i++) vl_y_bin[i] = (fm.labels[fold->val_indices[i]] == CLASS_NORMAL) ? 0 : 1;
 
             float *os_m_x; int *os_m_y, os_n_m;
-            smote_oversample(tr_x_v, tr_y_bin, n_train_aug, nf_vowel, 2, &os_m_x, &os_m_y, &os_n_m);
+            smote_oversample(tr_x_v, tr_y_bin, n_train_aug, nf_vowel, 2, SMOTE_STANDARD, NULL, &os_m_x, &os_m_y, &os_n_m);
             mlp_init_dynamic(&net_master[v], nf_vowel, 2); TrainHistory h_m;
             mlp_train(&net_master[v], os_m_x, os_m_y, os_n_m, vl_x_v, vl_y_bin, fold->n_val, nf_vowel, 2, cw_binary, &h_m);
 
@@ -391,7 +436,7 @@ static int mode_train(const char *base_dir)
                 memcpy(&ex_vl_x[cur * nf_vowel], &vl_x_v[i * nf_vowel], nf_vowel * sizeof(float)); ex_vl_y[cur++] = fm.labels[fold->val_indices[i]] - 1;
             }
             float *os_e_x; int *os_e_y, os_n_e;
-            smote_oversample(ex_tr_x, ex_tr_y, n_ex_tr, nf_vowel, 4, &os_e_x, &os_e_y, &os_n_e);
+            smote_oversample(ex_tr_x, ex_tr_y, n_ex_tr, nf_vowel, 4, SMOTE_STANDARD, NULL, &os_e_x, &os_e_y, &os_n_e);
             mlp_init_dynamic(&net_expert[v], nf_vowel, 4); TrainHistory h_e;
             mlp_train(&net_expert[v], os_e_x, os_e_y, os_n_e, ex_vl_x, ex_vl_y, n_ex_vl, nf_vowel, 4, cw_expert, &h_e);
 
