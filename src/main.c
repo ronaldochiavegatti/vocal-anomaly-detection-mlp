@@ -247,6 +247,11 @@ static int mode_train(const char *base_dir)
     int *all_y_true = (int *)safe_malloc(fm.count * sizeof(int));
     int *all_y_pred = (int *)safe_malloc(fm.count * sizeof(int));
     float *all_y_prob = (float *)safe_malloc(fm.count * 5 * sizeof(float));
+    /* Baseline predictions (MajorityClass, kNN, LogisticRegression), alinhadas com
+     * all_y_true/all_y_pred no mesmo indice all_count, para McNemar 3-vias (Tarefa 1). */
+    int *all_y_pred_majority = (int *)safe_malloc(fm.count * sizeof(int));
+    int *all_y_pred_knn = (int *)safe_malloc(fm.count * sizeof(int));
+    int *all_y_pred_logreg = (int *)safe_malloc(fm.count * sizeof(int));
     int all_count = 0;
     float *aug_cache = (float *)safe_calloc((size_t)ds.count * N_AUG_PER_SAMPLE * fm.num_features, sizeof(float));
     precalculate_augmentations(&ds, fm.num_features, aug_cache);
@@ -269,6 +274,26 @@ static int mode_train(const char *base_dir)
         float *val_x_all = (float *)safe_malloc(fold->n_val * nf_all * sizeof(float));
         for (int i = 0; i < fold->n_val; i++) memcpy(&val_x_all[i * nf_all], &fm.features[fold->val_indices[i] * nf_all], nf_all * sizeof(float));
         norm_transform(val_x_all, fold->n_val, &norm);
+
+        /* Baselines (MajorityClass, kNN, LogisticRegression) sobre o mesmo split de
+         * fold/validacao usado pelo MLP, calculados ANTES do treino hierarquico
+         * (SMOTE + Master/Expert por vogal) para que McNemar compare exatamente as
+         * mesmas amostras de validacao out-of-fold. */
+        int *val_y_all = (int *)safe_malloc(fold->n_val * sizeof(int));
+        for (int i = 0; i < fold->n_val; i++) val_y_all[i] = fm.labels[fold->val_indices[i]];
+
+        int counts[NUM_CLASSES] = {0};
+        for (int i = 0; i < fold->n_train; i++) counts[train_y_all[i]]++;
+        int majority_class = 0;
+        for (int c = 1; c < NUM_CLASSES; c++) if (counts[c] > counts[majority_class]) majority_class = c;
+
+        int *knn_pred_buf = (int *)safe_malloc(fold->n_val * sizeof(int));
+        knn_predict(train_x_all, train_y_all, n_train_aug, val_x_all, fold->n_val, nf_all, 5, knn_pred_buf);
+
+        LRModel lr; lr_init(&lr, nf_all, NUM_CLASSES);
+        int *logreg_pred_buf = (int *)safe_malloc(fold->n_val * sizeof(int));
+        lr_train(&lr, train_x_all, train_y_all, n_train_aug, val_x_all, val_y_all, fold->n_val, nf_all, logreg_pred_buf);
+        lr_free(&lr);
 
         MLP net_master[3], net_expert[3];
         float cw_binary[] = {0.9f, 1.1f}, cw_expert[] = {1.0f, 1.2f, 1.2f, 1.4f};
@@ -328,12 +353,16 @@ static int mode_train(const char *base_dir)
                 p_norm += om[0]; for(int c=0; c<4; c++) p_exp[c] += om[1] * oe[c];
             }
             all_y_prob[all_count * 5 + 0] = p_norm / 3.0f; for(int c=1; c<5; c++) all_y_prob[all_count * 5 + c] = p_exp[c-1] / 3.0f;
+            all_y_pred_majority[all_count] = majority_class;
+            all_y_pred_knn[all_count] = knn_pred_buf[i];
+            all_y_pred_logreg[all_count] = logreg_pred_buf[i];
             all_count++;
         }
         MetricsResult fm_res; metrics_compute(&all_y_true[all_count - fold->n_val], &all_y_pred[all_count - fold->n_val], fold->n_val, &fm_res);
         metrics_print(&fm_res, stderr); acc_sum += fm_res.accuracy; macro_f1_sum += fm_res.macro_f1;
         for (int v = 0; v < 3; v++) { mlp_free(&net_master[v]); mlp_free(&net_expert[v]); }
         norm_free(&norm); free(train_x_all); free(train_y_all); free(val_x_all);
+        free(val_y_all); free(knn_pred_buf); free(logreg_pred_buf);
     }
     log_info("\n========== RESULTADOS AGREGADOS ==========");
     log_info("Acuracia media: %.4f  Macro F1 medio: %.4f", acc_sum / K_FOLDS, macro_f1_sum / K_FOLDS);
