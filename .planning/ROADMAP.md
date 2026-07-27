@@ -38,11 +38,11 @@ inspeção visual) e atualização do `CLAUDE.md`, terminando em uma tabela cons
   2. Running `make full` twice in a row (same `RANDOM_SEED=42`) produces identical augmented training inputs — the OpenMP RNG race in `precalculate_augmentations()` is fixed (per-thread RNG stream, or the loop is no longer parallel) rather than merely documented, unless a fix is explicitly judged infeasible and the caveat is recorded instead.
   3. `results/train_log_v29_baseline_reconfirmed.txt` exists with a freshly executed run's Macro F1/Accuracy, and either matches `results/metrics_global.csv` (Macro F1 0,4423 / Acc 69,4%) or the divergence is explicitly documented with a hypothesis for the cause.
 
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 Plans:
 **Wave 1**
 
-- [ ] 00-01-PLAN.md — Fix the OpenMP RNG race in `precalculate_augmentations()` (drop the parallel pragma) and add a fast `verify-rng` determinism-check mode
+- [x] 00-01-PLAN.md — Fix the OpenMP RNG race in `precalculate_augmentations()` (drop the parallel pragma) and add a fast `verify-rng` determinism-check mode
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -106,7 +106,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Statistical Infrastructure & RNG Reproducibility | 0/3 | Planned | - |
+| 0. Statistical Infrastructure & RNG Reproducibility | 1/3 | In Progress|  |
 | 1. Gap 2 — Borderline-SMOTE | 0/TBD | Not started | - |
 | 2. Gap 3 — Shallow vs Deep MLP Comparison | 0/TBD | Not started | - |
 | 3. Gap 1 — Paraconsistent Feature Selection | 0/TBD | Not started | - |

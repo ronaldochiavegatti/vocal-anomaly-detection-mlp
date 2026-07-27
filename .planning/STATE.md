@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: ROADMAP.md and STATE.md written; REQUIREMENTS.md traceability already consistent (Phase 0-3 mapping confirmed, no edit needed)
-last_updated: "2026-07-27T04:54:23.784Z"
-last_activity: 2026-07-27 -- Phase 0 planning complete
+stopped_at: Completed 00-01-PLAN.md (RNG race fix + verify-rng determinism check)
+last_updated: "2026-07-27T19:22:24.609Z"
+last_activity: 2026-07-27
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 3
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-27)
 
 **Core value:** Fechar, com rigor metodológico comprovável por comparação A/B (mesma seed, mesmos 5-folds), os 3 gaps entre a implementação atual e a proposta PIBIC original — sem piorar o baseline de referência (Macro F1 0,4423 / Acurácia 69,4%).
-**Current focus:** Phase 0 — Statistical Infrastructure & RNG Reproducibility Prerequisite
+**Current focus:** Phase 00 — statistical-infrastructure-rng-reproducibility-prerequisite
 
 ## Current Position
 
-Phase: 0 of 4 (Statistical Infrastructure & RNG Reproducibility Prerequisite)
-Plan: 0 of TBD in current phase
+Phase: 00 (statistical-infrastructure-rng-reproducibility-prerequisite) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
-Last activity: 2026-07-27 -- Phase 0 planning complete
+Last activity: 2026-07-27
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: -
 
 *Updated after each plan completion*
+| Phase 00 P01 | 70min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -63,6 +64,7 @@ Recent decisions affecting current work:
 - Milestone-wide: Order is Gap 2 (Phase 1) → Gap 3 (Phase 2) → Gap 1 (Phase 3), preceded by Phase 0 infrastructure prerequisite — per SPEC.md and confirmed independently by research (structural refactor in Gap 3 must land before Gap 1's higher fan-out; Gap 3's parameter-count table would be invalidated if Gap 1's dimensionality changes came first).
 - Milestone-wide: Baseline = v29 HEAD (commit e63483a), not the broken v30/v31 "nested stacked hierarchy" WIP.
 - Phase 0: RNG race fix-vs-document is a judgment call to be made explicitly during Phase 0 planning, not left ambiguous (research flag).
+- [Phase 00]: Fixed OpenMP RNG race in precalculate_augmentations() by removing #pragma omp parallel for (INFRA-02 sanctioned fallback), not merely documenting it — precalculate_augmentations() is not the pipeline's wall-clock bottleneck; verified deterministic via new verify-rng CLI mode (cmp exit code 0 across two runs)
 
 ### Pending Todos
 
@@ -86,6 +88,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-27
-Stopped at: ROADMAP.md and STATE.md written; REQUIREMENTS.md traceability already consistent (Phase 0-3 mapping confirmed, no edit needed)
+Last session: 2026-07-27T19:22:24.604Z
+Stopped at: Completed 00-01-PLAN.md (RNG race fix + verify-rng determinism check)
 Resume file: None
