@@ -34,7 +34,11 @@ inspeção visual) e atualização do `CLAUDE.md`, terminando em uma tabela cons
   1. `mode_train()` calls `metrics_bootstrap_ci()` and `metrics_mcnemar()` on the aggregated out-of-fold predictions and prints/saves bootstrap CI + McNemar p-values (MLP vs MajorityClass, kNN, LogReg) for every training run.
   2. Running `make full` twice in a row (same `RANDOM_SEED=42`) produces identical augmented training inputs — the OpenMP RNG race in `precalculate_augmentations()` is fixed (per-thread RNG stream, or the loop is no longer parallel) rather than merely documented, unless a fix is explicitly judged infeasible and the caveat is recorded instead.
   3. `results/train_log_v29_baseline_reconfirmed.txt` exists with a freshly executed run's Macro F1/Accuracy, and either matches `results/metrics_global.csv` (Macro F1 0,4423 / Acc 69,4%) or the divergence is explicitly documented with a hypothesis for the cause.
-**Plans**: TBD
+**Plans:** 3 plans
+Plans:
+- [ ] 00-01-PLAN.md — Fix the OpenMP RNG race in `precalculate_augmentations()` (drop the parallel pragma) and add a fast `verify-rng` determinism-check mode
+- [ ] 00-02-PLAN.md — Wire `metrics_bootstrap_ci()`/`metrics_mcnemar()` into `mode_train()`, reconnecting MajorityClass/kNN/LogReg baselines for the 3-way comparison
+- [ ] 00-03-PLAN.md — Run a fresh full pipeline execution and produce `results/train_log_v29_baseline_reconfirmed.txt` with an explicit match/divergence verdict
 
 ### Phase 1: Gap 2 — Borderline-SMOTE
 **Goal**: Borderline-SMOTE (Han, Wang & Mao, 2005) is implemented as a selectable oversampling mode alongside standard SMOTE, and its adoption or rejection is decided by reproducible A/B comparison rather than assumption.
@@ -81,7 +85,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Statistical Infrastructure & RNG Reproducibility | 0/TBD | Not started | - |
+| 0. Statistical Infrastructure & RNG Reproducibility | 0/3 | Planned | - |
 | 1. Gap 2 — Borderline-SMOTE | 0/TBD | Not started | - |
 | 2. Gap 3 — Shallow vs Deep MLP Comparison | 0/TBD | Not started | - |
 | 3. Gap 1 — Paraconsistent Feature Selection | 0/TBD | Not started | - |
