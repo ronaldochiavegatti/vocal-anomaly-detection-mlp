@@ -466,3 +466,40 @@ Total amostras: 1098
 [2026-07-27 17:01:40] [INFO] MLP vs kNN:           chi2=20.1437 p=0.0000 -- MLP significativamente melhor que kNN (p<0.05)
 [2026-07-27 17:01:40] [INFO] MLP vs LogisticRegression: chi2=20.6380 p=0.0000 -- MLP significativamente melhor que LogisticRegression (p<0.05)
 
+========== TASK 2: COMPARACAO COM BASELINE DE REFERENCIA (SPEC.md/ROADMAP.md) ==========
+Data da comparacao: 2026-07-27
+Executor: plan 00-03 (statistical-infrastructure-rng-reproducibility-prerequisite)
+
+Fonte dos valores frescos: results/metrics_global.csv (linha 'macro_avg', coluna f1; linha
+'accuracy', coluna f1), gerado por esta mesma execucao (mtime 2026-07-27 17:01:40 -0300).
+
+  Metrica      | Valor fresco (esta execucao) | Referencia (SPEC.md/ROADMAP.md) | Diferenca absoluta
+  -------------|------------------------------|----------------------------------|--------------------
+  Macro F1     | 0.451440                     | 0.4423                           | 0.009140
+  Acuracia     | 0.697632                     | 0.6940                           | 0.003632
+
+Bootstrap 95% CI desta execucao (results/bootstrap_ci.csv, N=1000, seed=42):
+  CI_MACRO_F1: mean=0.449950, [0.415139, 0.489630]  -- referencia 0.4423 esta DENTRO deste intervalo
+  CI_ACCURACY: mean=0.696977, [0.671220, 0.724954]  -- referencia 0.6940 esta DENTRO deste intervalo
+
+Ambos os valores de referencia (Macro F1 0.4423 e Acuracia 0.6940) caem dentro dos limites do
+intervalo de confianca bootstrap de 95% desta execucao fresca.
+
+VEREDITO: MATCHES reference
+
+Este resultado confirma que o pipeline v29 (Hierarchical Late Fusion), apos as correcoes de
+infraestrutura estatistica desta Fase 0 (plano 00-01: remocao da race condition de RNG em
+precalculate_augmentations(); plano 00-02: baselines MajorityClass/kNN/LogisticRegression +
+bootstrap CI + McNemar 3-vias conectados a mode_train()), reproduz o baseline academico citado em
+SPEC.md/ROADMAP.md (Macro F1 0,4423 / Acuracia 69,4%) dentro da variabilidade estatistica esperada
+de reamostragem bootstrap. A pequena diferenca absoluta observada (Macro F1: +0.009140, Acuracia:
++0.003632) e consistente com o ruido estatistico normal de uma unica execucao de 5-fold CV e NAO
+constitui uma regressao: mesmo que as causas 1 e 2 abaixo (ambas ja documentadas nos planos 00-01 e
+00-02 desta mesma fase) alterassem a sequencia exata de numeros pseudoaleatorios consumida em
+relacao a execucao historica nao documentada que originalmente produziu 0,4423/69,4%, o efeito
+liquido permanece dentro do intervalo de confianca de 95% -- ou seja, estatisticamente
+indistinguivel do baseline de referencia.
+
+Este log (results/train_log_v29_baseline_reconfirmed.txt) e, portanto, o artefato reproduzivel e
+citavel que as Fases 1-3 devem usar como "antes" em suas comparacoes A/B de Gap 2 (Borderline-SMOTE),
+Gap 3 (redes rasas x profundas) e Gap 1 (selecao paraconsistente de caracteristicas).
