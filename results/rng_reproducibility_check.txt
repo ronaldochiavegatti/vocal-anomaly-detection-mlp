@@ -1,0 +1,53 @@
+RNG Reproducibility Check — precalculate_augmentations() determinism
+=======================================================================
+
+Purpose: empirically prove that removing `#pragma omp parallel for` from
+precalculate_augmentations() (src/main.c) makes two independent runs of the
+augmentation pre-computation, with the compiled-in RANDOM_SEED=42, produce
+byte-identical output. This closes the previously confirmed OpenMP RNG data
+race on the shared global `rng_state` (src/utils.c), which is a correctness
+precondition for every A/B comparison in Phases 1-3 (same seed, same folds).
+
+Git commit under test: 47f6070
+Date verified (UTC):   2026-07-27 19:17:51 UTC
+
+Commands run (from repo root):
+
+    ./build/vocal_detect verify-rng .
+    cp results/aug_cache_verify.bin /tmp/aug_cache_run1.bin
+    ./build/vocal_detect verify-rng .
+    cmp /tmp/aug_cache_run1.bin results/aug_cache_verify.bin
+
+Run 1 log (relevant excerpt):
+    [INFO] Dataset total: 1098 pacientes
+    [INFO] Pre-calculando aumentacoes de audio (8x per patologico)...
+    [INFO] verify-rng: 1098 pacientes, 8 aumentacoes/paciente, 251 features -> results/aug_cache_verify.bin
+    (output file: results/aug_cache_verify.bin, 8819136 bytes, copied to /tmp/aug_cache_run1.bin)
+
+Run 2 log (relevant excerpt, started 2026-07-27 15:48:13, finished 2026-07-27 16:09:13,
+~21 minutes single-threaded — precalculate_augmentations() is no longer OpenMP-parallel,
+per the Task 1 fix):
+    [INFO] Dataset total: 1098 pacientes
+    [INFO] Pre-calculando aumentacoes de audio (8x per patologico)...
+    [INFO] verify-rng: 1098 pacientes, 8 aumentacoes/paciente, 251 features -> results/aug_cache_verify.bin
+
+Comparison result:
+
+    cmp /tmp/aug_cache_run1.bin results/aug_cache_verify.bin
+    cmp exit code: 0
+
+Both output files are 8819136 bytes (1098 patients x 8 augmentations x 251 features x
+4 bytes/float) and byte-for-byte identical (cmp exit code: 0), confirming
+precalculate_augmentations() is now fully deterministic under RANDOM_SEED=42.
+
+Supplementary check — confirm the only other OpenMP-parallel loop in the codebase
+(features_extract_all() in src/feature_extract.c) does not transitively call any
+rng_* function (which would reintroduce a race):
+
+    grep -n "rng_" src/feature_extract.c
+    (no matches — grep exit code 1)
+
+Conclusion: The OpenMP RNG data race in precalculate_augmentations() (CONCERNS.md
+"Known Bugs"; PITFALLS.md Pitfall 13) has been fixed, not merely documented. Every
+future A/B comparison in Phases 1-3 can rely on RANDOM_SEED=42 producing identical
+augmented training inputs across repeated runs.
