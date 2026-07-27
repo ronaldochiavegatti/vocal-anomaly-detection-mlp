@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 00-01-PLAN.md (RNG race fix + verify-rng determinism check)
-last_updated: "2026-07-27T19:22:24.609Z"
+stopped_at: Completed 00-02-PLAN.md (Bootstrap CI + 3-way McNemar wired into mode_train)
+last_updated: "2026-07-27T19:28:21.549Z"
 last_activity: 2026-07-27
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-07-27)
 ## Current Position
 
 Phase: 00 (statistical-infrastructure-rng-reproducibility-prerequisite) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-07-27
 
-Progress: [███░░░░░░░] 33%
+Progress: [███████░░░] 67%
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Progress: [███░░░░░░░] 33%
 
 *Updated after each plan completion*
 | Phase 00 P01 | 70min | 2 tasks | 3 files |
+| Phase 00 P02 | 25min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -65,6 +66,8 @@ Recent decisions affecting current work:
 - Milestone-wide: Baseline = v29 HEAD (commit e63483a), not the broken v30/v31 "nested stacked hierarchy" WIP.
 - Phase 0: RNG race fix-vs-document is a judgment call to be made explicitly during Phase 0 planning, not left ambiguous (research flag).
 - [Phase 00]: Fixed OpenMP RNG race in precalculate_augmentations() by removing #pragma omp parallel for (INFRA-02 sanctioned fallback), not merely documenting it — precalculate_augmentations() is not the pipeline's wall-clock bottleneck; verified deterministic via new verify-rng CLI mode (cmp exit code 0 across two runs)
+- [Phase 00]: Baseline computation (MajorityClass/kNN/LogReg) placed BEFORE the per-vowel SMOTE+MLP training loop in each fold — lr_train's internal RNG draws happen first, deliberately shifting the subsequent SMOTE/dropout RNG sequence; documented as accepted ordering, not a bug
+- [Phase 00]: Majority-class baseline counts only original (non-augmented) fold->n_train rows of train_y_all — Matches norm_fit's established precedent of fitting only on original training samples
 
 ### Pending Todos
 
@@ -88,6 +91,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-27T19:22:24.604Z
-Stopped at: Completed 00-01-PLAN.md (RNG race fix + verify-rng determinism check)
+Last session: 2026-07-27T19:28:21.544Z
+Stopped at: Completed 00-02-PLAN.md (Bootstrap CI + 3-way McNemar wired into mode_train)
 Resume file: None
