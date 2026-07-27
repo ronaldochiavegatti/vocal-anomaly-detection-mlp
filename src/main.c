@@ -134,7 +134,7 @@ static void extract_vowel_from_float(const float *samples, int n, int sr, float 
 static void precalculate_augmentations(const Dataset *ds, int nf, float *aug_features)
 {
     log_info("Pre-calculando aumentacoes de audio (8x per patologico)...");
-#pragma omp parallel for schedule(dynamic, 1)
+    /* NAO paralelizar: rng_state (src/utils.c) e global e nao thread-safe sob OpenMP - ver PITFALLS.md Pitfall 13 */
     for (int i = 0; i < ds->count; i++) {
         if (ds->patients[i].class_label == CLASS_NORMAL) continue;
         WavFile wavs[3]; int wav_ok[3];
@@ -351,6 +351,28 @@ static int mode_extract(const char *base_dir)
     features_export_csv(&fm, out_p); features_free(&fm); dataset_free(&ds); return 0;
 }
 
+static int mode_verify_rng(const char *base_dir)
+{
+    Dataset ds; char csv_p[1024]; snprintf(csv_p, 1024, "%s/%s", base_dir, CSV_METADATA);
+    if (dataset_load(base_dir, csv_p, &ds) != 0) return -1;
+
+    rng_seed(RANDOM_SEED);
+
+    float *aug_cache = (float *)safe_calloc((size_t)ds.count * N_AUG_PER_SAMPLE * TOTAL_FEATURES, sizeof(float));
+    precalculate_augmentations(&ds, TOTAL_FEATURES, aug_cache);
+
+    char out_p[1024]; snprintf(out_p, 1024, "%s/aug_cache_verify.bin", RESULTS_DIR);
+    FILE *f = fopen(out_p, "wb");
+    if (!f) { free(aug_cache); dataset_free(&ds); return -1; }
+    fwrite(aug_cache, sizeof(float), (size_t)ds.count * N_AUG_PER_SAMPLE * TOTAL_FEATURES, f);
+    fclose(f);
+
+    log_info("verify-rng: %d pacientes, %d aumentacoes/paciente, %d features -> %s",
+              ds.count, N_AUG_PER_SAMPLE, TOTAL_FEATURES, out_p);
+
+    free(aug_cache); dataset_free(&ds); return 0;
+}
+
 static int mode_validate_external(const char *external_dir)
 {
     log_info("=== MODO: VALIDACAO EXTERNA (GENERALIZACAO) ===");
@@ -365,5 +387,6 @@ int main(int argc, char *argv[])
     if (strcmp(mode, "extract") == 0) return mode_extract(base_dir) == 0 ? 0 : 1;
     if (strcmp(mode, "train") == 0 || strcmp(mode, "full") == 0) return mode_train(base_dir) == 0 ? 0 : 1;
     if (strcmp(mode, "external") == 0) return mode_validate_external(base_dir) == 0 ? 0 : 1;
+    if (strcmp(mode, "verify-rng") == 0) return mode_verify_rng(base_dir) == 0 ? 0 : 1;
     return 1;
 }
