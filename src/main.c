@@ -348,7 +348,36 @@ typedef struct {
     int *y_true;
     int *y_pred;
     int n;
+    /* Gap 3 (ARCH-04): contagem de parametros treinaveis e tempo de parede por
+     * epoca, por combinacao arquitetura x regularizacao. Zero/nao utilizados em
+     * instancias de ABResult criadas pelo caminho ja existente mode_smote_ab()
+     * (adicionar campos e compativel com esse codigo ja publicado). */
+    int param_count_master;
+    int param_count_expert;
+    double mean_time_per_epoch_sec;
+    float mean_epochs_to_stop;
 } ABResult;
+
+/* Config C = producao atual (2 camadas ocultas [128,64]), per ARCH-01 -- NAO
+ * chamar de "Config A" em nenhum lugar (correcao ja aplicada em CLAUDE.md pelo
+ * Plano 02-01). */
+typedef struct { const char *name; int hidden_sizes[3]; int n_hidden; float dropout_rates[3]; } ArchConfig;
+
+static const ArchConfig ARCH_CONFIGS[4] = {
+    { "A", {128, 0, 0},   1, {0.5f, 0.0f, 0.0f} },
+    { "B", {64, 0, 0},    1, {0.5f, 0.0f, 0.0f} },
+    { "C", {128, 64, 0},  2, {0.5f, 0.4f, 0.0f} },
+    { "D", {128, 64, 32}, 3, {0.5f, 0.4f, 0.3f} }
+};
+
+/* Forca de regularizacao relativa (Gap 3): multiplicador aplicado uniformemente
+ * aos dropout_rates[] de ArchConfig E ao L2_LAMBDA (0.001f, config.h -- verificado
+ * nesta sessao, NAO o 0.003 obsoleto da tabela de Hiperparametros do CLAUDE.md).
+ * REG_BASELINE (multiplicador 1.0) reproduz exatamente o dropout/L2 de producao
+ * atual, sem alteracao. */
+typedef enum { REG_LIGHT = 0, REG_BASELINE = 1, REG_STRONG = 2 } RegSetting;
+static const float REG_MULTIPLIER[3] = { 0.6f, 1.0f, 1.4f };
+static const char *REG_NAME[3] = { "light", "baseline", "strong" };
 
 /* mode_train_ex(): executa o pipeline hierarquico completo com o modo SMOTE indicado.
  * result == NULL: execucao CLI simples (modos train/full) -- nomes de arquivo de saida
@@ -356,8 +385,11 @@ typedef struct {
  * mode_train() original.
  * result != NULL: execucao de comparacao A/B (mode_smote_ab()) -- nomes de arquivo
  * sufixados por modo, all_y_true/all_y_pred NAO sao liberados aqui (posse transferida
- * para o chamador via *result), que deve libera-los apos o uso. */
-static int mode_train_ex(const char *base_dir, SmoteMode smote_mode, ABResult *result)
+ * para o chamador via *result), que deve libera-los apos o uso.
+ * arch/reg (Gap 3, ARCH-03): selecionam a arquitetura (ARCH_CONFIGS) e a forca de
+ * regularizacao (REG_MULTIPLIER) usadas por esta execucao -- widen em relacao ao
+ * Plano 02-01, sem duplicar o loop fold+vogal. */
+static int mode_train_ex(const char *base_dir, SmoteMode smote_mode, const ArchConfig *arch, RegSetting reg, ABResult *result)
 {
     log_info("=== MODO: TREINAMENTO HIERARQUICO COM LATE FUSION (VOGAIS A, I, U) ===");
     Dataset ds; char csv_path[1024]; snprintf(csv_path, 1024, "%s/%s", base_dir, CSV_METADATA);
@@ -387,13 +419,29 @@ static int mode_train_ex(const char *base_dir, SmoteMode smote_mode, ABResult *r
      * um no-op e as contagens seriam todas zero, nao vale a pena exportar). */
     FILE *counts_f = NULL;
     if (smote_mode == SMOTE_BORDERLINE) {
-        counts_f = fopen("results/smote_borderline_counts.csv", "w");
+        char counts_path[160];
+        if (result != NULL) {
+            snprintf(counts_path, sizeof(counts_path), "results/smote_borderline_counts_%s_%s.csv", arch->name, REG_NAME[reg]);
+        } else {
+            snprintf(counts_path, sizeof(counts_path), "results/smote_borderline_counts.csv");
+        }
+        counts_f = fopen(counts_path, "w");
         if (counts_f) {
             fprintf(counts_f, "fold,vowel,network,class,safe,borderline,noise\n");
         } else {
-            log_error("Falha ao abrir results/smote_borderline_counts.csv para escrita");
+            log_error("Falha ao abrir %s para escrita", counts_path);
         }
     }
+
+    /* Gap 3: hiperparametros efetivos desta execucao -- calculados uma unica vez,
+     * fora do loop de folds, ja que arch/reg sao fixos para toda a chamada. */
+    float eff_dropout[3];
+    for (int i = 0; i < arch->n_hidden; i++) eff_dropout[i] = arch->dropout_rates[i] * REG_MULTIPLIER[reg];
+    float eff_l2 = L2_LAMBDA * REG_MULTIPLIER[reg];
+    int param_count_master = 0, param_count_expert = 0;
+    double total_train_time_sec = 0.0;
+    long total_epochs_sum = 0;
+    int total_trainings = 0;
 
     for (int f = 0; f < K_FOLDS; f++) {
         log_info("\n========== FOLD %d/%d (HIERARCHICAL LATE FUSION) ==========", f + 1, K_FOLDS);
@@ -461,8 +509,13 @@ static int mode_train_ex(const char *base_dir, SmoteMode smote_mode, ABResult *r
                             sbc_master.safe[c], sbc_master.borderline[c], sbc_master.noise[c]);
                 }
             }
-            mlp_init_dynamic(&net_master[v], nf_vowel, 2); TrainHistory h_m;
-            mlp_train(&net_master[v], os_m_x, os_m_y, os_n_m, vl_x_v, vl_y_bin, fold->n_val, nf_vowel, 2, cw_binary, L2_LAMBDA, &h_m);
+            mlp_init_multi(&net_master[v], nf_vowel, 2, arch->hidden_sizes, arch->n_hidden, eff_dropout);
+            if (f == 0 && v == 0) { param_count_master = mlp_count_params(&net_master[v]); }
+            TrainHistory h_m;
+            double t0_m = timer_now();
+            mlp_train(&net_master[v], os_m_x, os_m_y, os_n_m, vl_x_v, vl_y_bin, fold->n_val, nf_vowel, 2, cw_binary, eff_l2, &h_m);
+            double dt_m = timer_now() - t0_m;
+            total_train_time_sec += dt_m; total_epochs_sum += h_m.num_epochs; total_trainings++;
 
             int n_ex_tr = 0; for (int i = 0; i < n_train_aug; i++) if (train_y_all[i] != CLASS_NORMAL) n_ex_tr++;
             float *ex_tr_x = (float *)safe_malloc(n_ex_tr * nf_vowel * sizeof(float));
@@ -484,8 +537,13 @@ static int mode_train_ex(const char *base_dir, SmoteMode smote_mode, ABResult *r
                             sbc_expert.safe[c], sbc_expert.borderline[c], sbc_expert.noise[c]);
                 }
             }
-            mlp_init_dynamic(&net_expert[v], nf_vowel, 4); TrainHistory h_e;
-            mlp_train(&net_expert[v], os_e_x, os_e_y, os_n_e, ex_vl_x, ex_vl_y, n_ex_vl, nf_vowel, 4, cw_expert, L2_LAMBDA, &h_e);
+            mlp_init_multi(&net_expert[v], nf_vowel, 4, arch->hidden_sizes, arch->n_hidden, eff_dropout);
+            if (f == 0 && v == 0) { param_count_expert = mlp_count_params(&net_expert[v]); }
+            TrainHistory h_e;
+            double t0_e = timer_now();
+            mlp_train(&net_expert[v], os_e_x, os_e_y, os_n_e, ex_vl_x, ex_vl_y, n_ex_vl, nf_vowel, 4, cw_expert, eff_l2, &h_e);
+            double dt_e = timer_now() - t0_e;
+            total_train_time_sec += dt_e; total_epochs_sum += h_e.num_epochs; total_trainings++;
 
             free(tr_x_v); free(vl_x_v); free(tr_y_bin); free(vl_y_bin); free(os_m_x); free(os_m_y);
             free(ex_tr_x); free(ex_tr_y); free(ex_vl_x); free(ex_vl_y); free(os_e_x); free(os_e_y);
@@ -518,21 +576,22 @@ static int mode_train_ex(const char *base_dir, SmoteMode smote_mode, ABResult *r
     log_info("\n========== RESULTADOS AGREGADOS ==========");
     log_info("Acuracia media: %.4f  Macro F1 medio: %.4f", acc_sum / K_FOLDS, macro_f1_sum / K_FOLDS);
 
+    double mean_time_per_epoch_sec = (total_epochs_sum > 0) ? total_train_time_sec / total_epochs_sum : 0.0;
+    float mean_epochs_to_stop = (total_trainings > 0) ? (float)total_epochs_sum / total_trainings : 0.0f;
+
     /* Nomes de arquivo de saida: sufixados por modo SMOTE apenas em execucoes de
      * comparacao A/B (result != NULL) -- os modos train/full (result == NULL) mantem
      * os nomes originais sem sufixo, garantindo que os artefatos canonicos da Fase 0
-     * permanecam byte-a-byte inalterados (garantia critica de nao-regressao). */
-    char metrics_path[128], ci_path[128], mcnemar_path[128];
+     * permanecam byte-a-byte inalterados (garantia critica de nao-regressao).
+     * Gap 3: quando result != NULL os 12 bracos do arch-compare compartilham
+     * smote_mode == SMOTE_BORDERLINE -- sem o sufixo arch->name/REG_NAME[reg], todos
+     * colidiriam nos mesmos 4 nomes de arquivo (ver threat_model T-02-06). */
+    char metrics_path[160], ci_path[160], mcnemar_path[160];
     if (result != NULL) {
-        if (smote_mode == SMOTE_BORDERLINE) {
-            snprintf(metrics_path, sizeof(metrics_path), "results/metrics_global_borderline.csv");
-            snprintf(ci_path, sizeof(ci_path), "results/bootstrap_ci_borderline.csv");
-            snprintf(mcnemar_path, sizeof(mcnemar_path), "results/mcnemar_vs_baselines_borderline.csv");
-        } else {
-            snprintf(metrics_path, sizeof(metrics_path), "results/metrics_global_standard.csv");
-            snprintf(ci_path, sizeof(ci_path), "results/bootstrap_ci_standard.csv");
-            snprintf(mcnemar_path, sizeof(mcnemar_path), "results/mcnemar_vs_baselines_standard.csv");
-        }
+        const char *smote_suffix = (smote_mode == SMOTE_BORDERLINE) ? "borderline" : "standard";
+        snprintf(metrics_path, sizeof(metrics_path), "results/metrics_global_%s_%s_%s.csv", smote_suffix, arch->name, REG_NAME[reg]);
+        snprintf(ci_path, sizeof(ci_path), "results/bootstrap_ci_%s_%s_%s.csv", smote_suffix, arch->name, REG_NAME[reg]);
+        snprintf(mcnemar_path, sizeof(mcnemar_path), "results/mcnemar_vs_baselines_%s_%s_%s.csv", smote_suffix, arch->name, REG_NAME[reg]);
     } else {
         snprintf(metrics_path, sizeof(metrics_path), "results/metrics_global.csv");
         snprintf(ci_path, sizeof(ci_path), "results/bootstrap_ci.csv");
@@ -616,6 +675,10 @@ static int mode_train_ex(const char *base_dir, SmoteMode smote_mode, ABResult *r
         result->y_true = all_y_true;
         result->y_pred = all_y_pred;
         result->n = all_count;
+        result->param_count_master = param_count_master;
+        result->param_count_expert = param_count_expert;
+        result->mean_time_per_epoch_sec = mean_time_per_epoch_sec;
+        result->mean_epochs_to_stop = mean_epochs_to_stop;
     } else {
         free(all_y_true); free(all_y_pred);
     }
@@ -624,7 +687,7 @@ static int mode_train_ex(const char *base_dir, SmoteMode smote_mode, ABResult *r
     return 0;
 }
 
-static int mode_train(const char *base_dir) { return mode_train_ex(base_dir, SMOTE_STANDARD, NULL); }
+static int mode_train(const char *base_dir) { return mode_train_ex(base_dir, SMOTE_STANDARD, &ARCH_CONFIGS[2], REG_BASELINE, NULL); }
 
 static int mode_extract(const char *base_dir)
 {
@@ -707,7 +770,7 @@ static void write_smote_ab_report(const ABResult *std_res, const ABResult *bl_re
                              : "diferenca nao estatisticamente significativa (p>=0.05)");
 
         fprintf(f, "Contagens completas de amostras seguras/borderline/ruido por fold/vogal/rede/classe: "
-                    "ver results/smote_borderline_counts.csv\n\n");
+                    "ver results/smote_borderline_counts_C_baseline.csv\n\n");
 
         if (bl_res->macro_f1 >= std_res->macro_f1) {
             fprintf(f, "DECISAO: Borderline-SMOTE ADOTADO (Macro F1 borderline=%.4f >= padrao=%.4f, delta=%+.4f, McNemar chi2=%.4f p=%.4f)\n",
@@ -758,8 +821,8 @@ static int mode_smote_ab(const char *base_dir)
     log_info("=== MODO: A/B BORDERLINE-SMOTE (Gap 2) ===");
     log_info("Atencao: modo de longa duracao (~60-180 min) -- executa o pipeline hierarquico completo duas vezes (uma por modo SMOTE)");
     ABResult res_standard = {0}, res_borderline = {0};
-    if (mode_train_ex(base_dir, SMOTE_STANDARD, &res_standard) != 0) return -1;
-    if (mode_train_ex(base_dir, SMOTE_BORDERLINE, &res_borderline) != 0) return -1;
+    if (mode_train_ex(base_dir, SMOTE_STANDARD, &ARCH_CONFIGS[2], REG_BASELINE, &res_standard) != 0) return -1;
+    if (mode_train_ex(base_dir, SMOTE_BORDERLINE, &ARCH_CONFIGS[2], REG_BASELINE, &res_borderline) != 0) return -1;
     write_smote_ab_report(&res_standard, &res_borderline,
                            "results/train_log_v32_gap2_smote_ab.txt",
                            "results/smote_ab_comparison.csv");
