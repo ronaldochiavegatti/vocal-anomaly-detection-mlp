@@ -65,7 +65,7 @@ Plans:
   4. `results/` contains an A/B report comparing standard vs borderline SMOTE (same seed/folds): Macro F1 + per-class F1 table with McNemar/bootstrap CI (via Phase 0 infrastructure), a safe/borderline/noise count table per class/fold, and an explicit adopt/reject decision sentence.
   5. `CLAUDE.md` is updated (Optimization History / What Worked / What Didn't Work) with the Gap 2 outcome, regardless of which mode was adopted.
 
-**Plans:** 2/4 plans executed
+**Plans:** 3/4 plans executed
 Plans:
 **Wave 1**
 
@@ -77,7 +77,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 01-03-PLAN.md — Execute the real `smote-ab` A/B run and verify the produced report (SMOTE-04)
+- [x] 01-03-PLAN.md — Execute the real `smote-ab` A/B run and verify the produced report (SMOTE-04)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -123,6 +123,6 @@ Phases execute in numeric order: 0 → 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 0. Statistical Infrastructure & RNG Reproducibility | 3/3 | Complete   | 2026-07-27 |
-| 1. Gap 2 — Borderline-SMOTE | 2/4 | In Progress|  |
+| 1. Gap 2 — Borderline-SMOTE | 3/4 | In Progress|  |
 | 2. Gap 3 — Shallow vs Deep MLP Comparison | 0/TBD | Not started | - |
 | 3. Gap 1 — Paraconsistent Feature Selection | 0/TBD | Not started | - |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-02-PLAN.md (mode_train_ex refactor + smote-ab CLI orchestration)
-last_updated: "2026-07-27T23:10:40.366Z"
-last_activity: 2026-07-27
+stopped_at: Completed 01-03-PLAN.md (smote-ab A/B execution + verification)
+last_updated: "2026-07-28T01:31:56.156Z"
+last_activity: 2026-07-28
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 7
-  completed_plans: 5
+  completed_plans: 6
   percent: 25
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-07-27)
 ## Current Position
 
 Phase: 01 (gap-2-borderline-smote) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
-Last activity: 2026-07-27
+Last activity: 2026-07-28
 
-Progress: [███████░░░] 71%
+Progress: [█████████░] 86%
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Progress: [███████░░░] 71%
 | Phase 00 P03 | 43min | 2 tasks | 4 files |
 | Phase 01 P01 | 25min | 2 tasks | 1 files |
 | Phase 01 P02 | 20min | 2 tasks | 1 files |
+| Phase 01 P03 | 136min | 3 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,10 @@ Recent decisions affecting current work:
 - [Phase 01]: mode_train_ex()'s result parameter is a nullable ownership-transfer switch -- NULL preserves today's train/full CLI byte-for-byte output; non-NULL transfers y_true/y_pred ownership to mode_smote_ab() and suffixes artifact filenames by SMOTE mode
 - [Phase 01]: smote-ab A/B comparison runs both SMOTE arms sequentially in one process invocation (mode_smote_ab), relying on kfold_split()'s internal RNG reseed for identical fold assignments -- no manual RNG snapshot/restore
 - [Phase 01]: Adopt/reject decision for Borderline-SMOTE is computed by a single fixed rule in write_smote_ab_report() (adopt iff borderline Macro F1 >= standard Macro F1) -- never asserted manually, closing off selective/cherry-picked reporting
+- [Phase 01]: DECISAO: Borderline-SMOTE ADOTADO (point estimate: borderline=0.4587 >= padrao=0.4351, delta=+0.0235; bootstrap-mean: 0.4565 >= 0.4338) -- both value sources agree on sign, decision is unambiguous under the fixed rule
+- [Phase 01]: Direct McNemar test between Borderline-SMOTE and standard SMOTE arms is NOT statistically significant (chi2=0.1928, p=0.6606) -- ADOTADO reflects a positive point-estimate delta, not a proven significant improvement; carry this caveat into CLAUDE.md documentation
+- [Phase 01]: Plain train/full CLI path (mode_train_ex(...,NULL)) reconfirmed byte-identical to Phase 0 baseline (Macro F1 0.4514, Accuracy 0.6976) after plan 01-02's refactor -- zero regression
+- [Phase 01]: Empty-borderline-pool fallback fired 0 times among the 60 real classification rows in this run's smote_borderline_counts.csv -- all 30 borderline==0 rows are structural placeholder rows for unused class slots (Master class=1, Expert class=0), not genuine fallback events
 
 ### Pending Todos
 
@@ -96,6 +101,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-27T23:10:40.360Z
-Stopped at: Completed 01-02-PLAN.md (mode_train_ex refactor + smote-ab CLI orchestration)
+Last session: 2026-07-28T01:31:56.150Z
+Stopped at: Completed 01-03-PLAN.md (smote-ab A/B execution + verification)
 Resume file: None
