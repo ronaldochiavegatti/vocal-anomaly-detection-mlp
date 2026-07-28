@@ -131,13 +131,37 @@ WAV files (5 class directories)
 
 ## Important Constraints
 
-**What works**: Wider layers (128+), LeakyReLU, Dropout, gradient clipping, Borderline-SMOTE, feature selection, mild class weights, std of delta MFCCs, Macro F1 early stopping, feature caching, OpenMP extraction.
+**What works**: Wider layers (128+), LeakyReLU, Dropout, gradient clipping, Borderline-SMOTE1 (Han/Wang/Mao 2005, validated by reproducible A/B in v32 — see `results/train_log_v32_gap2_smote_ab.txt`; Macro F1 +0.0235 point-estimate delta, McNemar p=0.66 not statistically significant), feature selection, mild class weights, std of delta MFCCs, Macro F1 early stopping, feature caching, OpenMP extraction.
 
 **What doesn't work** (do not re-attempt): SWA, ensemble averaging, focal loss, strong class weights + SMOTE, inter-vowel difference features, Mixup augmentation, Batch Normalization (hurts on small datasets), post-hoc probability boosting, wavelet denoising on initial features (removes pathological markers), mean delta MFCCs (near-zero for sustained vowels).
 
 **Fundamental bottleneck**: Acoustic ceiling for Disfonia Psicogênica vs Disfonia Funcional — AUC one-vs-rest ≈ 0.62-0.64 for these two classes. They are acoustically nearly indistinguishable (both functional dysphonias without structural lesion). No architecture/hyperparameter change can break this ceiling with acoustic features alone.
 
 **5-class reality**: Accuracy targets >75% and Macro F1 >0.55 are optimistic given the ceiling. Realistic expectations: Accuracy 62-68%, Macro F1 0.40-0.50. Edema de Reinke (structural lesion) should be separable; the two functional dysphonias are the hard problem.
+
+## Gap 2 Outcome — Borderline-SMOTE A/B (v32)
+
+**DECISAO** (verbatim from `results/train_log_v32_gap2_smote_ab.txt`):
+
+> DECISAO: Borderline-SMOTE ADOTADO (Macro F1 borderline=0.4587 >= padrao=0.4351, delta=+0.0235, McNemar chi2=0.1928 p=0.6606)
+
+**Comparison** (bootstrap mean [95% CI], N=1000, seed=42, same 5-folds):
+
+| Metric | Standard (Padrão) | Borderline-SMOTE1 |
+|---|---|---|
+| Accuracy | 0.6915 [0.6648, 0.7177] | 0.6958 [0.6694, 0.7231] |
+| **Macro F1** | **0.4338 [0.3976, 0.4713]** | **0.4565 [0.4194, 0.4949]** |
+| Normal F1 | 0.8725 | 0.8664 |
+| Laringite F1 | 0.3884 | 0.3974 |
+| Disfonia Psicogênica F1 | 0.2648 | 0.3273 |
+| Disfonia Funcional F1 | 0.1892 | 0.2386 |
+| Edema de Reinke F1 | 0.4540 | 0.4531 |
+
+**Significance caveat**: Direct McNemar test between the two arms' out-of-fold predictions: chi2=0.1928, **p=0.6606 — NOT statistically significant (p >= 0.05)**. The Macro F1 delta (point-estimate +0.0235) is directionally positive under both the raw point estimate and the bootstrap-CI mean readings, but this is a fixed adopt/reject rule (`borderline_macro_f1 >= standard_macro_f1`) with no significance gate — do not present this as a proven/statistically significant improvement, only as the outcome of that rule. Gains concentrate in the two hardest/smallest classes (Disfonia Psicogênica +0.063, Disfonia Funcional +0.049), with a small give-back on Normal (-0.006) and Reinke (-0.001).
+
+**Empty-borderline-pool fallback**: Fired in 30 of 90 rows in `results/smote_borderline_counts.csv`, but all 30 are structural placeholder rows for class slots each network doesn't use (Master's unused class=1 slot, Expert's unused class=0 slot), always `(0,0,0)` by construction — not real fallback events. Among the 60 real classification rows (Master's healthy class + Expert's 4 pathology classes, across 5 folds × 3 vowels × 2 networks), the fallback fired **zero times** — it did not concentrate in the smallest classes as anticipated.
+
+**Files**: `results/train_log_v32_gap2_smote_ab.txt` (full A/B report + DECISAO sentence), `results/smote_ab_comparison.csv` (machine-readable 7-metric × 2-arm comparison with bootstrap CI), `results/smote_borderline_counts.csv` (90-row safe/borderline/noise counts per fold/vowel/network/class).
 
 ## Output Files
 - `results/features.csv` — cached 1098×237 feature matrix (re-extracted if TOTAL_FEATURES changes)
