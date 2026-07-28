@@ -79,6 +79,7 @@
 #define MLP_HIDDEN3_SIZE      32
 #define MLP_OUTPUT_SIZE       NUM_CLASSES      /* 5 - Para o modo legacy */
 #define MLP_NUM_LAYERS        3
+#define MLP_MAX_LAYERS        5  /* headroom para Config D (3 ocultas + 1 saida = 4 camadas) */
 
 /* Classificacao Hierarquica */
 #define MLP_BINARY_OUTPUT     2                /* Normal vs Patologico */
