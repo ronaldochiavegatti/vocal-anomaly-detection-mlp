@@ -97,11 +97,11 @@ Plans:
   5. The "smallest complexity not statistically worse" decision rule (1-SE rule + McNemar) is applied and the adopted config is stated explicitly with its justification.
   6. `CLAUDE.md` is updated with the Gap 3 outcome, regardless of which config was adopted.
 
-**Plans:** 4 plans (0/4 complete)
+**Plans:** 1/4 plans executed
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — ARCH-01 CLAUDE.md config-label correction + MLP_MAX_LAYERS/mlp_init_multi()/mlp_count_params()/dynamic mlp_backward() sizing + l2_lambda runtime parameter + ad hoc ASan Config D check
+- [x] 02-01-PLAN.md — ARCH-01 CLAUDE.md config-label correction + MLP_MAX_LAYERS/mlp_init_multi()/mlp_count_params()/dynamic mlp_backward() sizing + l2_lambda runtime parameter + ad hoc ASan Config D check
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -140,5 +140,5 @@ Phases execute in numeric order: 0 → 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 0. Statistical Infrastructure & RNG Reproducibility | 3/3 | Complete   | 2026-07-27 |
 | 1. Gap 2 — Borderline-SMOTE | 4/4 | Complete   | 2026-07-28 |
-| 2. Gap 3 — Shallow vs Deep MLP Comparison | 0/4 | Planned | - |
+| 2. Gap 3 — Shallow vs Deep MLP Comparison | 1/4 | In Progress|  |
 | 3. Gap 1 — Paraconsistent Feature Selection | 0/TBD | Not started | - |

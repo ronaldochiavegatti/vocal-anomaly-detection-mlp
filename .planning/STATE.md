@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-04-PLAN.md (CLAUDE.md Gap 2 outcome documentation) — Phase 1 complete
-last_updated: "2026-07-28T17:59:36.624Z"
-last_activity: 2026-07-28 -- Phase 2 planning complete
+stopped_at: "Completed 02-01-PLAN.md (structural refactor: MLP_MAX_LAYERS, mlp_init_multi, runtime l2_lambda)"
+last_updated: "2026-07-28T18:11:49.088Z"
+last_activity: 2026-07-28
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 11
-  completed_plans: 7
+  completed_plans: 8
   percent: 50
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-27)
 
 **Core value:** Fechar, com rigor metodológico comprovável por comparação A/B (mesma seed, mesmos 5-folds), os 3 gaps entre a implementação atual e a proposta PIBIC original — sem piorar o baseline de referência (Macro F1 0,4423 / Acurácia 69,4%).
-**Current focus:** Phase 2 — gap 3 — shallow vs deep mlp comparison (with structural refactor)
+**Current focus:** Phase 2 — Gap 3 - Shallow vs Deep MLP Comparison
 
 ## Current Position
 
-Phase: 2
-Plan: Not started
+Phase: 2 (Gap 3 - Shallow vs Deep MLP Comparison) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-07-28 -- Phase 2 planning complete
+Last activity: 2026-07-28
 
-Progress: [██████████] 100%
+Progress: [███████░░░] 73%
 
 ## Performance Metrics
 
@@ -60,6 +60,7 @@ Progress: [██████████] 100%
 | Phase 01 P02 | 20min | 2 tasks | 1 files |
 | Phase 01 P03 | 136min | 3 tasks | 14 files |
 | Phase 01 P04 | 6min | 1 tasks | 1 files |
+| Phase 02 P01 | 15min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,9 @@ Recent decisions affecting current work:
 - [Phase 01]: Empty-borderline-pool fallback fired 0 times among the 60 real classification rows in this run's smote_borderline_counts.csv -- all 30 borderline==0 rows are structural placeholder rows for unused class slots (Master class=1, Expert class=0), not genuine fallback events
 - [Phase 01]: CLAUDE.md's Borderline-SMOTE 'What Works' claim corrected to cite Han/Wang/Mao 2005 and results/train_log_v32_gap2_smote_ab.txt (macro F1 +0.0235 delta, McNemar p=0.66 not significant); new dated Gap 2 Outcome subsection added with full comparison table and empty-pool-fallback finding, satisfying SMOTE-05
 - [Phase 02 planning]: Regularization-sweep scope resolved by explicit user decision (not left as a fixed-hyperparameter limitation): sweep BOTH dropout and L2 lambda jointly (not dropout alone), using 3 settings (not 2) via a single relative multiplier `REG_MULTIPLIER {0.6, 1.0, 1.4}` (light/baseline/strong) applied to both hyperparameters together — user chose the more expansive option each time over the recommended default, reasoning that architecture and regularization strength are confounded (a "shallow" config could look worse than a "deep" one purely because it was tested at the wrong regularization strength) and the extra compute (12 runs vs. 4) was accepted to remove that confound. Baseline L2 anchor uses config.h's actual `L2_LAMBDA=0.001f` (not CLAUDE.md's stale documented 0.003, itself corrected in Plan 02-04). Config D's 3rd hidden layer dropout is a hardcoded literal 0.3f (SPEC.md's proposed value), not config.h's dead unused `DROPOUT_RATE_HIDDEN3=0.0f` constant. Confirmed by gsd-plan-checker (2nd pass) as roadmap-sanctioned scope, faithfully implemented across all 4 Phase 2 plans.
+- [Phase 02]: Plan 02-01: MLP_MAX_LAYERS=5 (one slot of headroom over Config D's exact 4 layers), covering the runtime-configurable-depth generalization needed for Gap 3's architecture comparison
+- [Phase 02]: Plan 02-01: mlp_init_dynamic() kept as a behavior-identical thin wrapper around new mlp_init_multi(), avoiding call-site churn elsewhere in the codebase
+- [Phase 02]: Plan 02-01: mlp_train() now accepts l2_lambda as a runtime parameter (both existing call sites pass L2_LAMBDA explicitly, zero behavior change), unblocking Plan 02-02's regularization sweep
 
 ### Pending Todos
 
@@ -104,6 +108,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-28T01:35:58.626Z
-Stopped at: Completed 01-04-PLAN.md (CLAUDE.md Gap 2 outcome documentation) — Phase 1 complete
+Last session: 2026-07-28T18:11:49.082Z
+Stopped at: Completed 02-01-PLAN.md (structural refactor: MLP_MAX_LAYERS, mlp_init_multi, runtime l2_lambda)
 Resume file: None
