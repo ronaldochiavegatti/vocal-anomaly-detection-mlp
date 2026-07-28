@@ -831,6 +831,177 @@ static int mode_smote_ab(const char *base_dir)
     return 0;
 }
 
+/* Gera o relatorio de comparacao Gap 3 (ARCH-05): 4 arquiteturas x 3 forcas de
+ * regularizacao, decisao de adocao computada por procedimento fixo em 5 passos
+ * (melhor regularizacao por arquitetura -> melhor arquitetura -> banda de 1 SE ->
+ * portao McNemar -> menor numero de parametros) -- nunca por inspecao visual da
+ * tabela, espelhando o precedente fixo-em-codigo de write_smote_ab_report(). */
+static void write_arch_compare_report(const ABResult results[4][3], const ArchConfig arch_configs[4], const char *report_path)
+{
+    /* Passo 1: melhor regularizacao por arquitetura (empate mantem o r de menor
+     * indice -- prefere REG_LIGHT sobre REG_BASELINE sobre REG_STRONG). */
+    int best_reg[4];
+    const ABResult *best_of[4];
+    for (int a = 0; a < 4; a++) {
+        best_reg[a] = 0;
+        for (int r = 1; r < 3; r++) {
+            if (results[a][r].macro_f1 > results[a][best_reg[a]].macro_f1) best_reg[a] = r;
+        }
+        best_of[a] = &results[a][best_reg[a]];
+    }
+
+    /* Passo 2: melhor arquitetura geral (empate mantem o a de menor indice). */
+    int ao = 0;
+    for (int a = 1; a < 4; a++) {
+        if (best_of[a]->macro_f1 > best_of[ao]->macro_f1) ao = a;
+    }
+
+    /* Passo 3: banda de 1 SE. SE derivada do IC bootstrap (nao da formula classica
+     * CART por fold), por consistencia com a infraestrutura estatistica ja
+     * estabelecida no projeto -- este codebase nao mantem um array de macro_f1 por
+     * fold. */
+    float se = (best_of[ao]->ci[CI_MACRO_F1].upper - best_of[ao]->ci[CI_MACRO_F1].lower) / (2.0f * 1.96f);
+    float band_lower = best_of[ao]->macro_f1 - se;
+
+    /* Passo 4: portao McNemar -- cada arquitetura != ao comparada contra a melhor
+     * (ao), amostra-a-amostra, valido pois os 12 bracos compartilham a mesma
+     * seed/ordem de fold/vogal via reseed interno de kfold_split(). */
+    float chi2_arr[4] = {0}, p_arr[4] = {0};
+    int mcnemar_passes[4] = {0};
+    for (int a = 0; a < 4; a++) {
+        if (a == ao) { mcnemar_passes[a] = 1; continue; }
+        float chi2, p;
+        metrics_mcnemar(best_of[ao]->y_true, best_of[ao]->y_pred, best_of[a]->y_pred, best_of[ao]->n, &chi2, &p);
+        chi2_arr[a] = chi2; p_arr[a] = p;
+        mcnemar_passes[a] = (p >= 0.05f);
+    }
+
+    /* Passo 5: regra de adocao -- candidata passa se estiver dentro da banda de 1 SE
+     * E (for a propria ao OU nao-significativamente-pior por McNemar). Entre as
+     * candidatas aprovadas, adota-se a de menor numero total de parametros (empate
+     * mantem o a de menor indice), garantindo adopted==ao sempre que nenhuma config
+     * mais simples passar em ambos os portoes. */
+    int adopted = -1, adopted_params = 0;
+    for (int a = 0; a < 4; a++) {
+        int passes = (best_of[a]->macro_f1 >= band_lower) && (a == ao || mcnemar_passes[a]);
+        if (!passes) continue;
+        int params = best_of[a]->param_count_master + best_of[a]->param_count_expert;
+        if (adopted == -1 || params < adopted_params) { adopted = a; adopted_params = params; }
+    }
+
+    FILE *f = fopen(report_path, "w");
+    if (!f) {
+        log_error("Falha ao abrir %s para escrita", report_path);
+        return;
+    }
+
+    fprintf(f, "=== COMPARACAO REDES RASAS x PROFUNDAS (Gap 3) ===\n");
+    fprintf(f, "Mesma seed (RANDOM_SEED=%d), mesmos %d folds, SMOTE fixo em Borderline-SMOTE1 (decisao adotada na Fase 1)\n\n", RANDOM_SEED, K_FOLDS);
+    fprintf(f, "Config C [128,64] e a producao atual, NAO Config A [128] (correcao ARCH-01).\n\n");
+
+    fprintf(f, "--- Tabela completa: 4 arquiteturas x 3 forcas de regularizacao ---\n");
+    fprintf(f, "arch,reg,accuracy,macro_f1,macro_f1_ci_lower,macro_f1_ci_upper,f1_normal,f1_laringite,f1_disfonia_psicogenica,f1_disfonia_funcional,f1_reinke,param_count_master,param_count_expert,mean_time_per_epoch_sec,mean_epochs_to_stop\n");
+    for (int a = 0; a < 4; a++) {
+        for (int r = 0; r < 3; r++) {
+            const ABResult *res = &results[a][r];
+            fprintf(f, "%s,%s,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%d,%d,%.4f,%.2f\n",
+                    arch_configs[a].name, REG_NAME[r], res->accuracy, res->macro_f1,
+                    res->ci[CI_MACRO_F1].lower, res->ci[CI_MACRO_F1].upper,
+                    res->f1_per_class[CLASS_NORMAL], res->f1_per_class[CLASS_LARYNGITIS],
+                    res->f1_per_class[CLASS_DYSPHONIA], res->f1_per_class[CLASS_FUNC_DYSPHONIA],
+                    res->f1_per_class[CLASS_REINKE], res->param_count_master, res->param_count_expert,
+                    res->mean_time_per_epoch_sec, res->mean_epochs_to_stop);
+        }
+    }
+
+    fprintf(f, "\n--- Melhor regularizacao por arquitetura ---\n");
+    fprintf(f, "arch,reg,macro_f1,macro_f1_ci_lower,macro_f1_ci_upper,params_totais\n");
+    for (int a = 0; a < 4; a++) {
+        fprintf(f, "%s,%s,%.4f,%.4f,%.4f,%d\n",
+                arch_configs[a].name, REG_NAME[best_reg[a]], best_of[a]->macro_f1,
+                best_of[a]->ci[CI_MACRO_F1].lower, best_of[a]->ci[CI_MACRO_F1].upper,
+                best_of[a]->param_count_master + best_of[a]->param_count_expert);
+    }
+
+    fprintf(f, "\n--- Banda de 1 SE ---\n");
+    fprintf(f, "SE derivada do IC bootstrap (nao da formula classica CART por fold), por consistencia com a infraestrutura estatistica ja estabelecida no projeto.\n");
+    fprintf(f, "Melhor arquitetura geral (ao): %s (reg=%s), macro_f1=%.4f\n", arch_configs[ao].name, REG_NAME[best_reg[ao]], best_of[ao]->macro_f1);
+    fprintf(f, "Banda: [%.4f, %.4f]\n\n", band_lower, best_of[ao]->macro_f1);
+
+    fprintf(f, "--- McNemar vs melhor arquitetura (%s) ---\n", arch_configs[ao].name);
+    for (int a = 0; a < 4; a++) {
+        if (a == ao) continue;
+        fprintf(f, "%s vs %s: chi2=%.4f p=%.4f -- %s\n", arch_configs[a].name, arch_configs[ao].name, chi2_arr[a], p_arr[a],
+                p_arr[a] < 0.05f ? "diferenca estatisticamente significativa (p<0.05)" : "diferenca nao estatisticamente significativa (p>=0.05)");
+    }
+
+    fprintf(f, "\nDECISAO: arquitetura adotada = %s, regularizacao = %s, parametros totais = %d -- ",
+            arch_configs[adopted].name, REG_NAME[best_reg[adopted]], adopted_params);
+    if (adopted == ao) {
+        fprintf(f, "e a propria melhor configuracao (macro_f1=%.4f).\n", best_of[adopted]->macro_f1);
+    } else {
+        fprintf(f, "dentro da banda de 1 SE (macro_f1=%.4f >= %.4f) e nao significativamente pior que %s por McNemar (p=%.4f >= 0.05).\n",
+                best_of[adopted]->macro_f1, band_lower, arch_configs[ao].name, p_arr[adopted]);
+    }
+
+    fclose(f);
+}
+
+/* Orquestra a comparacao Gap 3 (ARCH-03/04/05): executa o pipeline hierarquico
+ * completo 12 vezes (4 arquiteturas x 3 forcas de regularizacao), SMOTE fixo em
+ * Borderline-SMOTE1 (decisao adotada na Fase 1, ver STATE.md), persistindo cada
+ * braco imediatamente em results/arch_compare_comparison.csv (mecanismo de
+ * durabilidade explicito -- ver threat_model T-02-04/T-02-07 do plano 02-02). */
+static int mode_arch_compare(const char *base_dir)
+{
+    log_info("=== MODO: COMPARACAO REDES RASAS x PROFUNDAS (Gap 3) ===");
+    log_info("Atencao: modo de duracao extremamente longa (estimado 6-18+ horas) -- executa o pipeline hierarquico completo 12 vezes (4 arquiteturas x 3 forcas de regularizacao), SMOTE fixo em Borderline-SMOTE1 (decisao da Fase 1)");
+
+    ABResult results[4][3] = {0};
+    const char *csv_path = "results/arch_compare_comparison.csv";
+
+    FILE *cf = fopen(csv_path, "w");
+    if (cf) {
+        fprintf(cf, "arch,reg,accuracy,macro_f1,f1_normal,f1_laringite,f1_disfonia_psicogenica,f1_disfonia_funcional,f1_reinke,param_count_master,param_count_expert,mean_time_per_epoch_sec,mean_epochs_to_stop\n");
+        fclose(cf);
+    } else {
+        log_error("Falha ao abrir %s para escrita", csv_path);
+    }
+
+    for (int a = 0; a < 4; a++) {
+        for (int r = 0; r < 3; r++) {
+            int arm_num = a * 3 + r + 1;
+            log_info("Iniciando braco %d/12: arquitetura=%s regularizacao=%s", arm_num, ARCH_CONFIGS[a].name, REG_NAME[r]);
+            if (mode_train_ex(base_dir, SMOTE_BORDERLINE, &ARCH_CONFIGS[a], (RegSetting)r, &results[a][r]) != 0) return -1;
+
+            FILE *af = fopen(csv_path, "a");
+            if (af) {
+                const ABResult *res = &results[a][r];
+                fprintf(af, "%s,%s,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%d,%d,%.6f,%.4f\n",
+                        ARCH_CONFIGS[a].name, REG_NAME[r], res->accuracy, res->macro_f1,
+                        res->f1_per_class[CLASS_NORMAL], res->f1_per_class[CLASS_LARYNGITIS],
+                        res->f1_per_class[CLASS_DYSPHONIA], res->f1_per_class[CLASS_FUNC_DYSPHONIA],
+                        res->f1_per_class[CLASS_REINKE], res->param_count_master, res->param_count_expert,
+                        res->mean_time_per_epoch_sec, res->mean_epochs_to_stop);
+                fclose(af);
+            } else {
+                log_error("Falha ao abrir %s para escrita (append)", csv_path);
+            }
+            log_info("Braco %d/12 concluido: arquitetura=%s regularizacao=%s macro_f1=%.4f", arm_num, ARCH_CONFIGS[a].name, REG_NAME[r], results[a][r].macro_f1);
+        }
+    }
+
+    write_arch_compare_report(results, ARCH_CONFIGS, "results/train_log_v33_gap3_arch_compare.txt");
+
+    for (int a = 0; a < 4; a++) {
+        for (int r = 0; r < 3; r++) {
+            free(results[a][r].y_true);
+            free(results[a][r].y_pred);
+        }
+    }
+    return 0;
+}
+
 static int mode_validate_external(const char *external_dir)
 {
     log_info("=== MODO: VALIDACAO EXTERNA (GENERALIZACAO) ===");
@@ -847,5 +1018,6 @@ int main(int argc, char *argv[])
     if (strcmp(mode, "external") == 0) return mode_validate_external(base_dir) == 0 ? 0 : 1;
     if (strcmp(mode, "verify-rng") == 0) return mode_verify_rng(base_dir) == 0 ? 0 : 1;
     if (strcmp(mode, "smote-ab") == 0) return mode_smote_ab(base_dir) == 0 ? 0 : 1;
+    if (strcmp(mode, "arch-compare") == 0) return mode_arch_compare(base_dir) == 0 ? 0 : 1;
     return 1;
 }
