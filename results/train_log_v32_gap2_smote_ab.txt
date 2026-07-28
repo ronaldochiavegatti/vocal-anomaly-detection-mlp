@@ -1,0 +1,17 @@
+=== COMPARACAO A/B: SMOTE PADRAO vs BORDERLINE-SMOTE1 (Gap 2) ===
+Mesma seed (RANDOM_SEED=42), mesmos 5 folds
+
+Metrica                      Padrao [IC 95%%]                 Borderline [IC 95%%]            
+accuracy                     0.6915 [0.6648, 0.7177]      0.6958 [0.6694, 0.7231]
+macro_f1                     0.4338 [0.3976, 0.4713]      0.4565 [0.4194, 0.4949]
+Normal                       0.8725 [0.8531, 0.8904]      0.8664 [0.8475, 0.8850]
+Laringite                    0.3884 [0.3046, 0.4690]      0.3974 [0.3131, 0.4891]
+Disfonia Psicogenica         0.2648 [0.1818, 0.3439]      0.3273 [0.2375, 0.4149]
+Disfonia Funcional           0.1892 [0.1118, 0.2703]      0.2386 [0.1507, 0.3294]
+Edema de Reinke              0.4540 [0.3657, 0.5463]      0.4531 [0.3636, 0.5444]
+
+McNemar direto (Borderline vs Padrao): chi2=0.1928 p=0.6606 -- diferenca nao estatisticamente significativa (p>=0.05)
+
+Contagens completas de amostras seguras/borderline/ruido por fold/vogal/rede/classe: ver results/smote_borderline_counts.csv
+
+DECISAO: Borderline-SMOTE ADOTADO (Macro F1 borderline=0.4587 >= padrao=0.4351, delta=+0.0235, McNemar chi2=0.1928 p=0.6606)
