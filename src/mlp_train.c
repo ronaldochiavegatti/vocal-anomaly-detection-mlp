@@ -161,6 +161,7 @@ int mlp_train(MLP *net,
               const float *train_x, const int *train_y, int n_train,
               const float *val_x, const int *val_y, int n_val,
               int num_features, int num_classes, const float *class_weights,
+              float l2_lambda,
               TrainHistory *history)
 {
     history->epochs = (EpochResult *)safe_malloc(MAX_EPOCHS * sizeof(EpochResult));
@@ -180,9 +181,9 @@ int mlp_train(MLP *net,
     int patience_counter = 0;
 
     /* Checkpoint buffers */
-    float *best_weights[MLP_NUM_LAYERS], *best_biases[MLP_NUM_LAYERS];
-    float *best_bn_gamma[MLP_NUM_LAYERS], *best_bn_beta[MLP_NUM_LAYERS];
-    float *best_bn_mean[MLP_NUM_LAYERS], *best_bn_var[MLP_NUM_LAYERS];
+    float *best_weights[MLP_MAX_LAYERS], *best_biases[MLP_MAX_LAYERS];
+    float *best_bn_gamma[MLP_MAX_LAYERS], *best_bn_beta[MLP_MAX_LAYERS];
+    float *best_bn_mean[MLP_MAX_LAYERS], *best_bn_var[MLP_MAX_LAYERS];
 
     for (int i = 0; i < net->num_layers; i++) {
         Layer *l = &net->layers[i];
@@ -201,7 +202,7 @@ int mlp_train(MLP *net,
 
     /* SWA buffers */
     int swa_start = 20, swa_freq = 5, swa_count = 0;
-    float *swa_weights[MLP_NUM_LAYERS], *swa_biases[MLP_NUM_LAYERS];
+    float *swa_weights[MLP_MAX_LAYERS], *swa_biases[MLP_MAX_LAYERS];
     for (int i = 0; i < net->num_layers; i++) {
         Layer *l = &net->layers[i];
         swa_weights[i] = (float *)safe_calloc(l->output_size * l->input_size, sizeof(float));
@@ -252,7 +253,7 @@ int mlp_train(MLP *net,
                 }
             }
 
-            batch_loss += mlp_l2_regularization(net, L2_LAMBDA);
+            batch_loss += mlp_l2_regularization(net, l2_lambda);
             mlp_adam_update(net, cosine_annealing_lr(epoch, MAX_EPOCHS));
             epoch_loss += batch_loss;
         }

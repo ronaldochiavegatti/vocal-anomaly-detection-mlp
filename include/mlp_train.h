@@ -39,6 +39,8 @@ typedef struct {
  * val_y: labels de validacao [n_val]
  * n_val: numero de amostras de validacao
  * num_features: dimensao das features
+ * l2_lambda: coeficiente L2 desta chamada de treino (permite variar a forca de
+ *            regularizacao por configuracao de arquitetura, Gap 3)
  * history: ponteiro para historico de saida
  *
  * Retorna 0 em sucesso.
@@ -47,6 +49,7 @@ int mlp_train(MLP *net,
               const float *train_x, const int *train_y, int n_train,
               const float *val_x, const int *val_y, int n_val,
               int num_features, int num_classes, const float *class_weights,
+              float l2_lambda,
               TrainHistory *history);
 
 /*

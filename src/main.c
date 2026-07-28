@@ -462,7 +462,7 @@ static int mode_train_ex(const char *base_dir, SmoteMode smote_mode, ABResult *r
                 }
             }
             mlp_init_dynamic(&net_master[v], nf_vowel, 2); TrainHistory h_m;
-            mlp_train(&net_master[v], os_m_x, os_m_y, os_n_m, vl_x_v, vl_y_bin, fold->n_val, nf_vowel, 2, cw_binary, &h_m);
+            mlp_train(&net_master[v], os_m_x, os_m_y, os_n_m, vl_x_v, vl_y_bin, fold->n_val, nf_vowel, 2, cw_binary, L2_LAMBDA, &h_m);
 
             int n_ex_tr = 0; for (int i = 0; i < n_train_aug; i++) if (train_y_all[i] != CLASS_NORMAL) n_ex_tr++;
             float *ex_tr_x = (float *)safe_malloc(n_ex_tr * nf_vowel * sizeof(float));
@@ -485,7 +485,7 @@ static int mode_train_ex(const char *base_dir, SmoteMode smote_mode, ABResult *r
                 }
             }
             mlp_init_dynamic(&net_expert[v], nf_vowel, 4); TrainHistory h_e;
-            mlp_train(&net_expert[v], os_e_x, os_e_y, os_n_e, ex_vl_x, ex_vl_y, n_ex_vl, nf_vowel, 4, cw_expert, &h_e);
+            mlp_train(&net_expert[v], os_e_x, os_e_y, os_n_e, ex_vl_x, ex_vl_y, n_ex_vl, nf_vowel, 4, cw_expert, L2_LAMBDA, &h_e);
 
             free(tr_x_v); free(vl_x_v); free(tr_y_bin); free(vl_y_bin); free(os_m_x); free(os_m_y);
             free(ex_tr_x); free(ex_tr_y); free(ex_vl_x); free(ex_vl_y); free(os_e_x); free(os_e_y);
