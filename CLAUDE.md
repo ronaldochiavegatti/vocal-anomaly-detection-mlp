@@ -77,6 +77,7 @@ WAV files (5 class directories)
 
 ### MLP Architecture (config.h)
 - **Layers**: Input(~160) → Dense(128) + LeakyReLU + Dropout(0.5) → Dense(64) + LeakyReLU + Dropout(0.4) → Dense(5) + Softmax
+- A producao atual (2 camadas ocultas [128,64]) e a "Config C" da comparacao da Fase 2/Gap 3 -- NAO a "Config A [128]" que o SPEC.md original assumia estar em producao; nenhuma configuracao rasa de 1 camada oculta jamais rodou em producao.
 - `MLP_NUM_LAYERS=3` is a preprocessor constant used with `#if` guards in `mlp.c`
 - For variable input sizes use `mlp_init_dynamic(net, input_size)` (not `mlp_init()`)
 
