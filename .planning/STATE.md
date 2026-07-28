@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 01-03-PLAN.md (smote-ab A/B execution + verification)
-last_updated: "2026-07-28T01:31:56.156Z"
+status: verifying
+stopped_at: Completed 01-04-PLAN.md (CLAUDE.md Gap 2 outcome documentation) — Phase 1 complete
+last_updated: "2026-07-28T01:35:58.634Z"
 last_activity: 2026-07-28
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 7
-  completed_plans: 6
-  percent: 25
+  completed_plans: 7
+  percent: 50
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-07-27)
 
 Phase: 01 (gap-2-borderline-smote) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-28
 
-Progress: [█████████░] 86%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -58,6 +58,7 @@ Progress: [█████████░] 86%
 | Phase 01 P01 | 25min | 2 tasks | 1 files |
 | Phase 01 P02 | 20min | 2 tasks | 1 files |
 | Phase 01 P03 | 136min | 3 tasks | 14 files |
+| Phase 01 P04 | 6min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,7 @@ Recent decisions affecting current work:
 - [Phase 01]: Direct McNemar test between Borderline-SMOTE and standard SMOTE arms is NOT statistically significant (chi2=0.1928, p=0.6606) -- ADOTADO reflects a positive point-estimate delta, not a proven significant improvement; carry this caveat into CLAUDE.md documentation
 - [Phase 01]: Plain train/full CLI path (mode_train_ex(...,NULL)) reconfirmed byte-identical to Phase 0 baseline (Macro F1 0.4514, Accuracy 0.6976) after plan 01-02's refactor -- zero regression
 - [Phase 01]: Empty-borderline-pool fallback fired 0 times among the 60 real classification rows in this run's smote_borderline_counts.csv -- all 30 borderline==0 rows are structural placeholder rows for unused class slots (Master class=1, Expert class=0), not genuine fallback events
+- [Phase 01]: CLAUDE.md's Borderline-SMOTE 'What Works' claim corrected to cite Han/Wang/Mao 2005 and results/train_log_v32_gap2_smote_ab.txt (macro F1 +0.0235 delta, McNemar p=0.66 not significant); new dated Gap 2 Outcome subsection added with full comparison table and empty-pool-fallback finding, satisfying SMOTE-05
 
 ### Pending Todos
 
@@ -101,6 +103,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-28T01:31:56.150Z
-Stopped at: Completed 01-03-PLAN.md (smote-ab A/B execution + verification)
+Last session: 2026-07-28T01:35:58.626Z
+Stopped at: Completed 01-04-PLAN.md (CLAUDE.md Gap 2 outcome documentation) — Phase 1 complete
 Resume file: None

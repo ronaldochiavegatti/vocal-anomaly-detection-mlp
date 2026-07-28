@@ -21,7 +21,7 @@ inspeção visual) e atualização do `CLAUDE.md`, terminando em uma tabela cons
 - Decimal phases (X.1, X.2): Urgent insertions (marked with INSERTED), none currently planned
 
 - [x] **Phase 0: Statistical Infrastructure & RNG Reproducibility** - Bootstrap CI/McNemar wired into `mode_train()`, RNG race documented/mitigated, baseline reconfirmed with a fresh log (completed 2026-07-27)
-- [ ] **Phase 1: Gap 2 — Borderline-SMOTE** - `SmoteMode` (standard vs borderline) implemented and adopted/rejected via reproducible A/B comparison
+- [x] **Phase 1: Gap 2 — Borderline-SMOTE** - `SmoteMode` (standard vs borderline) implemented and adopted/rejected via reproducible A/B comparison (completed 2026-07-28)
 - [ ] **Phase 2: Gap 3 — Shallow vs Deep MLP Comparison** - Fold+vowel loop refactored into a reusable function; 4 architecture configs compared and the smallest non-inferior one adopted
 - [ ] **Phase 3: Gap 1 — Paraconsistent Feature Selection** - New paraconsistent selection module integrated per (fold, vowel, network); final consolidated Gap Adoption Status report produced
 
@@ -65,7 +65,7 @@ Plans:
   4. `results/` contains an A/B report comparing standard vs borderline SMOTE (same seed/folds): Macro F1 + per-class F1 table with McNemar/bootstrap CI (via Phase 0 infrastructure), a safe/borderline/noise count table per class/fold, and an explicit adopt/reject decision sentence.
   5. `CLAUDE.md` is updated (Optimization History / What Worked / What Didn't Work) with the Gap 2 outcome, regardless of which mode was adopted.
 
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 Plans:
 **Wave 1**
 
@@ -81,7 +81,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 01-04-PLAN.md — Update CLAUDE.md with the Gap 2 outcome (SMOTE-05)
+- [x] 01-04-PLAN.md — Update CLAUDE.md with the Gap 2 outcome (SMOTE-05)
 
 ### Phase 2: Gap 3 — Shallow vs Deep MLP Comparison (with structural refactor)
 
@@ -123,6 +123,6 @@ Phases execute in numeric order: 0 → 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 0. Statistical Infrastructure & RNG Reproducibility | 3/3 | Complete   | 2026-07-27 |
-| 1. Gap 2 — Borderline-SMOTE | 3/4 | In Progress|  |
+| 1. Gap 2 — Borderline-SMOTE | 4/4 | Complete   | 2026-07-28 |
 | 2. Gap 3 — Shallow vs Deep MLP Comparison | 0/TBD | Not started | - |
 | 3. Gap 1 — Paraconsistent Feature Selection | 0/TBD | Not started | - |
