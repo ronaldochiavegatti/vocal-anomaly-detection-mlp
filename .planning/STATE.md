@@ -83,6 +83,7 @@ Recent decisions affecting current work:
 - [Phase 01]: Plain train/full CLI path (mode_train_ex(...,NULL)) reconfirmed byte-identical to Phase 0 baseline (Macro F1 0.4514, Accuracy 0.6976) after plan 01-02's refactor -- zero regression
 - [Phase 01]: Empty-borderline-pool fallback fired 0 times among the 60 real classification rows in this run's smote_borderline_counts.csv -- all 30 borderline==0 rows are structural placeholder rows for unused class slots (Master class=1, Expert class=0), not genuine fallback events
 - [Phase 01]: CLAUDE.md's Borderline-SMOTE 'What Works' claim corrected to cite Han/Wang/Mao 2005 and results/train_log_v32_gap2_smote_ab.txt (macro F1 +0.0235 delta, McNemar p=0.66 not significant); new dated Gap 2 Outcome subsection added with full comparison table and empty-pool-fallback finding, satisfying SMOTE-05
+- [Phase 02 planning]: Regularization-sweep scope resolved by explicit user decision (not left as a fixed-hyperparameter limitation): sweep BOTH dropout and L2 lambda jointly (not dropout alone), using 3 settings (not 2) via a single relative multiplier `REG_MULTIPLIER {0.6, 1.0, 1.4}` (light/baseline/strong) applied to both hyperparameters together — user chose the more expansive option each time over the recommended default, reasoning that architecture and regularization strength are confounded (a "shallow" config could look worse than a "deep" one purely because it was tested at the wrong regularization strength) and the extra compute (12 runs vs. 4) was accepted to remove that confound. Baseline L2 anchor uses config.h's actual `L2_LAMBDA=0.001f` (not CLAUDE.md's stale documented 0.003, itself corrected in Plan 02-04). Config D's 3rd hidden layer dropout is a hardcoded literal 0.3f (SPEC.md's proposed value), not config.h's dead unused `DROPOUT_RATE_HIDDEN3=0.0f` constant. Confirmed by gsd-plan-checker (2nd pass) as roadmap-sanctioned scope, faithfully implemented across all 4 Phase 2 plans.
 
 ### Pending Todos
 
@@ -91,7 +92,6 @@ None yet.
 ### Blockers/Concerns
 
 - Phase 3 (deferred until then): Domain-specific precedent papers for the paraconsistent μ/λ derivation (Costa et al. 2019 DPM; 2025 wavelet+paraconsistent; 2021 grid-fault paper) are paywalled — plan to proceed with the ANOVA-F/η² substitute unless institutional access is obtained.
-- Phase 2 (deferred until then): Whether a supplementary regularization-strength check across the 4 architecture configs is in scope, or the fixed-hyperparameter limitation is simply documented, needs an explicit decision during Phase 2 planning.
 
 ## Deferred Items
 
