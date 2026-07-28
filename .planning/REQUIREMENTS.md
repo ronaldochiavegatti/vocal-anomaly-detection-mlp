@@ -23,9 +23,9 @@
 
 - [x] **ARCH-01**: Rótulo de configuração do SPEC.md corrigido antes de qualquer relatório — a produção atual já é a config de 2 camadas ocultas `[128, 64]` (SPEC.md's "Config C"), não a rasa `[128]` ("Config A") assumida originalmente
 - [x] **ARCH-02**: `mlp_init_dynamic()` generalizada para `mlp_init_multi()` com `hidden_sizes`/`dropout_rates` configuráveis; `Layer layers[MLP_NUM_LAYERS]` (tamanho fixo em tempo de compilação) alargado para `MLP_MAX_LAYERS` suficiente para a config mais profunda (D: 3 camadas ocultas), incluindo os buffers de tamanho fixo equivalentes em `mlp_train.c`/`mlp.c` (delta de backprop, checkpoint, BN, SWA)
-- [ ] **ARCH-03**: Laço de treino fold+vogal extraído para função reutilizável, permitindo treinar as 4 configs (rotulagem corrigida) sobre as mesmas partições de 5-fold
-- [ ] **ARCH-04**: Tabela comparativa das 4 configs (Acurácia, Macro F1, F1 por classe, nº parâmetros, tempo/época) com McNemar/bootstrap CI entre a melhor config e cada config mais simples — nunca decisão por inspeção visual
-- [ ] **ARCH-05**: Regra de decisão "menor complexidade não estatisticamente pior" aplicada e documentada explicitamente (regra 1-SE + McNemar)
+- [x] **ARCH-03**: Laço de treino fold+vogal extraído para função reutilizável, permitindo treinar as 4 configs (rotulagem corrigida) sobre as mesmas partições de 5-fold
+- [x] **ARCH-04**: Tabela comparativa das 4 configs (Acurácia, Macro F1, F1 por classe, nº parâmetros, tempo/época) com McNemar/bootstrap CI entre a melhor config e cada config mais simples — nunca decisão por inspeção visual
+- [x] **ARCH-05**: Regra de decisão "menor complexidade não estatisticamente pior" aplicada e documentada explicitamente (regra 1-SE + McNemar)
 - [ ] **ARCH-06**: `CLAUDE.md` atualizado com o resultado do Gap 3, independente do resultado
 
 ### Gap 1 — Seleção Paraconsistente de Características (PARA) — Fase 3
@@ -81,9 +81,9 @@ Adiado explicitamente pelo usuário para depois do fechamento dos 3 gaps.
 | SMOTE-05 | Phase 1 | Complete |
 | ARCH-01 | Phase 2 | Complete |
 | ARCH-02 | Phase 2 | Complete |
-| ARCH-03 | Phase 2 | Pending |
-| ARCH-04 | Phase 2 | Pending |
-| ARCH-05 | Phase 2 | Pending |
+| ARCH-03 | Phase 2 | Complete |
+| ARCH-04 | Phase 2 | Complete |
+| ARCH-05 | Phase 2 | Complete |
 | ARCH-06 | Phase 2 | Pending |
 | PARA-01 | Phase 3 | Pending |
 | PARA-02 | Phase 3 | Pending |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "Completed 02-01-PLAN.md (structural refactor: MLP_MAX_LAYERS, mlp_init_multi, runtime l2_lambda)"
-last_updated: "2026-07-28T18:11:49.088Z"
+stopped_at: "Completed 02-02-PLAN.md (arch-compare orchestration: ArchConfig/RegSetting, mode_arch_compare, 1-SE+McNemar decision)"
+last_updated: "2026-07-28T18:21:10.692Z"
 last_activity: 2026-07-28
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 11
-  completed_plans: 8
+  completed_plans: 9
   percent: 50
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-07-27)
 ## Current Position
 
 Phase: 2 (Gap 3 - Shallow vs Deep MLP Comparison) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-07-28
 
-Progress: [███████░░░] 73%
+Progress: [████████░░] 82%
 
 ## Performance Metrics
 
@@ -61,6 +61,7 @@ Progress: [███████░░░] 73%
 | Phase 01 P03 | 136min | 3 tasks | 14 files |
 | Phase 01 P04 | 6min | 1 tasks | 1 files |
 | Phase 02 P01 | 15min | 3 tasks | 7 files |
+| Phase 02 P02 | 6min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,10 @@ Recent decisions affecting current work:
 - [Phase 02]: Plan 02-01: MLP_MAX_LAYERS=5 (one slot of headroom over Config D's exact 4 layers), covering the runtime-configurable-depth generalization needed for Gap 3's architecture comparison
 - [Phase 02]: Plan 02-01: mlp_init_dynamic() kept as a behavior-identical thin wrapper around new mlp_init_multi(), avoiding call-site churn elsewhere in the codebase
 - [Phase 02]: Plan 02-01: mlp_train() now accepts l2_lambda as a runtime parameter (both existing call sites pass L2_LAMBDA explicitly, zero behavior change), unblocking Plan 02-02's regularization sweep
+- [Phase 02]: Plan 02-02: mode_train_ex() widened a 2nd time to (base_dir, smote_mode, arch, reg, result) -- ArchConfig/RegSetting/ARCH_CONFIGS/REG_MULTIPLIER added, ABResult extended with param_count_master/expert + mean_time_per_epoch_sec/mean_epochs_to_stop
+- [Phase 02]: Plan 02-02: mode_arch_compare() runs all 12 (architecture x regularization) combos with SMOTE fixed at SMOTE_BORDERLINE, appending each arm to results/arch_compare_comparison.csv incrementally for partial-run durability -- NOT executed in this plan (reserved for Plan 02-03, 6-18+ hour operation)
+- [Phase 02]: Plan 02-02: write_arch_compare_report() adoption decision is a fixed 5-step procedure (best reg per arch -> best arch overall -> 1-SE bootstrap-CI band -> McNemar gate -> fewest-params) -- SE derived from bootstrap CI half-width, not per-fold CART formula, since no per-fold macro_f1 array exists in this codebase
+- [Phase 02]: Plan 02-02: fixed a real per-arm filename collision bug proactively (all 12 arch-compare arms share SMOTE_BORDERLINE) by suffixing metrics_global/bootstrap_ci/mcnemar_vs_baselines/smote_borderline_counts paths with arch->name/REG_NAME[reg] -- disclosed side effect: mode_smote_ab()'s 2 diagnostic filenames now suffix with _C_baseline, its actual required deliverables (smote_ab_comparison.csv, train_log_v32_gap2_smote_ab.txt) are unaffected
 
 ### Pending Todos
 
@@ -108,6 +113,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-28T18:11:49.082Z
-Stopped at: Completed 02-01-PLAN.md (structural refactor: MLP_MAX_LAYERS, mlp_init_multi, runtime l2_lambda)
+Last session: 2026-07-28T18:21:10.686Z
+Stopped at: Completed 02-02-PLAN.md (arch-compare orchestration: ArchConfig/RegSetting, mode_arch_compare, 1-SE+McNemar decision)
 Resume file: None
