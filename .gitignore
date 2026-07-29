@@ -36,3 +36,7 @@ lastcld.md
 
 # Object files in root (legacy, should be in build/)
 *.o
+
+# Cache do Python dos utilitarios de geracao de material academico (tools/figures)
+__pycache__/
+*.pyc
