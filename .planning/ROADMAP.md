@@ -140,5 +140,5 @@ Phases execute in numeric order: 0 → 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 0. Statistical Infrastructure & RNG Reproducibility | 3/3 | Complete   | 2026-07-27 |
 | 1. Gap 2 — Borderline-SMOTE | 4/4 | Complete   | 2026-07-28 |
-| 2. Gap 3 — Shallow vs Deep MLP Comparison | 4/4 | Complete   | 2026-07-29 |
+| 2. Gap 3 — Shallow vs Deep MLP Comparison | 4/4 | Complete    | 2026-07-29 |
 | 3. Gap 1 — Paraconsistent Feature Selection | 0/TBD | Not started | - |
