@@ -377,22 +377,22 @@ int paraconsistent_select(const float *x, const int *y, int n, int nf, int n_cla
 
 **If this table is empty:** Not applicable — see entries above.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Should the paywalled precedent papers (Costa et al. 2019 DPM; 2025 wavelet+paraconsistent; 2021 grid-fault) be pursued via institutional access before implementation, or is the ANOVA-η²/global-variance-ratio substitute sufficient to proceed?**
+1. **RESOLVED: Should the paywalled precedent papers (Costa et al. 2019 DPM; 2025 wavelet+paraconsistent; 2021 grid-fault) be pursued via institutional access before implementation, or is the ANOVA-η²/global-variance-ratio substitute sufficient to proceed?**
    - What we know: `STATE.md`'s existing Phase 3 blocker note already anticipates this — "plan to proceed with the ANOVA-F/η² substitute unless institutional access is obtained."
    - What's unclear: whether the exact λ formula in those papers differs materially enough from this research's synthesized A1 design to matter for the committee defense.
-   - Recommendation: proceed with the substitute (already the documented fallback plan); the planner should not block implementation on paper access, but PARA-06's CLAUDE.md update should explicitly note the substitution and its rationale (already drafted in this research's "State of the Art" table) so the committee defense has a ready answer.
+   - RESOLVED — Recommendation: proceed with the substitute (already the documented fallback plan); the planner should not block implementation on paper access, but PARA-06's CLAUDE.md update should explicitly note the substitution and its rationale (already drafted in this research's "State of the Art" table) so the committee defense has a ready answer.
 
-2. **Should `mode_train()`'s default flip from `SMOTE_STANDARD` to `SMOTE_BORDERLINE` as part of this phase, or strictly stay out of scope?**
+2. **RESOLVED: Should `mode_train()`'s default flip from `SMOTE_STANDARD` to `SMOTE_BORDERLINE` as part of this phase, or strictly stay out of scope?**
    - What we know: `REQUIREMENTS.md`'s Out of Scope table explicitly defers "Corrigir bugs de débito técnico do mapeamento de codebase nesta fase" (fix tech-debt bugs) to v2, and `STATE.md` documents the current default as an intentional Phase 1 decision (byte-identical regression safety), not an oversight discovered mid-Phase-3.
    - What's unclear: whether leaving `mode_train()` un-flipped, while Gap 1's new comparison mode explicitly passes `SMOTE_BORDERLINE`, creates a confusing "two different meanings of production" state that undermines CROSS-02's spirit even if it satisfies CROSS-02's letter (no *citation* is added for an inactive technique, but the plain CLI's actual behavior still doesn't match what's documented as adopted).
-   - Recommendation: keep `mode_train()` unchanged (respects the explicit scope boundary), but require the final Gap Adoption Status report / CLAUDE.md update to state this explicitly and unambiguously (e.g., "the `train`/`full` CLI default remains on SMOTE_STANDARD/Config-C-baseline for regression-safety reasons; the actually-adopted configuration is only reachable via `arch-compare`'s C/baseline arm or a future default-flip, tracked as tech debt") — this turns a potential future confusion into a documented, defensible statement.
+   - RESOLVED — Recommendation: keep `mode_train()` unchanged (respects the explicit scope boundary), but require the final Gap Adoption Status report / CLAUDE.md update to state this explicitly and unambiguously (e.g., "the `train`/`full` CLI default remains on SMOTE_STANDARD/Config-C-baseline for regression-safety reasons; the actually-adopted configuration is only reachable via `arch-compare`'s C/baseline arm or a future default-flip, tracked as tech debt") — this turns a potential future confusion into a documented, defensible statement.
 
-3. **Should PARA-05's acceptance rule (adopt paraconsistent selection if Macro F1 equal-or-better, OR up to −0.01 worse with ≥30% feature reduction) be implemented as a second fixed decision rule in code (like Gap 2/3's DECISAO pattern), or left as a narrative judgment call in the final report?**
+3. **RESOLVED: Should PARA-05's acceptance rule (adopt paraconsistent selection if Macro F1 equal-or-better, OR up to −0.01 worse with ≥30% feature reduction) be implemented as a second fixed decision rule in code (like Gap 2/3's DECISAO pattern), or left as a narrative judgment call in the final report?**
    - What we know: `SPEC.md`'s Gap 1 acceptance criterion already specifies this exact trade-off rule in words; Gap 2 and Gap 3 both implemented their adopt/reject rules as fixed code logic (`write_smote_ab_report()`/`write_arch_compare_report()`), never asserted by inspection.
    - What's unclear: whether the −0.01/30% trade-off threshold needs to be a compile-time constant (like `PARA_GC_RELAX_STEP`) for consistency with the project's established "no cherry-picked decisions" methodology.
-   - Recommendation: implement it as fixed code logic, following the established precedent exactly (this is a strong signal from two prior gaps, not really ambiguous — flagging here mainly so the planner allocates a task for it rather than treating it as narrative-only).
+   - RESOLVED — Recommendation: implement it as fixed code logic, following the established precedent exactly (this is a strong signal from two prior gaps, not really ambiguous — flagging here mainly so the planner allocates a task for it rather than treating it as narrative-only).
 
 ## Environment Availability
 
