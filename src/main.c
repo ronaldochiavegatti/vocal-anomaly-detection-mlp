@@ -12,6 +12,7 @@
 #include "kfold.h"
 #include "metrics.h"
 #include "feature_select.h"
+#include "feature_select_paraconsistent.h"
 #include "knn.h"
 #include "logreg.h"
 #include "wav_augment.h"
@@ -36,26 +37,53 @@ static void map_to_binary_labels(const int *y_orig, int *y_bin, int n)
     }
 }
 
-static int predict_hierarchical_late_fusion(MLP master[3], MLP expert[3], 
-                                            const float *x_all)
+/* Gap 1 (PARA-04): unico ponto de fatiamento por selecao + forward pass para
+ * ambas as redes, para ambos os consumidores (predicao discreta e
+ * probabilidades registradas para bootstrap/McNemar) -- elimina por construcao
+ * o bug de divergencia entre os dois caminhos de codigo antes duplicados
+ * (predicao discreta aqui vs bloco inline de registro de probabilidade no loop
+ * de validacao). Master e Expert usam selecoes de features INDEPENDENTES
+ * (PARA-03): sel_m[v]/ns_m[v] e sel_e[v]/ns_e[v] podem e frequentemente vao
+ * divergir, por isso dois buffers fatiados distintos por vogal, nunca um unico
+ * buffer compartilhado. p_norm_out/p_exp_out sao preenchidos com as MESMAS
+ * saidas de mlp_forward usadas para computar o retorno discreto -- nunca uma
+ * segunda chamada separada de mlp_forward. */
+static int predict_hierarchical_late_fusion(MLP master[3], MLP expert[3],
+    const float *x_all,
+    const int sel_m[3][FEATURES_PER_VOWEL + NUM_METADATA_FEATURES], const int ns_m[3],
+    const int sel_e[3][FEATURES_PER_VOWEL + NUM_METADATA_FEATURES], const int ns_e[3],
+    float *p_norm_out, float p_exp_out[4])
 {
     float prob_pathology = 0.0f;
     float prob_expert[4] = {0, 0, 0, 0};
     int meta_offset = NUM_VOWELS * FEATURES_PER_VOWEL;
+    *p_norm_out = 0.0f;
+    for (int c = 0; c < 4; c++) p_exp_out[c] = 0.0f;
 
     for (int v = 0; v < 3; v++) {
         float x_v[FEATURES_PER_VOWEL + NUM_METADATA_FEATURES];
         memcpy(x_v, &x_all[v * FEATURES_PER_VOWEL], FEATURES_PER_VOWEL * sizeof(float));
         memcpy(&x_v[FEATURES_PER_VOWEL], &x_all[meta_offset], NUM_METADATA_FEATURES * sizeof(float));
 
+        float x_v_m[FEATURES_PER_VOWEL + NUM_METADATA_FEATURES];
+        for (int k = 0; k < ns_m[v]; k++) x_v_m[k] = x_v[sel_m[v][k]];
         float out_m[2];
-        mlp_forward(&master[v], x_v, out_m, 0);
+        mlp_forward(&master[v], x_v_m, out_m, 0);
         prob_pathology += out_m[1];
+        *p_norm_out += out_m[0];
 
+        float x_v_e[FEATURES_PER_VOWEL + NUM_METADATA_FEATURES];
+        for (int k = 0; k < ns_e[v]; k++) x_v_e[k] = x_v[sel_e[v][k]];
         float out_e[4];
-        mlp_forward(&expert[v], x_v, out_e, 0);
-        for (int c = 0; c < 4; c++) prob_expert[c] += out_e[c];
+        mlp_forward(&expert[v], x_v_e, out_e, 0);
+        for (int c = 0; c < 4; c++) {
+            prob_expert[c] += out_e[c];
+            p_exp_out[c] += out_m[1] * out_e[c];
+        }
     }
+
+    *p_norm_out /= 3.0f;
+    for (int c = 0; c < 4; c++) p_exp_out[c] /= 3.0f;
 
     if ((prob_pathology / 3.0f) < 0.5f) {
         return CLASS_NORMAL;
@@ -356,6 +384,11 @@ typedef struct {
     int param_count_expert;
     double mean_time_per_epoch_sec;
     float mean_epochs_to_stop;
+    /* Gap 1 (PARA-05): media do numero de features selecionadas por execucao de
+     * paraconsistent_select(), agregada sobre os 5 folds x 3 vogais x 2 redes = 30
+     * chamadas. So preenchido quando para_mode == PARA_SELECT_ON; 0 quando OFF
+     * (nao ha selecao a medir). */
+    float mean_n_selected;
 } ABResult;
 
 /* Config C = producao atual (2 camadas ocultas [128,64]), per ARCH-01 -- NAO
@@ -379,6 +412,16 @@ typedef enum { REG_LIGHT = 0, REG_BASELINE = 1, REG_STRONG = 2 } RegSetting;
 static const float REG_MULTIPLIER[3] = { 0.6f, 1.0f, 1.4f };
 static const char *REG_NAME[3] = { "light", "baseline", "strong" };
 
+/* Modo de selecao paraconsistente de features (Gap 1, PARA-03): OFF preserva o
+ * comportamento atual byte-a-byte -- cada combinacao (fold,vogal,rede) usa o
+ * conjunto completo, nao-selecionado, de nf_vowel features, sem nenhuma nova
+ * chamada de I/O em disco. ON executa paraconsistent_select() por
+ * (fold,vogal,rede), persistindo seus indices selecionados via
+ * selected_save()/selected_load() (round trip real por disco) antes do treino,
+ * tornando a predicao/o registro de probabilidades consumidores genuinos do
+ * arquivo persistido, nao apenas de uma copia em memoria. */
+typedef enum { PARA_SELECT_OFF = 0, PARA_SELECT_ON = 1 } ParaMode;
+
 /* mode_train_ex(): executa o pipeline hierarquico completo com o modo SMOTE indicado.
  * result == NULL: execucao CLI simples (modos train/full) -- nomes de arquivo de saida
  * sem sufixo, all_y_true/all_y_pred liberados ao final, comportamento identico ao
@@ -388,8 +431,13 @@ static const char *REG_NAME[3] = { "light", "baseline", "strong" };
  * para o chamador via *result), que deve libera-los apos o uso.
  * arch/reg (Gap 3, ARCH-03): selecionam a arquitetura (ARCH_CONFIGS) e a forca de
  * regularizacao (REG_MULTIPLIER) usadas por esta execucao -- widen em relacao ao
- * Plano 02-01, sem duplicar o loop fold+vogal. */
-static int mode_train_ex(const char *base_dir, SmoteMode smote_mode, const ArchConfig *arch, RegSetting reg, ABResult *result)
+ * Plano 02-01, sem duplicar o loop fold+vogal.
+ * para_mode (Gap 1, PARA-03): PARA_SELECT_OFF preserva o comportamento atual
+ * byte-a-byte (identidade, sem I/O novo); PARA_SELECT_ON executa
+ * paraconsistent_select() por (fold,vogal,rede), persiste os indices
+ * selecionados via selected_save()/selected_load() e aplica o subconjunto de
+ * colunas resultante ao treino/validacao de Master e Expert independentemente. */
+static int mode_train_ex(const char *base_dir, SmoteMode smote_mode, const ArchConfig *arch, RegSetting reg, ParaMode para_mode, ABResult *result)
 {
     log_info("=== MODO: TREINAMENTO HIERARQUICO COM LATE FUSION (VOGAIS A, I, U) ===");
     Dataset ds; char csv_path[1024]; snprintf(csv_path, 1024, "%s/%s", base_dir, CSV_METADATA);
@@ -433,6 +481,23 @@ static int mode_train_ex(const char *base_dir, SmoteMode smote_mode, const ArchC
         }
     }
 
+    /* Gap 1 (PARA-05 relatorio): abre results/paraconsistent_selection_freq.csv uma
+     * unica vez por execucao, apenas quando para_mode == PARA_SELECT_ON (nenhum
+     * caller neste plano passa PARA_SELECT_ON -- so o Plano 03-03 o fara -- mas a
+     * logica de escrita pertence aos blocos de insercao Master/Expert deste plano,
+     * que produzem os valores mu/lambda/gc/gct). Sem sufixo: apenas um chamador
+     * jamais passara PARA_SELECT_ON nesta fase. */
+    FILE *freq_f = NULL;
+    if (para_mode == PARA_SELECT_ON) {
+        const char *freq_path = "results/paraconsistent_selection_freq.csv";
+        freq_f = fopen(freq_path, "w");
+        if (freq_f) {
+            fprintf(freq_f, "fold,vowel,network,feature_idx,mu,lambda,gc,gct,selected\n");
+        } else {
+            log_error("Falha ao abrir %s para escrita", freq_path);
+        }
+    }
+
     /* Gap 3: hiperparametros efetivos desta execucao -- calculados uma unica vez,
      * fora do loop de folds, ja que arch/reg sao fixos para toda a chamada. */
     float eff_dropout[3];
@@ -442,6 +507,11 @@ static int mode_train_ex(const char *base_dir, SmoteMode smote_mode, const ArchC
     double total_train_time_sec = 0.0;
     long total_epochs_sum = 0;
     int total_trainings = 0;
+    /* Gap 1 (PARA-05): acumuladores para ABResult.mean_n_selected -- somam
+     * ns_m[v]/ns_e[v] a cada uma das 5 folds x 3 vogais x 2 redes = 30 chamadas de
+     * paraconsistent_select() (so incrementados quando para_mode == PARA_SELECT_ON). */
+    long n_selected_sum = 0;
+    int n_selected_calls = 0;
 
     for (int f = 0; f < K_FOLDS; f++) {
         log_info("\n========== FOLD %d/%d (HIERARCHICAL LATE FUSION) ==========", f + 1, K_FOLDS);
@@ -483,6 +553,13 @@ static int mode_train_ex(const char *base_dir, SmoteMode smote_mode, const ArchC
 
         MLP net_master[3], net_expert[3];
         float cw_binary[] = {0.9f, 1.1f}, cw_expert[] = {1.0f, 1.2f, 1.2f, 1.4f};
+        /* Gap 1 (PARA-03): indices de features selecionadas por vogal, independentes
+         * entre Master e Expert (podem e devem divergir) -- preenchidos dentro do
+         * loop de vogais abaixo, consumidos por predict_hierarchical_late_fusion()
+         * apos o loop. Em PARA_SELECT_OFF cada sel_m[v]/sel_e[v] recebe a identidade
+         * [0, nf_vowel) e ns_m[v]/ns_e[v] = nf_vowel (comportamento atual). */
+        int sel_m[3][FEATURES_PER_VOWEL + NUM_METADATA_FEATURES], ns_m[3];
+        int sel_e[3][FEATURES_PER_VOWEL + NUM_METADATA_FEATURES], ns_e[3];
         for (int v = 0; v < 3; v++) {
             float *tr_x_v = (float *)safe_malloc(n_train_aug * nf_vowel * sizeof(float));
             float *vl_x_v = (float *)safe_malloc(fold->n_val * nf_vowel * sizeof(float));
@@ -500,20 +577,78 @@ static int mode_train_ex(const char *base_dir, SmoteMode smote_mode, const ArchC
             map_to_binary_labels(train_y_all, tr_y_bin, n_train_aug);
             for(int i=0; i<fold->n_val; i++) vl_y_bin[i] = (fm.labels[fold->val_indices[i]] == CLASS_NORMAL) ? 0 : 1;
 
+            /* Gap 1 (PARA-03): selecao paraconsistente de features para o Master
+             * (rede binaria), computada SOMENTE sobre as fold->n_train linhas
+             * originais (nao-augmentadas, nao-SMOTE) de tr_x_v/tr_y_bin -- mesmo
+             * principio ja documentado para norm_fit (fold->n_train, nunca
+             * n_train_aug; Pitfall 3: linhas augmentadas/SMOTE enviesariam mu/lambda). */
+            if (para_mode == PARA_SELECT_ON) {
+                float *mu_buf = (float *)safe_malloc(nf_vowel * sizeof(float));
+                float *lambda_buf = (float *)safe_malloc(nf_vowel * sizeof(float));
+                float *gc_buf = (float *)safe_malloc(nf_vowel * sizeof(float));
+                float *gct_buf = (float *)safe_malloc(nf_vowel * sizeof(float));
+                int *sel_local = (int *)safe_malloc(nf_vowel * sizeof(int));
+                int ns_local = paraconsistent_select(tr_x_v, tr_y_bin, fold->n_train, nf_vowel, 2,
+                                                       PARA_GC_THRESH, PARA_GCT_MAX, sel_local,
+                                                       mu_buf, lambda_buf, gc_buf, gct_buf);
+                char sel_path[192];
+                snprintf(sel_path, sizeof(sel_path), "models/selected_master_fold%d_v%d.bin", f, v);
+                selected_save(sel_path, sel_local, ns_local);
+                /* Round trip real por disco (nao apenas copia em memoria) -- e o que
+                 * torna a etapa de predicao (mais abaixo) uma consumidora genuina do
+                 * arquivo persistido, satisfazendo PARA-04 literalmente. */
+                selected_load(sel_path, sel_m[v], &ns_m[v]);
+                if (freq_f) {
+                    for (int j = 0; j < nf_vowel; j++) {
+                        int is_selected = 0;
+                        for (int k = 0; k < ns_m[v]; k++) if (sel_m[v][k] == j) { is_selected = 1; break; }
+                        fprintf(freq_f, "%d,%d,master,%d,%.6f,%.6f,%.6f,%.6f,%d\n",
+                                f, v, j, mu_buf[j], lambda_buf[j], gc_buf[j], gct_buf[j], is_selected);
+                    }
+                }
+                free(mu_buf); free(lambda_buf); free(gc_buf); free(gct_buf); free(sel_local);
+            } else {
+                ns_m[v] = nf_vowel;
+                for (int j = 0; j < nf_vowel; j++) sel_m[v][j] = j;
+            }
+            /* T-03-04: valida bounds dos indices carregados/atribuidos antes de
+             * usa-los para fatiar tr_x_v/vl_x_v -- um .bin corrompido/obsoleto
+             * poderia conter indices fora de [0, nf_vowel), causando leitura fora
+             * dos limites do buffer. Em violacao, cai de volta para identidade
+             * completa (nunca faz clamp silencioso do indice invalido). */
+            for (int k = 0; k < ns_m[v]; k++) {
+                if (sel_m[v][k] < 0 || sel_m[v][k] >= nf_vowel) {
+                    log_error("Master fold=%d vowel=%d: indice de selecao corrompido sel_m[%d]=%d fora de [0,%d) -- usando identidade completa como fallback", f, v, k, sel_m[v][k], nf_vowel);
+                    ns_m[v] = nf_vowel;
+                    for (int j = 0; j < nf_vowel; j++) sel_m[v][j] = j;
+                    break;
+                }
+            }
+            if (para_mode == PARA_SELECT_ON) { n_selected_sum += ns_m[v]; n_selected_calls++; }
+
+            float *tr_x_v_sel = (float *)safe_malloc((size_t)n_train_aug * ns_m[v] * sizeof(float));
+            float *vl_x_v_sel = (float *)safe_malloc((size_t)fold->n_val * ns_m[v] * sizeof(float));
+            for (int i = 0; i < n_train_aug; i++)
+                for (int k = 0; k < ns_m[v]; k++)
+                    tr_x_v_sel[i * ns_m[v] + k] = tr_x_v[i * nf_vowel + sel_m[v][k]];
+            for (int i = 0; i < fold->n_val; i++)
+                for (int k = 0; k < ns_m[v]; k++)
+                    vl_x_v_sel[i * ns_m[v] + k] = vl_x_v[i * nf_vowel + sel_m[v][k]];
+
             SmoteBorderlineCounts sbc_master = {0}, sbc_expert = {0};
             float *os_m_x; int *os_m_y, os_n_m;
-            smote_oversample(tr_x_v, tr_y_bin, n_train_aug, nf_vowel, 2, smote_mode, &sbc_master, &os_m_x, &os_m_y, &os_n_m);
+            smote_oversample(tr_x_v_sel, tr_y_bin, n_train_aug, ns_m[v], 2, smote_mode, &sbc_master, &os_m_x, &os_m_y, &os_n_m);
             if (counts_f) {
                 for (int c = 0; c < 2; c++) {
                     fprintf(counts_f, "%d,%d,master,%d,%d,%d,%d\n", f, v, c,
                             sbc_master.safe[c], sbc_master.borderline[c], sbc_master.noise[c]);
                 }
             }
-            mlp_init_multi(&net_master[v], nf_vowel, 2, arch->hidden_sizes, arch->n_hidden, eff_dropout);
+            mlp_init_multi(&net_master[v], ns_m[v], 2, arch->hidden_sizes, arch->n_hidden, eff_dropout);
             if (f == 0 && v == 0) { param_count_master = mlp_count_params(&net_master[v]); }
             TrainHistory h_m;
             double t0_m = timer_now();
-            mlp_train(&net_master[v], os_m_x, os_m_y, os_n_m, vl_x_v, vl_y_bin, fold->n_val, nf_vowel, 2, cw_binary, eff_l2, &h_m);
+            mlp_train(&net_master[v], os_m_x, os_m_y, os_n_m, vl_x_v_sel, vl_y_bin, fold->n_val, ns_m[v], 2, cw_binary, eff_l2, &h_m);
             double dt_m = timer_now() - t0_m;
             total_train_time_sec += dt_m; total_epochs_sum += h_m.num_epochs; total_trainings++;
 
@@ -529,39 +664,100 @@ static int mode_train_ex(const char *base_dir, SmoteMode smote_mode, const ArchC
             cur = 0; for (int i = 0; i < fold->n_val; i++) if (fm.labels[fold->val_indices[i]] != CLASS_NORMAL) {
                 memcpy(&ex_vl_x[cur * nf_vowel], &vl_x_v[i * nf_vowel], nf_vowel * sizeof(float)); ex_vl_y[cur++] = fm.labels[fold->val_indices[i]] - 1;
             }
+
+            /* Gap 1 (PARA-03): selecao paraconsistente de features para o Expert
+             * (rede 4 classes) -- a COMPUTACAO da selecao (distinta do
+             * ex_tr_x/ex_tr_y acima, que usa todas as n_train_aug linhas para o
+             * SMOTE/treino real) roda sobre um subconjunto SEPARADO e mais estreito:
+             * apenas as linhas originais (fold->n_train-prefix, nao-augmentadas,
+             * nao-SMOTE) de tr_x_v/train_y_all cuja classe != CLASS_NORMAL. */
+            int n_ex_tr_orig = 0;
+            for (int i = 0; i < fold->n_train; i++) if (train_y_all[i] != CLASS_NORMAL) n_ex_tr_orig++;
+            float *ex_tr_x_orig = (float *)safe_malloc((size_t)n_ex_tr_orig * nf_vowel * sizeof(float));
+            int *ex_tr_y_orig = (int *)safe_malloc(n_ex_tr_orig * sizeof(int));
+            int cur_orig = 0;
+            for (int i = 0; i < fold->n_train; i++) {
+                if (train_y_all[i] != CLASS_NORMAL) {
+                    memcpy(&ex_tr_x_orig[cur_orig * nf_vowel], &tr_x_v[i * nf_vowel], nf_vowel * sizeof(float));
+                    ex_tr_y_orig[cur_orig++] = train_y_all[i] - 1;
+                }
+            }
+            if (para_mode == PARA_SELECT_ON) {
+                float *mu_buf_e = (float *)safe_malloc(nf_vowel * sizeof(float));
+                float *lambda_buf_e = (float *)safe_malloc(nf_vowel * sizeof(float));
+                float *gc_buf_e = (float *)safe_malloc(nf_vowel * sizeof(float));
+                float *gct_buf_e = (float *)safe_malloc(nf_vowel * sizeof(float));
+                int *sel_local_e = (int *)safe_malloc(nf_vowel * sizeof(int));
+                int ns_local_e = paraconsistent_select(ex_tr_x_orig, ex_tr_y_orig, n_ex_tr_orig, nf_vowel, 4,
+                                                         PARA_GC_THRESH, PARA_GCT_MAX, sel_local_e,
+                                                         mu_buf_e, lambda_buf_e, gc_buf_e, gct_buf_e);
+                char sel_path_e[192];
+                snprintf(sel_path_e, sizeof(sel_path_e), "models/selected_expert_fold%d_v%d.bin", f, v);
+                selected_save(sel_path_e, sel_local_e, ns_local_e);
+                selected_load(sel_path_e, sel_e[v], &ns_e[v]);
+                if (freq_f) {
+                    for (int j = 0; j < nf_vowel; j++) {
+                        int is_selected = 0;
+                        for (int k = 0; k < ns_e[v]; k++) if (sel_e[v][k] == j) { is_selected = 1; break; }
+                        fprintf(freq_f, "%d,%d,expert,%d,%.6f,%.6f,%.6f,%.6f,%d\n",
+                                f, v, j, mu_buf_e[j], lambda_buf_e[j], gc_buf_e[j], gct_buf_e[j], is_selected);
+                    }
+                }
+                free(mu_buf_e); free(lambda_buf_e); free(gc_buf_e); free(gct_buf_e); free(sel_local_e);
+            } else {
+                ns_e[v] = nf_vowel;
+                for (int j = 0; j < nf_vowel; j++) sel_e[v][j] = j;
+            }
+            /* T-03-04: mesma validacao de bounds do Master, aplicada aos indices do
+             * Expert antes de fatiar ex_tr_x/ex_vl_x. */
+            for (int k = 0; k < ns_e[v]; k++) {
+                if (sel_e[v][k] < 0 || sel_e[v][k] >= nf_vowel) {
+                    log_error("Expert fold=%d vowel=%d: indice de selecao corrompido sel_e[%d]=%d fora de [0,%d) -- usando identidade completa como fallback", f, v, k, sel_e[v][k], nf_vowel);
+                    ns_e[v] = nf_vowel;
+                    for (int j = 0; j < nf_vowel; j++) sel_e[v][j] = j;
+                    break;
+                }
+            }
+            if (para_mode == PARA_SELECT_ON) { n_selected_sum += ns_e[v]; n_selected_calls++; }
+            free(ex_tr_x_orig); free(ex_tr_y_orig);
+
+            float *ex_tr_x_sel = (float *)safe_malloc((size_t)n_ex_tr * ns_e[v] * sizeof(float));
+            float *ex_vl_x_sel = (float *)safe_malloc((size_t)n_ex_vl * ns_e[v] * sizeof(float));
+            for (int i = 0; i < n_ex_tr; i++)
+                for (int k = 0; k < ns_e[v]; k++)
+                    ex_tr_x_sel[i * ns_e[v] + k] = ex_tr_x[i * nf_vowel + sel_e[v][k]];
+            for (int i = 0; i < n_ex_vl; i++)
+                for (int k = 0; k < ns_e[v]; k++)
+                    ex_vl_x_sel[i * ns_e[v] + k] = ex_vl_x[i * nf_vowel + sel_e[v][k]];
+
             float *os_e_x; int *os_e_y, os_n_e;
-            smote_oversample(ex_tr_x, ex_tr_y, n_ex_tr, nf_vowel, 4, smote_mode, &sbc_expert, &os_e_x, &os_e_y, &os_n_e);
+            smote_oversample(ex_tr_x_sel, ex_tr_y, n_ex_tr, ns_e[v], 4, smote_mode, &sbc_expert, &os_e_x, &os_e_y, &os_n_e);
             if (counts_f) {
                 for (int c = 0; c < 4; c++) {
                     fprintf(counts_f, "%d,%d,expert,%d,%d,%d,%d\n", f, v, c,
                             sbc_expert.safe[c], sbc_expert.borderline[c], sbc_expert.noise[c]);
                 }
             }
-            mlp_init_multi(&net_expert[v], nf_vowel, 4, arch->hidden_sizes, arch->n_hidden, eff_dropout);
+            mlp_init_multi(&net_expert[v], ns_e[v], 4, arch->hidden_sizes, arch->n_hidden, eff_dropout);
             if (f == 0 && v == 0) { param_count_expert = mlp_count_params(&net_expert[v]); }
             TrainHistory h_e;
             double t0_e = timer_now();
-            mlp_train(&net_expert[v], os_e_x, os_e_y, os_n_e, ex_vl_x, ex_vl_y, n_ex_vl, nf_vowel, 4, cw_expert, eff_l2, &h_e);
+            mlp_train(&net_expert[v], os_e_x, os_e_y, os_n_e, ex_vl_x_sel, ex_vl_y, n_ex_vl, ns_e[v], 4, cw_expert, eff_l2, &h_e);
             double dt_e = timer_now() - t0_e;
             total_train_time_sec += dt_e; total_epochs_sum += h_e.num_epochs; total_trainings++;
 
-            free(tr_x_v); free(vl_x_v); free(tr_y_bin); free(vl_y_bin); free(os_m_x); free(os_m_y);
-            free(ex_tr_x); free(ex_tr_y); free(ex_vl_x); free(ex_vl_y); free(os_e_x); free(os_e_y);
+            free(tr_x_v); free(vl_x_v); free(tr_x_v_sel); free(vl_x_v_sel); free(tr_y_bin); free(vl_y_bin); free(os_m_x); free(os_m_y);
+            free(ex_tr_x); free(ex_tr_y); free(ex_vl_x); free(ex_vl_y); free(ex_tr_x_sel); free(ex_vl_x_sel); free(os_e_x); free(os_e_y);
             train_history_free(&h_m); train_history_free(&h_e);
         }
 
         for (int i = 0; i < fold->n_val; i++) {
             const float *x_samp = &val_x_all[i * nf_all];
-            all_y_pred[all_count] = predict_hierarchical_late_fusion(net_master, net_expert, x_samp);
+            float p_norm; float p_exp[4];
+            all_y_pred[all_count] = predict_hierarchical_late_fusion(net_master, net_expert, x_samp, sel_m, ns_m, sel_e, ns_e, &p_norm, &p_exp[0]);
             all_y_true[all_count] = fm.labels[fold->val_indices[i]];
-            float p_norm = 0, p_exp[4] = {0};
-            for (int v = 0; v < 3; v++) {
-                float xv[251]; memcpy(xv, &x_samp[v * FEATURES_PER_VOWEL], FEATURES_PER_VOWEL * sizeof(float));
-                memcpy(&xv[FEATURES_PER_VOWEL], &x_samp[3 * FEATURES_PER_VOWEL], 2 * sizeof(float));
-                float om[2], oe[4]; mlp_forward(&net_master[v], xv, om, 0); mlp_forward(&net_expert[v], xv, oe, 0);
-                p_norm += om[0]; for(int c=0; c<4; c++) p_exp[c] += om[1] * oe[c];
-            }
-            all_y_prob[all_count * 5 + 0] = p_norm / 3.0f; for(int c=1; c<5; c++) all_y_prob[all_count * 5 + c] = p_exp[c-1] / 3.0f;
+            all_y_prob[all_count * 5 + 0] = p_norm;
+            for (int c = 1; c < 5; c++) all_y_prob[all_count * 5 + c] = p_exp[c - 1];
             all_y_pred_majority[all_count] = majority_class;
             all_y_pred_knn[all_count] = knn_pred_buf[i];
             all_y_pred_logreg[all_count] = logreg_pred_buf[i];
@@ -662,6 +858,7 @@ static int mode_train_ex(const char *base_dir, SmoteMode smote_mode, const ArchC
     }
 
     if (counts_f) fclose(counts_f);
+    if (freq_f) fclose(freq_f);
 
     /* Transferencia de posse: em execucao de comparacao A/B (result != NULL),
      * all_y_true/all_y_pred NAO sao liberados aqui -- mode_smote_ab() e responsavel
@@ -679,6 +876,7 @@ static int mode_train_ex(const char *base_dir, SmoteMode smote_mode, const ArchC
         result->param_count_expert = param_count_expert;
         result->mean_time_per_epoch_sec = mean_time_per_epoch_sec;
         result->mean_epochs_to_stop = mean_epochs_to_stop;
+        result->mean_n_selected = (n_selected_calls > 0) ? (float)n_selected_sum / n_selected_calls : 0.0f;
     } else {
         free(all_y_true); free(all_y_pred);
     }
@@ -687,7 +885,7 @@ static int mode_train_ex(const char *base_dir, SmoteMode smote_mode, const ArchC
     return 0;
 }
 
-static int mode_train(const char *base_dir) { return mode_train_ex(base_dir, SMOTE_STANDARD, &ARCH_CONFIGS[2], REG_BASELINE, NULL); }
+static int mode_train(const char *base_dir) { return mode_train_ex(base_dir, SMOTE_STANDARD, &ARCH_CONFIGS[2], REG_BASELINE, PARA_SELECT_OFF, NULL); }
 
 static int mode_extract(const char *base_dir)
 {
@@ -821,8 +1019,8 @@ static int mode_smote_ab(const char *base_dir)
     log_info("=== MODO: A/B BORDERLINE-SMOTE (Gap 2) ===");
     log_info("Atencao: modo de longa duracao (~60-180 min) -- executa o pipeline hierarquico completo duas vezes (uma por modo SMOTE)");
     ABResult res_standard = {0}, res_borderline = {0};
-    if (mode_train_ex(base_dir, SMOTE_STANDARD, &ARCH_CONFIGS[2], REG_BASELINE, &res_standard) != 0) return -1;
-    if (mode_train_ex(base_dir, SMOTE_BORDERLINE, &ARCH_CONFIGS[2], REG_BASELINE, &res_borderline) != 0) return -1;
+    if (mode_train_ex(base_dir, SMOTE_STANDARD, &ARCH_CONFIGS[2], REG_BASELINE, PARA_SELECT_OFF, &res_standard) != 0) return -1;
+    if (mode_train_ex(base_dir, SMOTE_BORDERLINE, &ARCH_CONFIGS[2], REG_BASELINE, PARA_SELECT_OFF, &res_borderline) != 0) return -1;
     write_smote_ab_report(&res_standard, &res_borderline,
                            "results/train_log_v32_gap2_smote_ab.txt",
                            "results/smote_ab_comparison.csv");
@@ -972,7 +1170,7 @@ static int mode_arch_compare(const char *base_dir)
         for (int r = 0; r < 3; r++) {
             int arm_num = a * 3 + r + 1;
             log_info("Iniciando braco %d/12: arquitetura=%s regularizacao=%s", arm_num, ARCH_CONFIGS[a].name, REG_NAME[r]);
-            if (mode_train_ex(base_dir, SMOTE_BORDERLINE, &ARCH_CONFIGS[a], (RegSetting)r, &results[a][r]) != 0) return -1;
+            if (mode_train_ex(base_dir, SMOTE_BORDERLINE, &ARCH_CONFIGS[a], (RegSetting)r, PARA_SELECT_OFF, &results[a][r]) != 0) return -1;
 
             FILE *af = fopen(csv_path, "a");
             if (af) {
