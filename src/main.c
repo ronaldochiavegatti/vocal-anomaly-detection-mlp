@@ -37,26 +37,53 @@ static void map_to_binary_labels(const int *y_orig, int *y_bin, int n)
     }
 }
 
-static int predict_hierarchical_late_fusion(MLP master[3], MLP expert[3], 
-                                            const float *x_all)
+/* Gap 1 (PARA-04): unico ponto de fatiamento por selecao + forward pass para
+ * ambas as redes, para ambos os consumidores (predicao discreta e
+ * probabilidades registradas para bootstrap/McNemar) -- elimina por construcao
+ * o bug de divergencia entre os dois caminhos de codigo antes duplicados
+ * (predicao discreta aqui vs bloco inline de registro de probabilidade no loop
+ * de validacao). Master e Expert usam selecoes de features INDEPENDENTES
+ * (PARA-03): sel_m[v]/ns_m[v] e sel_e[v]/ns_e[v] podem e frequentemente vao
+ * divergir, por isso dois buffers fatiados distintos por vogal, nunca um unico
+ * buffer compartilhado. p_norm_out/p_exp_out sao preenchidos com as MESMAS
+ * saidas de mlp_forward usadas para computar o retorno discreto -- nunca uma
+ * segunda chamada separada de mlp_forward. */
+static int predict_hierarchical_late_fusion(MLP master[3], MLP expert[3],
+    const float *x_all,
+    const int sel_m[3][FEATURES_PER_VOWEL + NUM_METADATA_FEATURES], const int ns_m[3],
+    const int sel_e[3][FEATURES_PER_VOWEL + NUM_METADATA_FEATURES], const int ns_e[3],
+    float *p_norm_out, float p_exp_out[4])
 {
     float prob_pathology = 0.0f;
     float prob_expert[4] = {0, 0, 0, 0};
     int meta_offset = NUM_VOWELS * FEATURES_PER_VOWEL;
+    *p_norm_out = 0.0f;
+    for (int c = 0; c < 4; c++) p_exp_out[c] = 0.0f;
 
     for (int v = 0; v < 3; v++) {
         float x_v[FEATURES_PER_VOWEL + NUM_METADATA_FEATURES];
         memcpy(x_v, &x_all[v * FEATURES_PER_VOWEL], FEATURES_PER_VOWEL * sizeof(float));
         memcpy(&x_v[FEATURES_PER_VOWEL], &x_all[meta_offset], NUM_METADATA_FEATURES * sizeof(float));
 
+        float x_v_m[FEATURES_PER_VOWEL + NUM_METADATA_FEATURES];
+        for (int k = 0; k < ns_m[v]; k++) x_v_m[k] = x_v[sel_m[v][k]];
         float out_m[2];
-        mlp_forward(&master[v], x_v, out_m, 0);
+        mlp_forward(&master[v], x_v_m, out_m, 0);
         prob_pathology += out_m[1];
+        *p_norm_out += out_m[0];
 
+        float x_v_e[FEATURES_PER_VOWEL + NUM_METADATA_FEATURES];
+        for (int k = 0; k < ns_e[v]; k++) x_v_e[k] = x_v[sel_e[v][k]];
         float out_e[4];
-        mlp_forward(&expert[v], x_v, out_e, 0);
-        for (int c = 0; c < 4; c++) prob_expert[c] += out_e[c];
+        mlp_forward(&expert[v], x_v_e, out_e, 0);
+        for (int c = 0; c < 4; c++) {
+            prob_expert[c] += out_e[c];
+            p_exp_out[c] += out_m[1] * out_e[c];
+        }
     }
+
+    *p_norm_out /= 3.0f;
+    for (int c = 0; c < 4; c++) p_exp_out[c] /= 3.0f;
 
     if ((prob_pathology / 3.0f) < 0.5f) {
         return CLASS_NORMAL;
@@ -637,39 +664,100 @@ static int mode_train_ex(const char *base_dir, SmoteMode smote_mode, const ArchC
             cur = 0; for (int i = 0; i < fold->n_val; i++) if (fm.labels[fold->val_indices[i]] != CLASS_NORMAL) {
                 memcpy(&ex_vl_x[cur * nf_vowel], &vl_x_v[i * nf_vowel], nf_vowel * sizeof(float)); ex_vl_y[cur++] = fm.labels[fold->val_indices[i]] - 1;
             }
+
+            /* Gap 1 (PARA-03): selecao paraconsistente de features para o Expert
+             * (rede 4 classes) -- a COMPUTACAO da selecao (distinta do
+             * ex_tr_x/ex_tr_y acima, que usa todas as n_train_aug linhas para o
+             * SMOTE/treino real) roda sobre um subconjunto SEPARADO e mais estreito:
+             * apenas as linhas originais (fold->n_train-prefix, nao-augmentadas,
+             * nao-SMOTE) de tr_x_v/train_y_all cuja classe != CLASS_NORMAL. */
+            int n_ex_tr_orig = 0;
+            for (int i = 0; i < fold->n_train; i++) if (train_y_all[i] != CLASS_NORMAL) n_ex_tr_orig++;
+            float *ex_tr_x_orig = (float *)safe_malloc((size_t)n_ex_tr_orig * nf_vowel * sizeof(float));
+            int *ex_tr_y_orig = (int *)safe_malloc(n_ex_tr_orig * sizeof(int));
+            int cur_orig = 0;
+            for (int i = 0; i < fold->n_train; i++) {
+                if (train_y_all[i] != CLASS_NORMAL) {
+                    memcpy(&ex_tr_x_orig[cur_orig * nf_vowel], &tr_x_v[i * nf_vowel], nf_vowel * sizeof(float));
+                    ex_tr_y_orig[cur_orig++] = train_y_all[i] - 1;
+                }
+            }
+            if (para_mode == PARA_SELECT_ON) {
+                float *mu_buf_e = (float *)safe_malloc(nf_vowel * sizeof(float));
+                float *lambda_buf_e = (float *)safe_malloc(nf_vowel * sizeof(float));
+                float *gc_buf_e = (float *)safe_malloc(nf_vowel * sizeof(float));
+                float *gct_buf_e = (float *)safe_malloc(nf_vowel * sizeof(float));
+                int *sel_local_e = (int *)safe_malloc(nf_vowel * sizeof(int));
+                int ns_local_e = paraconsistent_select(ex_tr_x_orig, ex_tr_y_orig, n_ex_tr_orig, nf_vowel, 4,
+                                                         PARA_GC_THRESH, PARA_GCT_MAX, sel_local_e,
+                                                         mu_buf_e, lambda_buf_e, gc_buf_e, gct_buf_e);
+                char sel_path_e[192];
+                snprintf(sel_path_e, sizeof(sel_path_e), "models/selected_expert_fold%d_v%d.bin", f, v);
+                selected_save(sel_path_e, sel_local_e, ns_local_e);
+                selected_load(sel_path_e, sel_e[v], &ns_e[v]);
+                if (freq_f) {
+                    for (int j = 0; j < nf_vowel; j++) {
+                        int is_selected = 0;
+                        for (int k = 0; k < ns_e[v]; k++) if (sel_e[v][k] == j) { is_selected = 1; break; }
+                        fprintf(freq_f, "%d,%d,expert,%d,%.6f,%.6f,%.6f,%.6f,%d\n",
+                                f, v, j, mu_buf_e[j], lambda_buf_e[j], gc_buf_e[j], gct_buf_e[j], is_selected);
+                    }
+                }
+                free(mu_buf_e); free(lambda_buf_e); free(gc_buf_e); free(gct_buf_e); free(sel_local_e);
+            } else {
+                ns_e[v] = nf_vowel;
+                for (int j = 0; j < nf_vowel; j++) sel_e[v][j] = j;
+            }
+            /* T-03-04: mesma validacao de bounds do Master, aplicada aos indices do
+             * Expert antes de fatiar ex_tr_x/ex_vl_x. */
+            for (int k = 0; k < ns_e[v]; k++) {
+                if (sel_e[v][k] < 0 || sel_e[v][k] >= nf_vowel) {
+                    log_error("Expert fold=%d vowel=%d: indice de selecao corrompido sel_e[%d]=%d fora de [0,%d) -- usando identidade completa como fallback", f, v, k, sel_e[v][k], nf_vowel);
+                    ns_e[v] = nf_vowel;
+                    for (int j = 0; j < nf_vowel; j++) sel_e[v][j] = j;
+                    break;
+                }
+            }
+            if (para_mode == PARA_SELECT_ON) { n_selected_sum += ns_e[v]; n_selected_calls++; }
+            free(ex_tr_x_orig); free(ex_tr_y_orig);
+
+            float *ex_tr_x_sel = (float *)safe_malloc((size_t)n_ex_tr * ns_e[v] * sizeof(float));
+            float *ex_vl_x_sel = (float *)safe_malloc((size_t)n_ex_vl * ns_e[v] * sizeof(float));
+            for (int i = 0; i < n_ex_tr; i++)
+                for (int k = 0; k < ns_e[v]; k++)
+                    ex_tr_x_sel[i * ns_e[v] + k] = ex_tr_x[i * nf_vowel + sel_e[v][k]];
+            for (int i = 0; i < n_ex_vl; i++)
+                for (int k = 0; k < ns_e[v]; k++)
+                    ex_vl_x_sel[i * ns_e[v] + k] = ex_vl_x[i * nf_vowel + sel_e[v][k]];
+
             float *os_e_x; int *os_e_y, os_n_e;
-            smote_oversample(ex_tr_x, ex_tr_y, n_ex_tr, nf_vowel, 4, smote_mode, &sbc_expert, &os_e_x, &os_e_y, &os_n_e);
+            smote_oversample(ex_tr_x_sel, ex_tr_y, n_ex_tr, ns_e[v], 4, smote_mode, &sbc_expert, &os_e_x, &os_e_y, &os_n_e);
             if (counts_f) {
                 for (int c = 0; c < 4; c++) {
                     fprintf(counts_f, "%d,%d,expert,%d,%d,%d,%d\n", f, v, c,
                             sbc_expert.safe[c], sbc_expert.borderline[c], sbc_expert.noise[c]);
                 }
             }
-            mlp_init_multi(&net_expert[v], nf_vowel, 4, arch->hidden_sizes, arch->n_hidden, eff_dropout);
+            mlp_init_multi(&net_expert[v], ns_e[v], 4, arch->hidden_sizes, arch->n_hidden, eff_dropout);
             if (f == 0 && v == 0) { param_count_expert = mlp_count_params(&net_expert[v]); }
             TrainHistory h_e;
             double t0_e = timer_now();
-            mlp_train(&net_expert[v], os_e_x, os_e_y, os_n_e, ex_vl_x, ex_vl_y, n_ex_vl, nf_vowel, 4, cw_expert, eff_l2, &h_e);
+            mlp_train(&net_expert[v], os_e_x, os_e_y, os_n_e, ex_vl_x_sel, ex_vl_y, n_ex_vl, ns_e[v], 4, cw_expert, eff_l2, &h_e);
             double dt_e = timer_now() - t0_e;
             total_train_time_sec += dt_e; total_epochs_sum += h_e.num_epochs; total_trainings++;
 
             free(tr_x_v); free(vl_x_v); free(tr_x_v_sel); free(vl_x_v_sel); free(tr_y_bin); free(vl_y_bin); free(os_m_x); free(os_m_y);
-            free(ex_tr_x); free(ex_tr_y); free(ex_vl_x); free(ex_vl_y); free(os_e_x); free(os_e_y);
+            free(ex_tr_x); free(ex_tr_y); free(ex_vl_x); free(ex_vl_y); free(ex_tr_x_sel); free(ex_vl_x_sel); free(os_e_x); free(os_e_y);
             train_history_free(&h_m); train_history_free(&h_e);
         }
 
         for (int i = 0; i < fold->n_val; i++) {
             const float *x_samp = &val_x_all[i * nf_all];
-            all_y_pred[all_count] = predict_hierarchical_late_fusion(net_master, net_expert, x_samp);
+            float p_norm; float p_exp[4];
+            all_y_pred[all_count] = predict_hierarchical_late_fusion(net_master, net_expert, x_samp, sel_m, ns_m, sel_e, ns_e, &p_norm, &p_exp[0]);
             all_y_true[all_count] = fm.labels[fold->val_indices[i]];
-            float p_norm = 0, p_exp[4] = {0};
-            for (int v = 0; v < 3; v++) {
-                float xv[251]; memcpy(xv, &x_samp[v * FEATURES_PER_VOWEL], FEATURES_PER_VOWEL * sizeof(float));
-                memcpy(&xv[FEATURES_PER_VOWEL], &x_samp[3 * FEATURES_PER_VOWEL], 2 * sizeof(float));
-                float om[2], oe[4]; mlp_forward(&net_master[v], xv, om, 0); mlp_forward(&net_expert[v], xv, oe, 0);
-                p_norm += om[0]; for(int c=0; c<4; c++) p_exp[c] += om[1] * oe[c];
-            }
-            all_y_prob[all_count * 5 + 0] = p_norm / 3.0f; for(int c=1; c<5; c++) all_y_prob[all_count * 5 + c] = p_exp[c-1] / 3.0f;
+            all_y_prob[all_count * 5 + 0] = p_norm;
+            for (int c = 1; c < 5; c++) all_y_prob[all_count * 5 + c] = p_exp[c - 1];
             all_y_pred_majority[all_count] = majority_class;
             all_y_pred_knn[all_count] = knn_pred_buf[i];
             all_y_pred_logreg[all_count] = logreg_pred_buf[i];
