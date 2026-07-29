@@ -23,7 +23,7 @@ inspeção visual) e atualização do `CLAUDE.md`, terminando em uma tabela cons
 - [x] **Phase 0: Statistical Infrastructure & RNG Reproducibility** - Bootstrap CI/McNemar wired into `mode_train()`, RNG race documented/mitigated, baseline reconfirmed with a fresh log (completed 2026-07-27)
 - [x] **Phase 1: Gap 2 — Borderline-SMOTE** - `SmoteMode` (standard vs borderline) implemented and adopted/rejected via reproducible A/B comparison (completed 2026-07-28)
 - [x] **Phase 2: Gap 3 — Shallow vs Deep MLP Comparison** - Fold+vowel loop refactored into a reusable function; 4 architecture configs compared and the smallest non-inferior one adopted (completed 2026-07-29)
-- [ ] **Phase 3: Gap 1 — Paraconsistent Feature Selection** - New paraconsistent selection module integrated per (fold, vowel, network); final consolidated Gap Adoption Status report produced
+- [x] **Phase 3: Gap 1 — Paraconsistent Feature Selection** - New paraconsistent selection module integrated per (fold, vowel, network); final consolidated Gap Adoption Status report produced (completed 2026-07-29)
 
 ## Phase Details
 
@@ -129,7 +129,7 @@ Plans:
   5. A consolidated "Gap Adoption Status" table (decision / metric delta / citation status per gap) exists in `results/` or the final report, and no bibliographic citation is added for a technique not actually active in the final shipped model.
   6. `CLAUDE.md` is updated with the Gap 1 outcome, regardless of result.
 
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans executed
 Plans:
 **Wave 1**
 
@@ -149,7 +149,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 03-05-PLAN.md — Update CLAUDE.md with the Gap 1 outcome + Gap Adoption Status consolidated table (PARA-06, CROSS-01, CROSS-02)
+- [x] 03-05-PLAN.md — Update CLAUDE.md with the Gap 1 outcome + Gap Adoption Status consolidated table (PARA-06, CROSS-01, CROSS-02)
 
 ## Progress
 
@@ -161,4 +161,4 @@ Phases execute in numeric order: 0 → 1 → 2 → 3
 | 0. Statistical Infrastructure & RNG Reproducibility | 3/3 | Complete   | 2026-07-27 |
 | 1. Gap 2 — Borderline-SMOTE | 4/4 | Complete   | 2026-07-28 |
 | 2. Gap 3 — Shallow vs Deep MLP Comparison | 4/4 | Complete    | 2026-07-29 |
-| 3. Gap 1 — Paraconsistent Feature Selection | 4/5 | In Progress|  |
+| 3. Gap 1 — Paraconsistent Feature Selection | 5/5 | Complete   | 2026-07-29 |

@@ -30,17 +30,17 @@
 
 ### Gap 1 — Seleção Paraconsistente de Características (PARA) — Fase 3
 
-- [ ] **PARA-01**: Novo módulo `src/feature_select_paraconsistent.c` + `include/feature_select_paraconsistent.h` computando μ via estatística F da ANOVA (ou η²) — não a razão por classe do SPEC.md, matematicamente enviesada — e λ via dispersão normalizada pela variância global — não `CV = std/mean`, que explode para features de δMFCC com média ≈ zero (documentado em `CLAUDE.md`)
-- [ ] **PARA-02**: Cálculo de Gc/Gct com guarda de variância mínima (proteção contra divisão por zero, no padrão `MIN_STD` já usado em `normalize.c`) e laço de relaxamento do limiar com número máximo de iterações (evita loop não limitado quando zero features são selecionadas)
-- [ ] **PARA-03**: Seleção executada independentemente por (fold, vogal, rede) — Master (binário) e Expert (4 classes) recebem índices de features selecionadas distintos
-- [ ] **PARA-04**: Índices selecionados persistidos via `selected_save`/`selected_load` por (fold, vogal, rede); `predict_hierarchical_late_fusion()` e o bloco duplicado de slicing inline no loop de validação (`src/main.c`) atualizados de forma consistente para usá-los, evitando divergência entre a predição discreta e a probabilidade registrada
+- [x] **PARA-01**: Novo módulo `src/feature_select_paraconsistent.c` + `include/feature_select_paraconsistent.h` computando μ via estatística F da ANOVA (ou η²) — não a razão por classe do SPEC.md, matematicamente enviesada — e λ via dispersão normalizada pela variância global — não `CV = std/mean`, que explode para features de δMFCC com média ≈ zero (documentado em `CLAUDE.md`)
+- [x] **PARA-02**: Cálculo de Gc/Gct com guarda de variância mínima (proteção contra divisão por zero, no padrão `MIN_STD` já usado em `normalize.c`) e laço de relaxamento do limiar com número máximo de iterações (evita loop não limitado quando zero features são selecionadas)
+- [x] **PARA-03**: Seleção executada independentemente por (fold, vogal, rede) — Master (binário) e Expert (4 classes) recebem índices de features selecionadas distintos
+- [x] **PARA-04**: Índices selecionados persistidos via `selected_save`/`selected_load` por (fold, vogal, rede); `predict_hierarchical_late_fusion()` e o bloco duplicado de slicing inline no loop de validação (`src/main.c`) atualizados de forma consistente para usá-los, evitando divergência entre a predição discreta e a probabilidade registrada
 - [x] **PARA-05**: Relatório final inclui tabela completa (feature, μ, λ, Gc, Gct, selecionada S/N) agregada nas ~30 execuções (5 folds × 3 vogais × 2 redes) — tabela de frequência de seleção, não um snapshot de uma única execução — mais Macro F1 antes/depois
-- [ ] **PARA-06**: `CLAUDE.md` atualizado com o resultado do Gap 1, independente do resultado
+- [x] **PARA-06**: `CLAUDE.md` atualizado com o resultado do Gap 1, independente do resultado
 
 ### Transversal (CROSS)
 
-- [ ] **CROSS-01**: Tabela consolidada "Gap Adoption Status" (decisão / delta de métrica / status de citação por gap) produzida ao final, para uso direto no relatório/pôster PIBIC
-- [ ] **CROSS-02**: Nenhuma citação bibliográfica adicionada para técnica não efetivamente ativa no modelo final entregue (regra do próprio SPEC.md — erro já cometido uma vez com Borderline-SMOTE)
+- [x] **CROSS-01**: Tabela consolidada "Gap Adoption Status" (decisão / delta de métrica / status de citação por gap) produzida ao final, para uso direto no relatório/pôster PIBIC
+- [x] **CROSS-02**: Nenhuma citação bibliográfica adicionada para técnica não efetivamente ativa no modelo final entregue (regra do próprio SPEC.md — erro já cometido uma vez com Borderline-SMOTE)
 
 ## v2 Requirements
 
@@ -85,14 +85,14 @@ Adiado explicitamente pelo usuário para depois do fechamento dos 3 gaps.
 | ARCH-04 | Phase 2 | Complete |
 | ARCH-05 | Phase 2 | Complete |
 | ARCH-06 | Phase 2 | Complete |
-| PARA-01 | Phase 3 | Pending |
-| PARA-02 | Phase 3 | Pending |
-| PARA-03 | Phase 3 | Pending |
-| PARA-04 | Phase 3 | Pending |
+| PARA-01 | Phase 3 | Complete |
+| PARA-02 | Phase 3 | Complete |
+| PARA-03 | Phase 3 | Complete |
+| PARA-04 | Phase 3 | Complete |
 | PARA-05 | Phase 3 | Complete |
-| PARA-06 | Phase 3 | Pending |
-| CROSS-01 | Phase 3 | Pending |
-| CROSS-02 | Phase 3 | Pending |
+| PARA-06 | Phase 3 | Complete |
+| CROSS-01 | Phase 3 | Complete |
+| CROSS-02 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 22 total
@@ -101,4 +101,4 @@ Adiado explicitamente pelo usuário para depois do fechamento dos 3 gaps.
 
 ---
 *Requirements defined: 2026-07-27*
-*Last updated: 2026-07-27 after initial definition*
+*Last updated: 2026-07-29 — all v1 requirements complete, milestone closed (Plan 03-05)*
