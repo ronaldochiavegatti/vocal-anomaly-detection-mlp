@@ -1010,6 +1010,174 @@ static void write_smote_ab_report(const ABResult *std_res, const ABResult *bl_re
     fclose(cf);
 }
 
+/* Gera o relatorio de comparacao A/B (Gap 1, PARA-05) entre o pipeline SEM selecao
+ * paraconsistente de features e o pipeline COM selecao paraconsistente (LPA2v),
+ * ambos fixos na configuracao ja adotada nos Gaps 2/3 (Borderline-SMOTE1, Config C,
+ * regularizacao baseline -- RESEARCH.md Pitfall 5). A decisao de adocao implementa
+ * o criterio EXATO de SPEC.md (linhas 123-131): substituir a versao sem selecao
+ * somente se (a) Macro F1 igual ou superior, OU (b) Macro F1 ate 0.01 inferior mas
+ * com reducao de features >=30% -- nunca por inspecao/redacao manual (mesmo
+ * precedente fixo-em-codigo de write_smote_ab_report()/write_arch_compare_report()).
+ * decision_out/chi2_out/p_out (ponteiros opcionais, podem ser NULL) sao preenchidos
+ * com a decisao final -- unica fonte de verdade, consumida por
+ * write_gap_adoption_status() sem recomputar a regra uma segunda vez (T-03-07). */
+static void write_gap1_report(const ABResult *off_res, const ABResult *on_res,
+                               const char *report_path, const char *csv_path,
+                               char *decision_out, size_t decision_out_size,
+                               float *chi2_out, float *p_out)
+{
+    float chi2_ab, p_ab;
+    metrics_mcnemar(off_res->y_true, on_res->y_pred, off_res->y_pred, off_res->n, &chi2_ab, &p_ab);
+    if (chi2_out) *chi2_out = chi2_ab;
+    if (p_out) *p_out = p_ab;
+
+    int total_features_vowel = FEATURES_PER_VOWEL + NUM_METADATA_FEATURES;
+    float feature_reduction = 1.0f - (on_res->mean_n_selected / (float)total_features_vowel);
+
+    FILE *f = fopen(report_path, "w");
+    if (!f) {
+        log_error("Falha ao abrir %s para escrita", report_path);
+    } else {
+        fprintf(f, "=== COMPARACAO A/B: SELECAO PARACONSISTENTE (Gap 1): SEM vs COM selecao ===\n");
+        fprintf(f, "Mesma seed (RANDOM_SEED=%d), mesmos %d folds, fixo em Borderline-SMOTE1 + Config C + regularizacao baseline\n\n", RANDOM_SEED, K_FOLDS);
+
+        fprintf(f, "%-28s %-32s %-32s\n", "Metrica", "Sem selecao [IC 95%%]", "Com selecao [IC 95%%]");
+        fprintf(f, "%-28s %.4f [%.4f, %.4f]      %.4f [%.4f, %.4f]\n", "accuracy",
+                off_res->ci[CI_ACCURACY].mean, off_res->ci[CI_ACCURACY].lower, off_res->ci[CI_ACCURACY].upper,
+                on_res->ci[CI_ACCURACY].mean, on_res->ci[CI_ACCURACY].lower, on_res->ci[CI_ACCURACY].upper);
+        fprintf(f, "%-28s %.4f [%.4f, %.4f]      %.4f [%.4f, %.4f]\n", "macro_f1",
+                off_res->ci[CI_MACRO_F1].mean, off_res->ci[CI_MACRO_F1].lower, off_res->ci[CI_MACRO_F1].upper,
+                on_res->ci[CI_MACRO_F1].mean, on_res->ci[CI_MACRO_F1].lower, on_res->ci[CI_MACRO_F1].upper);
+        fprintf(f, "%-28s %.4f [%.4f, %.4f]      %.4f [%.4f, %.4f]\n", CLASS_NAME_NORMAL,
+                off_res->ci[CI_F1_NORMAL].mean, off_res->ci[CI_F1_NORMAL].lower, off_res->ci[CI_F1_NORMAL].upper,
+                on_res->ci[CI_F1_NORMAL].mean, on_res->ci[CI_F1_NORMAL].lower, on_res->ci[CI_F1_NORMAL].upper);
+        fprintf(f, "%-28s %.4f [%.4f, %.4f]      %.4f [%.4f, %.4f]\n", CLASS_NAME_LARYNGITIS,
+                off_res->ci[CI_F1_LARYNGITE].mean, off_res->ci[CI_F1_LARYNGITE].lower, off_res->ci[CI_F1_LARYNGITE].upper,
+                on_res->ci[CI_F1_LARYNGITE].mean, on_res->ci[CI_F1_LARYNGITE].lower, on_res->ci[CI_F1_LARYNGITE].upper);
+        fprintf(f, "%-28s %.4f [%.4f, %.4f]      %.4f [%.4f, %.4f]\n", CLASS_NAME_DYSPHONIA,
+                off_res->ci[CI_F1_DISFONIA].mean, off_res->ci[CI_F1_DISFONIA].lower, off_res->ci[CI_F1_DISFONIA].upper,
+                on_res->ci[CI_F1_DISFONIA].mean, on_res->ci[CI_F1_DISFONIA].lower, on_res->ci[CI_F1_DISFONIA].upper);
+        fprintf(f, "%-28s %.4f [%.4f, %.4f]      %.4f [%.4f, %.4f]\n", CLASS_NAME_FUNC_DYSPHONIA,
+                off_res->ci[CI_F1_FUNC_DISFONIA].mean, off_res->ci[CI_F1_FUNC_DISFONIA].lower, off_res->ci[CI_F1_FUNC_DISFONIA].upper,
+                on_res->ci[CI_F1_FUNC_DISFONIA].mean, on_res->ci[CI_F1_FUNC_DISFONIA].lower, on_res->ci[CI_F1_FUNC_DISFONIA].upper);
+        fprintf(f, "%-28s %.4f [%.4f, %.4f]      %.4f [%.4f, %.4f]\n\n", CLASS_NAME_REINKE,
+                off_res->ci[CI_F1_REINKE].mean, off_res->ci[CI_F1_REINKE].lower, off_res->ci[CI_F1_REINKE].upper,
+                on_res->ci[CI_F1_REINKE].mean, on_res->ci[CI_F1_REINKE].lower, on_res->ci[CI_F1_REINKE].upper);
+
+        fprintf(f, "McNemar direto (Com-selecao vs Sem-selecao): chi2=%.4f p=%.4f -- %s\n\n", chi2_ab, p_ab,
+                p_ab < 0.05f ? "diferenca estatisticamente significativa (p<0.05)"
+                             : "diferenca nao estatisticamente significativa (p>=0.05)");
+
+        fprintf(f, "Media de features selecionadas (braco com-selecao): %.1f de %d (%.1f%% de reducao)\n",
+                on_res->mean_n_selected, total_features_vowel, feature_reduction * 100.0f);
+
+        fprintf(f, "Tabela completa mu/lambda/Gc/Gct/selected por feature: ver results/paraconsistent_selection_freq.csv\n\n");
+
+        if (on_res->macro_f1 >= off_res->macro_f1) {
+            if (decision_out) snprintf(decision_out, decision_out_size, "ADOTADO (Macro F1 com-selecao=%.4f >= sem-selecao=%.4f)", on_res->macro_f1, off_res->macro_f1);
+            fprintf(f, "DECISAO: Selecao Paraconsistente ADOTADA (Macro F1 com-selecao=%.4f >= sem-selecao=%.4f, delta=%+.4f, reducao de features=%.1f%%, McNemar chi2=%.4f p=%.4f)\n",
+                    on_res->macro_f1, off_res->macro_f1, on_res->macro_f1 - off_res->macro_f1, feature_reduction * 100.0f, chi2_ab, p_ab);
+        } else if ((off_res->macro_f1 - on_res->macro_f1) <= 0.01f && feature_reduction >= 0.30f) {
+            if (decision_out) snprintf(decision_out, decision_out_size, "ADOTADO (trade-off SPEC.md: reducao de features=%.1f%%)", feature_reduction * 100.0f);
+            fprintf(f, "DECISAO: Selecao Paraconsistente ADOTADA (trade-off SPEC.md: Macro F1 levemente inferior, delta=%+.4f, mas reducao de features=%.1f%% >= 30%%, McNemar chi2=%.4f p=%.4f)\n",
+                    on_res->macro_f1 - off_res->macro_f1, feature_reduction * 100.0f, chi2_ab, p_ab);
+        } else {
+            if (decision_out) snprintf(decision_out, decision_out_size, "REJEITADO (mantendo pipeline sem selecao paraconsistente)");
+            fprintf(f, "DECISAO: Selecao Paraconsistente REJEITADA (Macro F1 sem-selecao=%.4f > com-selecao=%.4f, delta=%+.4f, reducao de features=%.1f%% insuficiente para o trade-off do SPEC.md, McNemar chi2=%.4f p=%.4f) -- mantendo pipeline sem selecao paraconsistente em producao\n",
+                    off_res->macro_f1, on_res->macro_f1, on_res->macro_f1 - off_res->macro_f1, feature_reduction * 100.0f, chi2_ab, p_ab);
+        }
+        fclose(f);
+    }
+
+    FILE *cf = fopen(csv_path, "w");
+    if (!cf) {
+        log_error("Falha ao abrir %s para escrita", csv_path);
+        return;
+    }
+    fprintf(cf, "metric,without_selection,without_ci_lower,without_ci_upper,with_selection,with_ci_lower,with_ci_upper\n");
+    fprintf(cf, "accuracy,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+            off_res->ci[CI_ACCURACY].mean, off_res->ci[CI_ACCURACY].lower, off_res->ci[CI_ACCURACY].upper,
+            on_res->ci[CI_ACCURACY].mean, on_res->ci[CI_ACCURACY].lower, on_res->ci[CI_ACCURACY].upper);
+    fprintf(cf, "macro_f1,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+            off_res->ci[CI_MACRO_F1].mean, off_res->ci[CI_MACRO_F1].lower, off_res->ci[CI_MACRO_F1].upper,
+            on_res->ci[CI_MACRO_F1].mean, on_res->ci[CI_MACRO_F1].lower, on_res->ci[CI_MACRO_F1].upper);
+    fprintf(cf, "f1_normal,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+            off_res->ci[CI_F1_NORMAL].mean, off_res->ci[CI_F1_NORMAL].lower, off_res->ci[CI_F1_NORMAL].upper,
+            on_res->ci[CI_F1_NORMAL].mean, on_res->ci[CI_F1_NORMAL].lower, on_res->ci[CI_F1_NORMAL].upper);
+    fprintf(cf, "f1_laringite,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+            off_res->ci[CI_F1_LARYNGITE].mean, off_res->ci[CI_F1_LARYNGITE].lower, off_res->ci[CI_F1_LARYNGITE].upper,
+            on_res->ci[CI_F1_LARYNGITE].mean, on_res->ci[CI_F1_LARYNGITE].lower, on_res->ci[CI_F1_LARYNGITE].upper);
+    fprintf(cf, "f1_disfonia_psicogenica,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+            off_res->ci[CI_F1_DISFONIA].mean, off_res->ci[CI_F1_DISFONIA].lower, off_res->ci[CI_F1_DISFONIA].upper,
+            on_res->ci[CI_F1_DISFONIA].mean, on_res->ci[CI_F1_DISFONIA].lower, on_res->ci[CI_F1_DISFONIA].upper);
+    fprintf(cf, "f1_disfonia_funcional,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+            off_res->ci[CI_F1_FUNC_DISFONIA].mean, off_res->ci[CI_F1_FUNC_DISFONIA].lower, off_res->ci[CI_F1_FUNC_DISFONIA].upper,
+            on_res->ci[CI_F1_FUNC_DISFONIA].mean, on_res->ci[CI_F1_FUNC_DISFONIA].lower, on_res->ci[CI_F1_FUNC_DISFONIA].upper);
+    fprintf(cf, "f1_reinke,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+            off_res->ci[CI_F1_REINKE].mean, off_res->ci[CI_F1_REINKE].lower, off_res->ci[CI_F1_REINKE].upper,
+            on_res->ci[CI_F1_REINKE].mean, on_res->ci[CI_F1_REINKE].lower, on_res->ci[CI_F1_REINKE].upper);
+    fprintf(cf, "mean_n_selected,,,,%f,,\n", on_res->mean_n_selected);
+    fprintf(cf, "feature_reduction,,,,%f,,\n", feature_reduction);
+    fclose(cf);
+}
+
+/* Consolida a tabela de status de adocao dos 3 gaps do SPEC.md (CROSS-01) -- Gap 2 e
+ * Gap 3 sao fatos historicos ja fechados (hardcoded, ver CLAUDE.md "Gap 2 Outcome"/
+ * "Gap 3 Outcome"), Gap 1 usa os valores AO VIVO produzidos por write_gap1_report()
+ * nesta mesma execucao. O campo de citacao de Gap 1 SO cita PAL2v se a decisao ao
+ * vivo comecar com "ADOTAD" -- esta e a unica salvaguarda mecanica contra CROSS-02
+ * (citar uma tecnica que nao esta de fato ativa no modelo final), T-03-07. */
+static void write_gap_adoption_status(const char *decision_gap1, float gap1_macro_f1_delta,
+                                       float gap1_mcnemar_p, const char *path)
+{
+    FILE *f = fopen(path, "w");
+    if (!f) {
+        log_error("Falha ao abrir %s para escrita", path);
+        return;
+    }
+    fprintf(f, "gap,decision,macro_f1_delta,mcnemar_p,citation_status\n");
+    fprintf(f, "Gap 2 (Borderline-SMOTE),ADOTADO,+0.0235,0.6606,Han/Wang/Mao 2005 (Borderline-SMOTE1)\n");
+    fprintf(f, "Gap 3 (Config C 2-hidden-layer),ADOTADO (sem mudanca em config.h),n/a (ja em producao),0.7463,N/A - comparacao metodologica interna\n");
+
+    const char *citation_str;
+    if (strncmp(decision_gap1, "ADOTAD", 6) == 0) {
+        citation_str = "Da Costa 1990 / Abe & Nakamatsu 2009 (PAL2v)";
+    } else {
+        citation_str = "N/A - tecnica nao ativa no modelo final (CROSS-02)";
+    }
+    fprintf(f, "Gap 1 (Selecao Paraconsistente LPA2v),%s,%+.4f,%.4f,%s\n",
+            decision_gap1, gap1_macro_f1_delta, gap1_mcnemar_p, citation_str);
+    fclose(f);
+}
+
+/* Orquestra a comparacao A/B (Gap 1, PARA-05): executa o pipeline hierarquico
+ * completo duas vezes, sempre fixo na configuracao ja adotada nos Gaps 2/3
+ * (Borderline-SMOTE1, Config C, regularizacao baseline -- RESEARCH.md Pitfall 5),
+ * variando apenas para_mode (PARA_SELECT_OFF/PARA_SELECT_ON), e produz o relatorio
+ * comparativo + a tabela consolidada de status de adocao (CROSS-01) com decisao
+ * computada por uma unica regra fixa, nunca recomputada (CROSS-02, T-03-07). */
+static int mode_paraconsistent_ab(const char *base_dir)
+{
+    log_info("=== MODO: A/B SELECAO PARACONSISTENTE (Gap 1) ===");
+    log_info("Atencao: modo de longa duracao (~60-180 min) -- executa o pipeline hierarquico completo duas vezes (sem e com selecao paraconsistente), fixo em Borderline-SMOTE1 + Config C + regularizacao baseline (configuracao ja adotada nas Fases 1-2)");
+    ABResult res_off = {0}, res_on = {0};
+    if (mode_train_ex(base_dir, SMOTE_BORDERLINE, &ARCH_CONFIGS[2], REG_BASELINE, PARA_SELECT_OFF, &res_off) != 0) return -1;
+    if (mode_train_ex(base_dir, SMOTE_BORDERLINE, &ARCH_CONFIGS[2], REG_BASELINE, PARA_SELECT_ON, &res_on) != 0) return -1;
+
+    char decision_gap1[160];
+    float p_gap1 = 0.0f;
+    write_gap1_report(&res_off, &res_on,
+                       "results/train_log_v34_gap1_paraconsistent_ab.txt",
+                       "results/paraconsistent_ab_comparison.csv",
+                       decision_gap1, sizeof(decision_gap1), NULL, &p_gap1);
+    write_gap_adoption_status(decision_gap1, res_on.macro_f1 - res_off.macro_f1, p_gap1,
+                               "results/gap_adoption_status.csv");
+
+    free(res_off.y_true); free(res_off.y_pred);
+    free(res_on.y_true); free(res_on.y_pred);
+    return 0;
+}
+
 /* Orquestra a comparacao A/B (Gap 2, SMOTE-04): executa o pipeline hierarquico
  * completo duas vezes, uma por modo SMOTE, sob a mesma seed/folds (garantido pelo
  * reseed interno de kfold_split() -- ver RESEARCH.md Pattern 2), e produz o
@@ -1217,5 +1385,6 @@ int main(int argc, char *argv[])
     if (strcmp(mode, "verify-rng") == 0) return mode_verify_rng(base_dir) == 0 ? 0 : 1;
     if (strcmp(mode, "smote-ab") == 0) return mode_smote_ab(base_dir) == 0 ? 0 : 1;
     if (strcmp(mode, "arch-compare") == 0) return mode_arch_compare(base_dir) == 0 ? 0 : 1;
+    if (strcmp(mode, "paraconsistent-ab") == 0) return mode_paraconsistent_ab(base_dir) == 0 ? 0 : 1;
     return 1;
 }
