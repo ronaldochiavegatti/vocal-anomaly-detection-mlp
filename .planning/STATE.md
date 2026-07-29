@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "Completed 02-02-PLAN.md (arch-compare orchestration: ArchConfig/RegSetting, mode_arch_compare, 1-SE+McNemar decision)"
-last_updated: "2026-07-28T18:21:10.692Z"
-last_activity: 2026-07-28
+stopped_at: Completed 02-03-PLAN.md (real 12-arm arch-compare sweep + regression check + decision verification; adopted architecture=C baseline, ready for Plan 02-04 CLAUDE.md documentation)
+last_updated: "2026-07-29T00:40:58.867Z"
+last_activity: 2026-07-29
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 11
-  completed_plans: 9
+  completed_plans: 10
   percent: 50
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-07-27)
 ## Current Position
 
 Phase: 2 (Gap 3 - Shallow vs Deep MLP Comparison) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
-Last activity: 2026-07-28
+Last activity: 2026-07-29
 
-Progress: [████████░░] 82%
+Progress: [█████████░] 91%
 
 ## Performance Metrics
 
@@ -62,6 +62,7 @@ Progress: [████████░░] 82%
 | Phase 01 P04 | 6min | 1 tasks | 1 files |
 | Phase 02 P01 | 15min | 3 tasks | 7 files |
 | Phase 02 P02 | 6min | 2 tasks | 1 files |
+| Phase 02 P03 | 375min | 3 tasks | 51 files |
 
 ## Accumulated Context
 
@@ -93,6 +94,9 @@ Recent decisions affecting current work:
 - [Phase 02]: Plan 02-02: mode_arch_compare() runs all 12 (architecture x regularization) combos with SMOTE fixed at SMOTE_BORDERLINE, appending each arm to results/arch_compare_comparison.csv incrementally for partial-run durability -- NOT executed in this plan (reserved for Plan 02-03, 6-18+ hour operation)
 - [Phase 02]: Plan 02-02: write_arch_compare_report() adoption decision is a fixed 5-step procedure (best reg per arch -> best arch overall -> 1-SE bootstrap-CI band -> McNemar gate -> fewest-params) -- SE derived from bootstrap CI half-width, not per-fold CART formula, since no per-fold macro_f1 array exists in this codebase
 - [Phase 02]: Plan 02-02: fixed a real per-arm filename collision bug proactively (all 12 arch-compare arms share SMOTE_BORDERLINE) by suffixing metrics_global/bootstrap_ci/mcnemar_vs_baselines/smote_borderline_counts paths with arch->name/REG_NAME[reg] -- disclosed side effect: mode_smote_ab()'s 2 diagnostic filenames now suffix with _C_baseline, its actual required deliverables (smote_ab_comparison.csv, train_log_v32_gap2_smote_ab.txt) are unaffected
+- [Phase 02]: Plan 02-03: Task 1's plain train/full CLI regression check reproduced results/metrics_global.csv, bootstrap_ci.csv, mcnemar_vs_baselines.csv byte-for-byte identical to the committed baseline (git diff = zero changes) -- Plan 02-02's mode_train_ex() widening confirmed fully behavior-preserving
+- [Phase 02]: Plan 02-03: Real 12-arm arch-compare sweep executed to completion (~5h30min): best-per-arch = A/light 0.4365, B/light 0.4452, C/baseline 0.4587, D/light 0.4741 (=ao); 1-SE band=[0.4554,0.4741]; DECISAO = adopted architecture C at baseline regularization (today's exact production config, 38918 params) -- within 1-SE band and not significantly worse than D by McNemar (p=0.7463), fewer params than D (42886)
+- [Phase 02]: Plan 02-03: Pitfall 3 (fixed-hyperparameter 'deeper is undertuned') confirmed present: Config D at strong regularization collapses (mean_epochs_to_stop=46.4 vs D's own light=76.8/baseline=87.3; macro_f1=0.2777, statistically indistinguishable from MajorityClass p=0.1176) -- does not change the adoption decision but must be documented as an explicit limitation in Plan 02-04's CLAUDE.md update
 
 ### Pending Todos
 
@@ -113,6 +117,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-28T18:21:10.686Z
-Stopped at: Completed 02-02-PLAN.md (arch-compare orchestration: ArchConfig/RegSetting, mode_arch_compare, 1-SE+McNemar decision)
+Last session: 2026-07-29T00:40:58.859Z
+Stopped at: Completed 02-03-PLAN.md (real 12-arm arch-compare sweep + regression check + decision verification; adopted architecture=C baseline, ready for Plan 02-04 CLAUDE.md documentation)
 Resume file: None

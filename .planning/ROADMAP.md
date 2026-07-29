@@ -97,7 +97,7 @@ Plans:
   5. The "smallest complexity not statistically worse" decision rule (1-SE rule + McNemar) is applied and the adopted config is stated explicitly with its justification.
   6. `CLAUDE.md` is updated with the Gap 3 outcome, regardless of which config was adopted.
 
-**Plans:** 2/4 plans executed
+**Plans:** 3/4 plans executed
 Plans:
 **Wave 1**
 
@@ -109,7 +109,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 02-03-PLAN.md — Execute the real 12-arm (4 architecture x 3 regularization) arch-compare run and verify the produced report
+- [x] 02-03-PLAN.md — Execute the real 12-arm (4 architecture x 3 regularization) arch-compare run and verify the produced report
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -140,5 +140,5 @@ Phases execute in numeric order: 0 → 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 0. Statistical Infrastructure & RNG Reproducibility | 3/3 | Complete   | 2026-07-27 |
 | 1. Gap 2 — Borderline-SMOTE | 4/4 | Complete   | 2026-07-28 |
-| 2. Gap 3 — Shallow vs Deep MLP Comparison | 2/4 | In Progress|  |
+| 2. Gap 3 — Shallow vs Deep MLP Comparison | 3/4 | In Progress|  |
 | 3. Gap 1 — Paraconsistent Feature Selection | 0/TBD | Not started | - |
