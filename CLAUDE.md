@@ -85,11 +85,11 @@ WAV files (5 class directories)
 | Level | Count | Components |
 |-------|-------|------------|
 | Temporal/vowel | 10 | jitter×3, shimmer×4, energy, HNR, ZCR |
-| Spectral/vowel | 51 | f0×2, F1-F4, entropy, centroid, rolloff, MFCC×13, δMFCC×13, δδMFCC×13, CPP×3 |
+| Spectral/vowel | 55 | f0×2, F1-F4, entropy, centroid, rolloff, MFCC×13, δMFCC×13, δδMFCC×13, CPP×3, glottal source×4 (Oq/Sq/NAQ/H1-H2 — previously undocumented in this table) |
 | Wavelet/vowel | 18 | 6 levels × (mean, variance, energy) |
-| **Per vowel** | **79** | |
-| **Total (3 vowels)** | **237** | |
-| After selection | ~150-190 | Varies per fold |
+| **Per vowel** | **83** | |
+| **Total (3 vowels)** | **251** | 3×83=249 + 2 metadata features (idade/sexo, `NUM_METADATA_FEATURES`) |
+| After selection (paraconsistent, Gap 1, v34) | 85 of 85 per vowel-network (0.0% reduction) | `mean_n_selected` from `results/paraconsistent_ab_comparison.csv` — gc-threshold relaxation exhausted in 30/30 (fold,vowel,network) combos, always falling back to "keep all"; see Gap 1 Outcome below |
 
 ### Key Hyperparameters (config.h)
 | Parameter | Value |
@@ -202,6 +202,52 @@ WAV files (5 class directories)
 **Pitfall 3 caveat (fixed-hyperparameter "deeper is undertuned" artifact) — must be carried forward**: Config D at strong regularization collapses: `mean_epochs_to_stop`=46.40, roughly half of D's own light (76.80) and baseline (87.27) arms, and far below every other architecture's own strong-regularization arm (A=77.73, B=83.93, C=74.10). D/strong's macro_f1 also crashes to 0.2777 — the lowest of all 12 arms — and is the only one of the 12 arms where the MLP is not statistically distinguishable from the trivial MajorityClass baseline (McNemar p=0.1176 vs MajorityClass). This does **not** change the adoption decision (D's own best regularization is light, not strong, so D/strong was never a decision-procedure candidate), but it is direct evidence that "Config D is worse than C" cannot be fully separated from "Config D needs a lighter, depth-specific regularization schedule than the one tested here." This run cannot distinguish "depth doesn't help" from "depth needs different tuning" — treat any future claim that deeper architectures categorically underperform on this dataset as unproven by this comparison alone.
 
 **Files**: `results/train_log_v33_gap3_arch_compare.txt` (full Portuguese report: complete 12-row table, best-per-architecture summary, 1-SE band, McNemar-vs-`ao` results, verbatim DECISAO sentence), `results/arch_compare_comparison.csv` (13-line machine-readable comparison: 1 header + 12 arm rows).
+
+## Gap 1 Outcome — Paraconsistent Feature Selection (LPA2v, v34)
+
+**DECISAO** (verbatim from `results/train_log_v34_gap1_paraconsistent_ab.txt`):
+
+> DECISAO: Selecao Paraconsistente REJEITADA (Macro F1 sem-selecao=0.4610 > com-selecao=0.4587, delta=-0.0024, reducao de features=0.0% insuficiente para o trade-off do SPEC.md, McNemar chi2=0.0506 p=0.8220) -- mantendo pipeline sem selecao paraconsistente em producao
+
+**Comparison** (bootstrap mean [95% CI], N=1000, seed=42, same 5-folds, fixed at Borderline-SMOTE1 + Config C baseline regularization — same production config as Gap 2/Gap 3's adopted arm):
+
+| Metric | Sem selecao (off_res) | Com selecao (on_res) |
+|---|---|---|
+| Accuracy | 0.6988 [0.6721, 0.7268] | 0.6958 [0.6694, 0.7231] |
+| **Macro F1** | **0.4597 [0.4229, 0.4955]** | **0.4565 [0.4194, 0.4949]** |
+| Normal F1 | 0.8704 [0.8512, 0.8886] | 0.8664 [0.8475, 0.8850] |
+| Laringite F1 | 0.4120 [0.3273, 0.4933] | 0.3974 [0.3131, 0.4891] |
+| Disfonia Psicogênica F1 | 0.3353 [0.2444, 0.4211] | 0.3273 [0.2375, 0.4149] |
+| Disfonia Funcional F1 | 0.1991 [0.1236, 0.2778] | 0.2386 [0.1507, 0.3294] |
+| Edema de Reinke F1 | 0.4818 [0.3867, 0.5714] | 0.4531 [0.3636, 0.5444] |
+| `mean_n_selected` | — | 85.0 of 85 |
+| `feature_reduction` | — | 0.0% |
+
+Raw (concatenated out-of-fold) point estimates, per the DECISAO sentence: Macro F1 sem-selecao=0.4610, com-selecao=0.4587, delta=-0.0024.
+
+**Direct McNemar** (com-selecao vs sem-selecao arms): chi2=0.0506, **p=0.8220 — NOT statistically significant (p >= 0.05)**, same pattern as Gap 2's and Gap 3's own not-significant McNemar comparisons — no arm is proven definitively better, the fixed adopt/reject rule (below) is what actually decides.
+
+**mu/lambda formula substitution (documented, deliberate deviation from SPEC.md's literal pseudocode)**: `mu` is computed as one-way ANOVA **eta-squared** (η² = SSB/SST, naturally bounded [0,1]), **not** SPEC.md's non-standard per-class Fisher ratio (which required an extra cross-fold min-max normalization pass). `lambda` is the **unweighted mean of per-class σ/global-σ ratio** (clipped to [0,1]), **not** SPEC.md's `CV = std/mean` (which explodes for near-zero-mean delta-MFCC features — a degeneracy already documented elsewhere in this file under "What doesn't work": mean delta MFCCs are near-zero for sustained vowels). This substitution is a documented, deliberate deviation, not an oversight or a silent change: the domain-specific precedent papers (Costa et al. 2019 DPM; a 2025 wavelet+paraconsistent paper; a 2021 grid-fault paper) that would normally ground the exact λ formula remain paywalled (see `03-RESEARCH.md`'s Assumptions Log A1), so this ANOVA-η²/global-variance-ratio substitute is a researcher-synthesized stand-in — a future update with institutional access to those papers may revise the exact λ formula.
+
+**Universal fallback finding**: the gc-threshold relaxation loop (`PARA_MAX_RELAX_ITERS=10`, `PARA_GC_RELAX_STEP=0.05`, starting `PARA_GC_THRESH=0.35` down to -0.15) found **zero** features clearing the paraconsistent-selection threshold, in **all 30 of 30** (fold, vowel, network) combinations (confirmed via `grep -c "relaxamento esgotado" results/train_log_v34_gap1_paraconsistent_ab_console.txt` = 30) — every run fell back to "select all 85 features," exactly explaining the 0.0% `feature_reduction`. This is a first-order empirical finding about the paraconsistent method's behavior on this acoustic feature space, not a bug in the comparison.
+
+**CLAUDE.md 0.42 Macro F1 regression-floor check**: both arms clear the floor comfortably — off_res raw 0.4610 / bootstrap-mean 0.4597, on_res raw 0.4587 / bootstrap-mean 0.4565, both well above the project's 0.42 floor. **PASS, explicitly checked, no exception needed.**
+
+**Files**: `results/train_log_v34_gap1_paraconsistent_ab.txt` (full A/B report + DECISAO sentence), `results/paraconsistent_ab_comparison.csv` (machine-readable 7-metric × 2-arm comparison with bootstrap CI, plus `mean_n_selected`/`feature_reduction` rows), `results/paraconsistent_selection_freq.csv` (2550-row per-fold/vowel/network/feature μ/λ/Gc/Gct/selected table).
+
+## Gap Adoption Status (Milestone Closure)
+
+All 3 SPEC.md gaps are now closed with explicit, evidence-backed adopt/reject outcomes (reproduced verbatim from `results/gap_adoption_status.csv`):
+
+| Gap | Decision | Macro F1 delta | McNemar p | Citation status |
+|-----|----------|-----------------|-----------|------------------|
+| Gap 2 (Borderline-SMOTE) | ADOTADO | +0.0235 | 0.6606 | Han/Wang/Mao 2005 (Borderline-SMOTE1) |
+| Gap 3 (Config C 2-hidden-layer) | ADOTADO (sem mudanca em config.h) | n/a (ja em producao) | 0.7463 | N/A - comparacao metodologica interna |
+| Gap 1 (Selecao Paraconsistente LPA2v) | REJEITADO (mantendo pipeline sem selecao paraconsistente) | -0.0024 | 0.8220 | N/A - tecnica nao ativa no modelo final (CROSS-02) |
+
+**mode_train() default-CLI disclosure (CROSS-02)**: `mode_train()`/`make train`/`make full`'s default CLI path (`mode_train_ex(base_dir, ..., NULL)`) remains on `SMOTE_STANDARD` + `PARA_SELECT_OFF` + Config C at baseline regularization for regression-safety reasons — an explicit Phase 1 decision (documented in `STATE.md`), unchanged by Phase 2 or Phase 3. The actually-adopted configuration per gap (Borderline-SMOTE, since Gap 2's row reads ADOTADO; paraconsistent selection is **not** adopted, since Gap 1's row reads REJEITADO) is only reachable via the dedicated comparison CLI modes (`smote-ab`, `arch-compare`, `paraconsistent-ab`), never via the plain `train`/`full` entry point. This is the CROSS-02-mandated disclosure that prevents a future citation/reality mismatch — e.g., a poster or report claiming "production uses Borderline-SMOTE" while `make train` still runs `SMOTE_STANDARD` — and it applies with even less risk to Gap 1 specifically, since paraconsistent selection was rejected and carries no citation at all (per its own row above).
+
+**Milestone status**: with this plan, all 3 SPEC.md gaps (Gap 2: Borderline-SMOTE, Gap 3: shallow-vs-deep architecture, Gap 1: paraconsistent feature selection) have been compared A/B with reproducible evidence (same seed, same 5-folds) and closed with an explicit adopt/reject decision each, per the project's Core Value. This closes CROSS-01 (consolidated Gap Adoption Status table, above) and CROSS-02 (default-CLI disclosure, above).
 
 ## Output Files
 - `results/features.csv` — cached 1098×237 feature matrix (re-extracted if TOTAL_FEATURES changes)
