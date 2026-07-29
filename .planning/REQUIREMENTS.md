@@ -34,7 +34,7 @@
 - [ ] **PARA-02**: Cálculo de Gc/Gct com guarda de variância mínima (proteção contra divisão por zero, no padrão `MIN_STD` já usado em `normalize.c`) e laço de relaxamento do limiar com número máximo de iterações (evita loop não limitado quando zero features são selecionadas)
 - [ ] **PARA-03**: Seleção executada independentemente por (fold, vogal, rede) — Master (binário) e Expert (4 classes) recebem índices de features selecionadas distintos
 - [ ] **PARA-04**: Índices selecionados persistidos via `selected_save`/`selected_load` por (fold, vogal, rede); `predict_hierarchical_late_fusion()` e o bloco duplicado de slicing inline no loop de validação (`src/main.c`) atualizados de forma consistente para usá-los, evitando divergência entre a predição discreta e a probabilidade registrada
-- [ ] **PARA-05**: Relatório final inclui tabela completa (feature, μ, λ, Gc, Gct, selecionada S/N) agregada nas ~30 execuções (5 folds × 3 vogais × 2 redes) — tabela de frequência de seleção, não um snapshot de uma única execução — mais Macro F1 antes/depois
+- [x] **PARA-05**: Relatório final inclui tabela completa (feature, μ, λ, Gc, Gct, selecionada S/N) agregada nas ~30 execuções (5 folds × 3 vogais × 2 redes) — tabela de frequência de seleção, não um snapshot de uma única execução — mais Macro F1 antes/depois
 - [ ] **PARA-06**: `CLAUDE.md` atualizado com o resultado do Gap 1, independente do resultado
 
 ### Transversal (CROSS)
@@ -89,7 +89,7 @@ Adiado explicitamente pelo usuário para depois do fechamento dos 3 gaps.
 | PARA-02 | Phase 3 | Pending |
 | PARA-03 | Phase 3 | Pending |
 | PARA-04 | Phase 3 | Pending |
-| PARA-05 | Phase 3 | Pending |
+| PARA-05 | Phase 3 | Complete |
 | PARA-06 | Phase 3 | Pending |
 | CROSS-01 | Phase 3 | Pending |
 | CROSS-02 | Phase 3 | Pending |
