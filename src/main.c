@@ -1121,6 +1121,63 @@ static void write_gap1_report(const ABResult *off_res, const ABResult *on_res,
     fclose(cf);
 }
 
+/* Consolida a tabela de status de adocao dos 3 gaps do SPEC.md (CROSS-01) -- Gap 2 e
+ * Gap 3 sao fatos historicos ja fechados (hardcoded, ver CLAUDE.md "Gap 2 Outcome"/
+ * "Gap 3 Outcome"), Gap 1 usa os valores AO VIVO produzidos por write_gap1_report()
+ * nesta mesma execucao. O campo de citacao de Gap 1 SO cita PAL2v se a decisao ao
+ * vivo comecar com "ADOTAD" -- esta e a unica salvaguarda mecanica contra CROSS-02
+ * (citar uma tecnica que nao esta de fato ativa no modelo final), T-03-07. */
+static void write_gap_adoption_status(const char *decision_gap1, float gap1_macro_f1_delta,
+                                       float gap1_mcnemar_p, const char *path)
+{
+    FILE *f = fopen(path, "w");
+    if (!f) {
+        log_error("Falha ao abrir %s para escrita", path);
+        return;
+    }
+    fprintf(f, "gap,decision,macro_f1_delta,mcnemar_p,citation_status\n");
+    fprintf(f, "Gap 2 (Borderline-SMOTE),ADOTADO,+0.0235,0.6606,Han/Wang/Mao 2005 (Borderline-SMOTE1)\n");
+    fprintf(f, "Gap 3 (Config C 2-hidden-layer),ADOTADO (sem mudanca em config.h),n/a (ja em producao),0.7463,N/A - comparacao metodologica interna\n");
+
+    const char *citation_str;
+    if (strncmp(decision_gap1, "ADOTAD", 6) == 0) {
+        citation_str = "Da Costa 1990 / Abe & Nakamatsu 2009 (PAL2v)";
+    } else {
+        citation_str = "N/A - tecnica nao ativa no modelo final (CROSS-02)";
+    }
+    fprintf(f, "Gap 1 (Selecao Paraconsistente LPA2v),%s,%+.4f,%.4f,%s\n",
+            decision_gap1, gap1_macro_f1_delta, gap1_mcnemar_p, citation_str);
+    fclose(f);
+}
+
+/* Orquestra a comparacao A/B (Gap 1, PARA-05): executa o pipeline hierarquico
+ * completo duas vezes, sempre fixo na configuracao ja adotada nos Gaps 2/3
+ * (Borderline-SMOTE1, Config C, regularizacao baseline -- RESEARCH.md Pitfall 5),
+ * variando apenas para_mode (PARA_SELECT_OFF/PARA_SELECT_ON), e produz o relatorio
+ * comparativo + a tabela consolidada de status de adocao (CROSS-01) com decisao
+ * computada por uma unica regra fixa, nunca recomputada (CROSS-02, T-03-07). */
+static int mode_paraconsistent_ab(const char *base_dir)
+{
+    log_info("=== MODO: A/B SELECAO PARACONSISTENTE (Gap 1) ===");
+    log_info("Atencao: modo de longa duracao (~60-180 min) -- executa o pipeline hierarquico completo duas vezes (sem e com selecao paraconsistente), fixo em Borderline-SMOTE1 + Config C + regularizacao baseline (configuracao ja adotada nas Fases 1-2)");
+    ABResult res_off = {0}, res_on = {0};
+    if (mode_train_ex(base_dir, SMOTE_BORDERLINE, &ARCH_CONFIGS[2], REG_BASELINE, PARA_SELECT_OFF, &res_off) != 0) return -1;
+    if (mode_train_ex(base_dir, SMOTE_BORDERLINE, &ARCH_CONFIGS[2], REG_BASELINE, PARA_SELECT_ON, &res_on) != 0) return -1;
+
+    char decision_gap1[160];
+    float p_gap1 = 0.0f;
+    write_gap1_report(&res_off, &res_on,
+                       "results/train_log_v34_gap1_paraconsistent_ab.txt",
+                       "results/paraconsistent_ab_comparison.csv",
+                       decision_gap1, sizeof(decision_gap1), NULL, &p_gap1);
+    write_gap_adoption_status(decision_gap1, res_on.macro_f1 - res_off.macro_f1, p_gap1,
+                               "results/gap_adoption_status.csv");
+
+    free(res_off.y_true); free(res_off.y_pred);
+    free(res_on.y_true); free(res_on.y_pred);
+    return 0;
+}
+
 /* Orquestra a comparacao A/B (Gap 2, SMOTE-04): executa o pipeline hierarquico
  * completo duas vezes, uma por modo SMOTE, sob a mesma seed/folds (garantido pelo
  * reseed interno de kfold_split() -- ver RESEARCH.md Pattern 2), e produz o
@@ -1328,5 +1385,6 @@ int main(int argc, char *argv[])
     if (strcmp(mode, "verify-rng") == 0) return mode_verify_rng(base_dir) == 0 ? 0 : 1;
     if (strcmp(mode, "smote-ab") == 0) return mode_smote_ab(base_dir) == 0 ? 0 : 1;
     if (strcmp(mode, "arch-compare") == 0) return mode_arch_compare(base_dir) == 0 ? 0 : 1;
+    if (strcmp(mode, "paraconsistent-ab") == 0) return mode_paraconsistent_ab(base_dir) == 0 ? 0 : 1;
     return 1;
 }
