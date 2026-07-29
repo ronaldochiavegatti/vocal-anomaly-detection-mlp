@@ -235,6 +235,20 @@ Raw (concatenated out-of-fold) point estimates, per the DECISAO sentence: Macro 
 
 **Files**: `results/train_log_v34_gap1_paraconsistent_ab.txt` (full A/B report + DECISAO sentence), `results/paraconsistent_ab_comparison.csv` (machine-readable 7-metric × 2-arm comparison with bootstrap CI, plus `mean_n_selected`/`feature_reduction` rows), `results/paraconsistent_selection_freq.csv` (2550-row per-fold/vowel/network/feature μ/λ/Gc/Gct/selected table).
 
+## Gap Adoption Status (Milestone Closure)
+
+All 3 SPEC.md gaps are now closed with explicit, evidence-backed adopt/reject outcomes (reproduced verbatim from `results/gap_adoption_status.csv`):
+
+| Gap | Decision | Macro F1 delta | McNemar p | Citation status |
+|-----|----------|-----------------|-----------|------------------|
+| Gap 2 (Borderline-SMOTE) | ADOTADO | +0.0235 | 0.6606 | Han/Wang/Mao 2005 (Borderline-SMOTE1) |
+| Gap 3 (Config C 2-hidden-layer) | ADOTADO (sem mudanca em config.h) | n/a (ja em producao) | 0.7463 | N/A - comparacao metodologica interna |
+| Gap 1 (Selecao Paraconsistente LPA2v) | REJEITADO (mantendo pipeline sem selecao paraconsistente) | -0.0024 | 0.8220 | N/A - tecnica nao ativa no modelo final (CROSS-02) |
+
+**mode_train() default-CLI disclosure (CROSS-02)**: `mode_train()`/`make train`/`make full`'s default CLI path (`mode_train_ex(base_dir, ..., NULL)`) remains on `SMOTE_STANDARD` + `PARA_SELECT_OFF` + Config C at baseline regularization for regression-safety reasons — an explicit Phase 1 decision (documented in `STATE.md`), unchanged by Phase 2 or Phase 3. The actually-adopted configuration per gap (Borderline-SMOTE, since Gap 2's row reads ADOTADO; paraconsistent selection is **not** adopted, since Gap 1's row reads REJEITADO) is only reachable via the dedicated comparison CLI modes (`smote-ab`, `arch-compare`, `paraconsistent-ab`), never via the plain `train`/`full` entry point. This is the CROSS-02-mandated disclosure that prevents a future citation/reality mismatch — e.g., a poster or report claiming "production uses Borderline-SMOTE" while `make train` still runs `SMOTE_STANDARD` — and it applies with even less risk to Gap 1 specifically, since paraconsistent selection was rejected and carries no citation at all (per its own row above).
+
+**Milestone status**: with this plan, all 3 SPEC.md gaps (Gap 2: Borderline-SMOTE, Gap 3: shallow-vs-deep architecture, Gap 1: paraconsistent feature selection) have been compared A/B with reproducible evidence (same seed, same 5-folds) and closed with an explicit adopt/reject decision each, per the project's Core Value. This closes CROSS-01 (consolidated Gap Adoption Status table, above) and CROSS-02 (default-CLI disclosure, above).
+
 ## Output Files
 - `results/features.csv` — cached 1098×237 feature matrix (re-extracted if TOTAL_FEATURES changes)
 - `results/metrics_global.csv` — per-class metrics + bootstrap CI (7 metrics, 5 classes)
