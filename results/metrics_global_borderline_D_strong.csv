@@ -1,0 +1,9 @@
+class,precision,recall,f1,support
+Normal,0.702611,0.901019,0.789541,687
+Laringite,0.350000,0.100000,0.155556,140
+Disfonia Psicogenica,0.193548,0.131868,0.156863,91
+Disfonia Funcional,0.076923,0.008929,0.016000,112
+Edema de Reinke,0.225490,0.338235,0.270588,68
+macro_avg,,,0.277709,1098
+weighted_avg,,,0.545227,1098
+accuracy,,,0.609290,1098
