@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: complete
 stopped_at: Completed 03-05-PLAN.md
-last_updated: "2026-07-29T21:10:00.000Z"
+last_updated: "2026-07-29T22:20:00.000Z"
 last_activity: 2026-07-29
 progress:
   total_phases: 4
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-27)
 
 **Core value:** Fechar, com rigor metodológico comprovável por comparação A/B (mesma seed, mesmos 5-folds), os 3 gaps entre a implementação atual e a proposta PIBIC original — sem piorar o baseline de referência (Macro F1 0,4423 / Acurácia 69,4%).
-**Current focus:** Milestone complete — all 3 SPEC.md gaps closed (Gap 2 ADOTADO, Gap 3 ADOTADO/no-op, Gap 1 REJEITADO), see CLAUDE.md's Gap Adoption Status table.
+**Current focus:** Milestone complete — all 3 SPEC.md gaps closed (Gap 2 ADOTADO, Gap 3 ADOTADO/no-op, Gap 1 REJEITADO), see CLAUDE.md's Gap Adoption Status table. Material do XXXVIII CIC (resumo + poster) atualizado para essa configuracao — ver Quick Tasks Completed.
 
 ## Current Position
 
@@ -111,6 +111,12 @@ None yet.
 ### Blockers/Concerns
 
 - Phase 3 (deferred until then): Domain-specific precedent papers for the paraconsistent μ/λ derivation (Costa et al. 2019 DPM; 2025 wavelet+paraconsistent; 2021 grid-fault paper) are paywalled — plan to proceed with the ANOVA-F/η² substitute unless institutional access is obtained.
+
+## Quick Tasks Completed
+
+| Date | Slug | Outcome |
+|------|------|---------|
+| 2026-07-29 | [cic-resumo-poster-update](quick/20260729-cic-resumo-poster-update/SUMMARY.md) | Resumo e pôster do XXXVIII CIC atualizados para a configuração adotada (69,7% / Macro F1 0,4587), com os números lidos dos CSVs de `results/`. Removida a alegação falsa "+5,2 p.p. vs arquitetura de camada única" (ARCH-01: Config A `[128]` nunca esteve em produção), substituída pela superioridade sobre os 3 baselines (McNemar p < 0,001). Gap 1 reportado como resultado negativo, sem citação bibliográfica. Novo `tools/figures/` regenera as figuras e confere as afirmações por `assert`. |
 
 ## Deferred Items
 
