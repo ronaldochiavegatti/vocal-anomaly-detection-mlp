@@ -129,7 +129,7 @@ Plans:
   5. A consolidated "Gap Adoption Status" table (decision / metric delta / citation status per gap) exists in `results/` or the final report, and no bibliographic citation is added for a technique not actually active in the final shipped model.
   6. `CLAUDE.md` is updated with the Gap 1 outcome, regardless of result.
 
-**Plans:** 2/5 plans executed
+**Plans:** 3/5 plans executed
 Plans:
 **Wave 1**
 
@@ -141,7 +141,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 03-03-PLAN.md — write_gap1_report() + write_gap_adoption_status() + mode_paraconsistent_ab() CLI orchestration (PARA-05, CROSS-01, CROSS-02)
+- [x] 03-03-PLAN.md — write_gap1_report() + write_gap_adoption_status() + mode_paraconsistent_ab() CLI orchestration (PARA-05, CROSS-01, CROSS-02)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -161,4 +161,4 @@ Phases execute in numeric order: 0 → 1 → 2 → 3
 | 0. Statistical Infrastructure & RNG Reproducibility | 3/3 | Complete   | 2026-07-27 |
 | 1. Gap 2 — Borderline-SMOTE | 4/4 | Complete   | 2026-07-28 |
 | 2. Gap 3 — Shallow vs Deep MLP Comparison | 4/4 | Complete    | 2026-07-29 |
-| 3. Gap 1 — Paraconsistent Feature Selection | 2/5 | In Progress|  |
+| 3. Gap 1 — Paraconsistent Feature Selection | 3/5 | In Progress|  |
