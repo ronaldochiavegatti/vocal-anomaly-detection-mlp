@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 02-03-PLAN.md (real 12-arm arch-compare sweep + regression check + decision verification; adopted architecture=C baseline, ready for Plan 02-04 CLAUDE.md documentation)
-last_updated: "2026-07-29T00:40:58.867Z"
+status: verifying
+stopped_at: Completed 02-04-PLAN.md (CLAUDE.md Gap 3 outcome documentation) -- Phase 2 complete
+last_updated: "2026-07-29T00:45:38.933Z"
 last_activity: 2026-07-29
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 11
-  completed_plans: 10
-  percent: 50
+  completed_plans: 11
+  percent: 75
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-07-27)
 
 Phase: 2 (Gap 3 - Shallow vs Deep MLP Comparison) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-29
 
-Progress: [█████████░] 91%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -63,6 +63,7 @@ Progress: [█████████░] 91%
 | Phase 02 P01 | 15min | 3 tasks | 7 files |
 | Phase 02 P02 | 6min | 2 tasks | 1 files |
 | Phase 02 P03 | 375min | 3 tasks | 51 files |
+| Phase 02 P04 | 8min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,8 @@ Recent decisions affecting current work:
 - [Phase 02]: Plan 02-03: Task 1's plain train/full CLI regression check reproduced results/metrics_global.csv, bootstrap_ci.csv, mcnemar_vs_baselines.csv byte-for-byte identical to the committed baseline (git diff = zero changes) -- Plan 02-02's mode_train_ex() widening confirmed fully behavior-preserving
 - [Phase 02]: Plan 02-03: Real 12-arm arch-compare sweep executed to completion (~5h30min): best-per-arch = A/light 0.4365, B/light 0.4452, C/baseline 0.4587, D/light 0.4741 (=ao); 1-SE band=[0.4554,0.4741]; DECISAO = adopted architecture C at baseline regularization (today's exact production config, 38918 params) -- within 1-SE band and not significantly worse than D by McNemar (p=0.7463), fewer params than D (42886)
 - [Phase 02]: Plan 02-03: Pitfall 3 (fixed-hyperparameter 'deeper is undertuned') confirmed present: Config D at strong regularization collapses (mean_epochs_to_stop=46.4 vs D's own light=76.8/baseline=87.3; macro_f1=0.2777, statistically indistinguishable from MajorityClass p=0.1176) -- does not change the adoption decision but must be documented as an explicit limitation in Plan 02-04's CLAUDE.md update
+- [Phase 02]: No production config.h change required: adopted arm (Config C, baseline regularization) is today's exact compiled production configuration -- Gap 3's outcome is a validated no-op for production code, documented explicitly in CLAUDE.md's new Gap 3 Outcome subsection
+- [Phase 02]: CLAUDE.md's L2 lambda documentation corrected (0.003 -> real config.h value 0.001) and Pitfall 3 caveat (Config D collapses at strong regularization, mean_epochs_to_stop=46.4, macro_f1=0.2777 statistically indistinguishable from MajorityClass) carried forward verbatim, satisfying ARCH-06
 
 ### Pending Todos
 
@@ -117,6 +120,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-29T00:40:58.859Z
-Stopped at: Completed 02-03-PLAN.md (real 12-arm arch-compare sweep + regression check + decision verification; adopted architecture=C baseline, ready for Plan 02-04 CLAUDE.md documentation)
+Last session: 2026-07-29T00:45:38.925Z
+Stopped at: Completed 02-04-PLAN.md (CLAUDE.md Gap 3 outcome documentation) -- Phase 2 complete
 Resume file: None

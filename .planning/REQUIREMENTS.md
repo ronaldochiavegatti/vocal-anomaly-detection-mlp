@@ -26,7 +26,7 @@
 - [x] **ARCH-03**: Laço de treino fold+vogal extraído para função reutilizável, permitindo treinar as 4 configs (rotulagem corrigida) sobre as mesmas partições de 5-fold
 - [x] **ARCH-04**: Tabela comparativa das 4 configs (Acurácia, Macro F1, F1 por classe, nº parâmetros, tempo/época) com McNemar/bootstrap CI entre a melhor config e cada config mais simples — nunca decisão por inspeção visual
 - [x] **ARCH-05**: Regra de decisão "menor complexidade não estatisticamente pior" aplicada e documentada explicitamente (regra 1-SE + McNemar)
-- [ ] **ARCH-06**: `CLAUDE.md` atualizado com o resultado do Gap 3, independente do resultado
+- [x] **ARCH-06**: `CLAUDE.md` atualizado com o resultado do Gap 3, independente do resultado
 
 ### Gap 1 — Seleção Paraconsistente de Características (PARA) — Fase 3
 
@@ -84,7 +84,7 @@ Adiado explicitamente pelo usuário para depois do fechamento dos 3 gaps.
 | ARCH-03 | Phase 2 | Complete |
 | ARCH-04 | Phase 2 | Complete |
 | ARCH-05 | Phase 2 | Complete |
-| ARCH-06 | Phase 2 | Pending |
+| ARCH-06 | Phase 2 | Complete |
 | PARA-01 | Phase 3 | Pending |
 | PARA-02 | Phase 3 | Pending |
 | PARA-03 | Phase 3 | Pending |

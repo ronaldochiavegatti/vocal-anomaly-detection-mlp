@@ -22,7 +22,7 @@ inspeção visual) e atualização do `CLAUDE.md`, terminando em uma tabela cons
 
 - [x] **Phase 0: Statistical Infrastructure & RNG Reproducibility** - Bootstrap CI/McNemar wired into `mode_train()`, RNG race documented/mitigated, baseline reconfirmed with a fresh log (completed 2026-07-27)
 - [x] **Phase 1: Gap 2 — Borderline-SMOTE** - `SmoteMode` (standard vs borderline) implemented and adopted/rejected via reproducible A/B comparison (completed 2026-07-28)
-- [ ] **Phase 2: Gap 3 — Shallow vs Deep MLP Comparison** - Fold+vowel loop refactored into a reusable function; 4 architecture configs compared and the smallest non-inferior one adopted
+- [x] **Phase 2: Gap 3 — Shallow vs Deep MLP Comparison** - Fold+vowel loop refactored into a reusable function; 4 architecture configs compared and the smallest non-inferior one adopted (completed 2026-07-29)
 - [ ] **Phase 3: Gap 1 — Paraconsistent Feature Selection** - New paraconsistent selection module integrated per (fold, vowel, network); final consolidated Gap Adoption Status report produced
 
 ## Phase Details
@@ -97,7 +97,7 @@ Plans:
   5. The "smallest complexity not statistically worse" decision rule (1-SE rule + McNemar) is applied and the adopted config is stated explicitly with its justification.
   6. `CLAUDE.md` is updated with the Gap 3 outcome, regardless of which config was adopted.
 
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 Plans:
 **Wave 1**
 
@@ -113,7 +113,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 02-04-PLAN.md — Update CLAUDE.md with the Gap 3 outcome + L2 lambda documentation correction
+- [x] 02-04-PLAN.md — Update CLAUDE.md with the Gap 3 outcome + L2 lambda documentation correction
 
 ### Phase 3: Gap 1 — Paraconsistent Feature Selection & Final Reporting
 
@@ -140,5 +140,5 @@ Phases execute in numeric order: 0 → 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 0. Statistical Infrastructure & RNG Reproducibility | 3/3 | Complete   | 2026-07-27 |
 | 1. Gap 2 — Borderline-SMOTE | 4/4 | Complete   | 2026-07-28 |
-| 2. Gap 3 — Shallow vs Deep MLP Comparison | 3/4 | In Progress|  |
+| 2. Gap 3 — Shallow vs Deep MLP Comparison | 4/4 | Complete   | 2026-07-29 |
 | 3. Gap 1 — Paraconsistent Feature Selection | 0/TBD | Not started | - |
