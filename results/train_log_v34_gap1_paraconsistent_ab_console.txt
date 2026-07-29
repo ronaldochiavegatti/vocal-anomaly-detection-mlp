@@ -1,0 +1,1282 @@
+[2026-07-29 15:27:07] [INFO] Classificador Vocals - Hierarchical Late Fusion
+[2026-07-29 15:27:07] [INFO] === MODO: A/B SELECAO PARACONSISTENTE (Gap 1) ===
+[2026-07-29 15:27:07] [INFO] Atencao: modo de longa duracao (~60-180 min) -- executa o pipeline hierarquico completo duas vezes (sem e com selecao paraconsistente), fixo em Borderline-SMOTE1 + Config C + regularizacao baseline (configuracao ja adotada nas Fases 1-2)
+[2026-07-29 15:27:07] [INFO] === MODO: TREINAMENTO HIERARQUICO COM LATE FUSION (VOGAIS A, I, U) ===
+[2026-07-29 15:27:07] [INFO] Classe 0 (saudavel): 687 pacientes
+[2026-07-29 15:27:07] [INFO] Classe 1 (laringite): 140 pacientes
+[2026-07-29 15:27:07] [INFO] Classe 2 (disfonia_psicogênica): 91 pacientes
+[2026-07-29 15:27:07] [INFO] Classe 3 (disfonia_funcional): 112 pacientes
+[2026-07-29 15:27:07] [INFO] Classe 4 (edema_de_reinke): 68 pacientes
+[2026-07-29 15:27:07] [INFO] Dataset total: 1098 pacientes
+[2026-07-29 15:27:07] [INFO] CSV lido: 1254 registros de ./overview_merged.csv
+[2026-07-29 15:27:53] [INFO] Extracao completa: 1098 pacientes, 0 erros, 45.8s
+[2026-07-29 15:27:53] [INFO] Features exportadas: results/features.csv (1098 x 251)
+[2026-07-29 15:27:53] [INFO] Pre-calculando aumentacoes de audio (8x per patologico)...
+[2026-07-29 15:48:43] [INFO] 
+========== FOLD 1/5 (HIERARCHICAL LATE FUSION) ==========
+[2026-07-29 15:48:45] [INFO] Epoch   1: train_loss=0.6389 train_acc=0.761 val_loss=0.3095 val_acc=0.689 val_f1=0.608
+[2026-07-29 15:48:47] [INFO] Epoch  10: train_loss=0.2960 train_acc=0.946 val_loss=0.1821 val_acc=0.685 val_f1=0.555
+[2026-07-29 15:48:50] [INFO] Epoch  20: train_loss=0.2607 train_acc=0.959 val_loss=0.1641 val_acc=0.712 val_f1=0.608
+[2026-07-29 15:48:53] [INFO] Epoch  30: train_loss=0.2321 train_acc=0.969 val_loss=0.1364 val_acc=0.766 val_f1=0.720
+[2026-07-29 15:48:55] [INFO] Epoch  40: train_loss=0.2197 train_acc=0.974 val_loss=0.1238 val_acc=0.788 val_f1=0.756
+[2026-07-29 15:48:58] [INFO] Epoch  50: train_loss=0.2144 train_acc=0.978 val_loss=0.1258 val_acc=0.806 val_f1=0.781
+[2026-07-29 15:49:01] [INFO] Epoch  60: train_loss=0.2187 train_acc=0.981 val_loss=0.1205 val_acc=0.802 val_f1=0.775
+[2026-07-29 15:49:03] [INFO] Epoch  70: train_loss=0.2187 train_acc=0.980 val_loss=0.1274 val_acc=0.793 val_f1=0.765
+[2026-07-29 15:49:06] [INFO] Epoch  80: train_loss=0.2123 train_acc=0.984 val_loss=0.1305 val_acc=0.802 val_f1=0.777
+[2026-07-29 15:49:09] [INFO] Epoch  90: train_loss=0.2255 train_acc=0.981 val_loss=0.1283 val_acc=0.797 val_f1=0.776
+[2026-07-29 15:49:10] [INFO] Early stopping na epoch 96
+[2026-07-29 15:49:11] [INFO] Epoch   1: train_loss=4.1529 train_acc=0.273 val_loss=0.8425 val_acc=0.298 val_f1=0.256
+[2026-07-29 15:49:13] [INFO] Epoch  10: train_loss=0.9049 train_acc=0.321 val_loss=0.7347 val_acc=0.333 val_f1=0.310
+[2026-07-29 15:49:15] [INFO] Epoch  20: train_loss=0.8356 train_acc=0.385 val_loss=0.7048 val_acc=0.310 val_f1=0.284
+[2026-07-29 15:49:16] [INFO] Epoch  30: train_loss=0.7216 train_acc=0.496 val_loss=0.7088 val_acc=0.369 val_f1=0.370
+[2026-07-29 15:49:18] [INFO] Epoch  40: train_loss=0.6289 train_acc=0.561 val_loss=0.7412 val_acc=0.393 val_f1=0.394
+[2026-07-29 15:49:20] [INFO] Epoch  50: train_loss=0.5540 train_acc=0.623 val_loss=0.8292 val_acc=0.369 val_f1=0.369
+[2026-07-29 15:49:22] [INFO] Epoch  60: train_loss=0.5061 train_acc=0.669 val_loss=0.8828 val_acc=0.393 val_f1=0.393
+[2026-07-29 15:49:24] [INFO] Epoch  70: train_loss=0.4728 train_acc=0.691 val_loss=0.9320 val_acc=0.405 val_f1=0.403
+[2026-07-29 15:49:25] [INFO] Early stopping na epoch 74
+[2026-07-29 15:49:25] [INFO] Epoch   1: train_loss=0.6008 train_acc=0.762 val_loss=0.3770 val_acc=0.680 val_f1=0.592
+[2026-07-29 15:49:27] [INFO] Epoch  10: train_loss=0.2390 train_acc=0.945 val_loss=0.2568 val_acc=0.653 val_f1=0.492
+[2026-07-29 15:49:30] [INFO] Epoch  20: train_loss=0.2395 train_acc=0.958 val_loss=0.2603 val_acc=0.698 val_f1=0.602
+[2026-07-29 15:49:33] [INFO] Epoch  30: train_loss=0.2228 train_acc=0.968 val_loss=0.1654 val_acc=0.757 val_f1=0.716
+[2026-07-29 15:49:36] [INFO] Epoch  40: train_loss=0.1998 train_acc=0.972 val_loss=0.1404 val_acc=0.752 val_f1=0.720
+[2026-07-29 15:49:38] [INFO] Epoch  50: train_loss=0.1978 train_acc=0.975 val_loss=0.1259 val_acc=0.793 val_f1=0.770
+[2026-07-29 15:49:41] [INFO] Epoch  60: train_loss=0.1910 train_acc=0.977 val_loss=0.1180 val_acc=0.806 val_f1=0.783
+[2026-07-29 15:49:44] [INFO] Epoch  70: train_loss=0.2024 train_acc=0.981 val_loss=0.1336 val_acc=0.811 val_f1=0.797
+[2026-07-29 15:49:46] [INFO] Epoch  80: train_loss=0.1931 train_acc=0.979 val_loss=0.1251 val_acc=0.820 val_f1=0.803
+[2026-07-29 15:49:49] [INFO] Epoch  90: train_loss=0.2084 train_acc=0.980 val_loss=0.1259 val_acc=0.806 val_f1=0.789
+[2026-07-29 15:49:52] [INFO] Epoch 100: train_loss=0.2040 train_acc=0.981 val_loss=0.1355 val_acc=0.797 val_f1=0.778
+[2026-07-29 15:49:54] [INFO] Early stopping na epoch 109
+[2026-07-29 15:49:55] [INFO] Epoch   1: train_loss=3.7829 train_acc=0.269 val_loss=1.0212 val_acc=0.310 val_f1=0.309
+[2026-07-29 15:49:56] [INFO] Epoch  10: train_loss=0.8842 train_acc=0.358 val_loss=0.8996 val_acc=0.310 val_f1=0.309
+[2026-07-29 15:49:58] [INFO] Epoch  20: train_loss=0.7958 train_acc=0.424 val_loss=0.8651 val_acc=0.369 val_f1=0.364
+[2026-07-29 15:50:00] [INFO] Epoch  30: train_loss=0.6902 train_acc=0.506 val_loss=0.8538 val_acc=0.333 val_f1=0.328
+[2026-07-29 15:50:02] [INFO] Epoch  40: train_loss=0.6112 train_acc=0.568 val_loss=0.8678 val_acc=0.369 val_f1=0.370
+[2026-07-29 15:50:04] [INFO] Epoch  50: train_loss=0.5483 train_acc=0.620 val_loss=0.9247 val_acc=0.357 val_f1=0.362
+[2026-07-29 15:50:06] [INFO] Epoch  60: train_loss=0.4963 train_acc=0.674 val_loss=0.9897 val_acc=0.393 val_f1=0.395
+[2026-07-29 15:50:07] [INFO] Epoch  70: train_loss=0.4659 train_acc=0.698 val_loss=1.0361 val_acc=0.393 val_f1=0.395
+[2026-07-29 15:50:09] [INFO] Epoch  80: train_loss=0.4507 train_acc=0.715 val_loss=1.0993 val_acc=0.381 val_f1=0.378
+[2026-07-29 15:50:11] [INFO] Early stopping na epoch 88
+[2026-07-29 15:50:11] [INFO] Epoch   1: train_loss=0.8137 train_acc=0.765 val_loss=0.4155 val_acc=0.581 val_f1=0.487
+[2026-07-29 15:50:14] [INFO] Epoch  10: train_loss=0.2990 train_acc=0.938 val_loss=0.1727 val_acc=0.640 val_f1=0.484
+[2026-07-29 15:50:16] [INFO] Epoch  20: train_loss=0.2706 train_acc=0.952 val_loss=0.1800 val_acc=0.667 val_f1=0.522
+[2026-07-29 15:50:19] [INFO] Epoch  30: train_loss=0.2470 train_acc=0.962 val_loss=0.1741 val_acc=0.662 val_f1=0.560
+[2026-07-29 15:50:22] [INFO] Epoch  40: train_loss=0.2154 train_acc=0.971 val_loss=0.1591 val_acc=0.712 val_f1=0.655
+[2026-07-29 15:50:24] [INFO] Epoch  50: train_loss=0.2060 train_acc=0.976 val_loss=0.1496 val_acc=0.748 val_f1=0.710
+[2026-07-29 15:50:27] [INFO] Epoch  60: train_loss=0.1873 train_acc=0.978 val_loss=0.1516 val_acc=0.748 val_f1=0.716
+[2026-07-29 15:50:30] [INFO] Epoch  70: train_loss=0.2062 train_acc=0.979 val_loss=0.1501 val_acc=0.757 val_f1=0.741
+[2026-07-29 15:50:33] [INFO] Epoch  80: train_loss=0.1934 train_acc=0.980 val_loss=0.1527 val_acc=0.766 val_f1=0.735
+[2026-07-29 15:50:35] [INFO] Epoch  90: train_loss=0.1994 train_acc=0.980 val_loss=0.1652 val_acc=0.770 val_f1=0.753
+[2026-07-29 15:50:38] [INFO] Epoch 100: train_loss=0.2096 train_acc=0.982 val_loss=0.1546 val_acc=0.775 val_f1=0.754
+[2026-07-29 15:50:41] [INFO] Epoch 110: train_loss=0.1953 train_acc=0.982 val_loss=0.1467 val_acc=0.761 val_f1=0.736
+[2026-07-29 15:50:41] [INFO] Early stopping na epoch 113
+[2026-07-29 15:50:42] [INFO] Epoch   1: train_loss=4.9574 train_acc=0.258 val_loss=1.0755 val_acc=0.214 val_f1=0.209
+[2026-07-29 15:50:44] [INFO] Epoch  10: train_loss=0.9282 train_acc=0.307 val_loss=0.7686 val_acc=0.226 val_f1=0.210
+[2026-07-29 15:50:45] [INFO] Epoch  20: train_loss=0.8560 train_acc=0.377 val_loss=0.7247 val_acc=0.333 val_f1=0.318
+[2026-07-29 15:50:47] [INFO] Epoch  30: train_loss=0.7509 train_acc=0.459 val_loss=0.6540 val_acc=0.429 val_f1=0.433
+[2026-07-29 15:50:49] [INFO] Epoch  40: train_loss=0.6692 train_acc=0.538 val_loss=0.6346 val_acc=0.440 val_f1=0.442
+[2026-07-29 15:50:51] [INFO] Epoch  50: train_loss=0.6110 train_acc=0.583 val_loss=0.6556 val_acc=0.405 val_f1=0.402
+[2026-07-29 15:50:53] [INFO] Epoch  60: train_loss=0.5661 train_acc=0.606 val_loss=0.6560 val_acc=0.393 val_f1=0.398
+[2026-07-29 15:50:55] [INFO] Epoch  70: train_loss=0.5268 train_acc=0.650 val_loss=0.7189 val_acc=0.417 val_f1=0.413
+[2026-07-29 15:50:55] [INFO] Early stopping na epoch 72
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        132            0            3            1            2
+  Laringite                      12            6            2            3            5
+  Disfonia Psicogenica            7            2            6            2            2
+  Disfonia Funcional              9            4            6            2            2
+  Edema de Reinke                 1            1            1            1           10
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8199     0.9565     0.8829
+Laringite                  0.4615     0.2143     0.2927
+Disfonia Psicogenica       0.3333     0.3158     0.3243
+Disfonia Funcional         0.2222     0.0870     0.1250
+Edema de Reinke            0.4762     0.7143     0.5714
+
+=== Metricas Globais ===
+Acuracia:     0.7027
+Macro F1:     0.4393
+Weighted F1:  0.6625
+Total amostras: 222
+[2026-07-29 15:50:55] [INFO] 
+========== FOLD 2/5 (HIERARCHICAL LATE FUSION) ==========
+[2026-07-29 15:50:57] [INFO] Epoch   1: train_loss=0.6582 train_acc=0.780 val_loss=0.4918 val_acc=0.679 val_f1=0.551
+[2026-07-29 15:50:59] [INFO] Epoch  10: train_loss=0.3022 train_acc=0.949 val_loss=0.1770 val_acc=0.679 val_f1=0.531
+[2026-07-29 15:51:02] [INFO] Epoch  20: train_loss=0.2879 train_acc=0.957 val_loss=0.1610 val_acc=0.719 val_f1=0.629
+[2026-07-29 15:51:05] [INFO] Epoch  30: train_loss=0.2517 train_acc=0.968 val_loss=0.1521 val_acc=0.738 val_f1=0.681
+[2026-07-29 15:51:08] [INFO] Epoch  40: train_loss=0.2402 train_acc=0.975 val_loss=0.1474 val_acc=0.747 val_f1=0.707
+[2026-07-29 15:51:10] [INFO] Epoch  50: train_loss=0.2200 train_acc=0.981 val_loss=0.1414 val_acc=0.756 val_f1=0.728
+[2026-07-29 15:51:13] [INFO] Epoch  60: train_loss=0.2177 train_acc=0.978 val_loss=0.1487 val_acc=0.747 val_f1=0.716
+[2026-07-29 15:51:16] [INFO] Epoch  70: train_loss=0.2145 train_acc=0.982 val_loss=0.1443 val_acc=0.760 val_f1=0.733
+[2026-07-29 15:51:18] [INFO] Epoch  80: train_loss=0.2118 train_acc=0.984 val_loss=0.1513 val_acc=0.760 val_f1=0.724
+[2026-07-29 15:51:21] [INFO] Epoch  90: train_loss=0.2170 train_acc=0.982 val_loss=0.1476 val_acc=0.769 val_f1=0.747
+[2026-07-29 15:51:24] [INFO] Epoch 100: train_loss=0.2244 train_acc=0.983 val_loss=0.1566 val_acc=0.765 val_f1=0.738
+[2026-07-29 15:51:25] [INFO] Early stopping na epoch 104
+[2026-07-29 15:51:25] [INFO] Epoch   1: train_loss=4.0237 train_acc=0.265 val_loss=0.8489 val_acc=0.289 val_f1=0.285
+[2026-07-29 15:51:27] [INFO] Epoch  10: train_loss=0.8864 train_acc=0.345 val_loss=0.7681 val_acc=0.193 val_f1=0.175
+[2026-07-29 15:51:29] [INFO] Epoch  20: train_loss=0.7953 train_acc=0.428 val_loss=0.7201 val_acc=0.349 val_f1=0.353
+[2026-07-29 15:51:31] [INFO] Epoch  30: train_loss=0.7031 train_acc=0.493 val_loss=0.7272 val_acc=0.434 val_f1=0.438
+[2026-07-29 15:51:32] [INFO] Epoch  40: train_loss=0.6109 train_acc=0.564 val_loss=0.8162 val_acc=0.398 val_f1=0.402
+[2026-07-29 15:51:34] [INFO] Epoch  50: train_loss=0.5571 train_acc=0.616 val_loss=0.8831 val_acc=0.434 val_f1=0.436
+[2026-07-29 15:51:36] [INFO] Epoch  60: train_loss=0.5102 train_acc=0.654 val_loss=0.9831 val_acc=0.410 val_f1=0.407
+[2026-07-29 15:51:38] [INFO] Epoch  70: train_loss=0.4661 train_acc=0.695 val_loss=1.0589 val_acc=0.434 val_f1=0.434
+[2026-07-29 15:51:40] [INFO] Epoch  80: train_loss=0.4513 train_acc=0.707 val_loss=1.0943 val_acc=0.398 val_f1=0.395
+[2026-07-29 15:51:41] [INFO] Early stopping na epoch 86
+[2026-07-29 15:51:41] [INFO] Epoch   1: train_loss=0.5913 train_acc=0.746 val_loss=0.3243 val_acc=0.620 val_f1=0.498
+[2026-07-29 15:51:44] [INFO] Epoch  10: train_loss=0.2283 train_acc=0.938 val_loss=0.1653 val_acc=0.670 val_f1=0.525
+[2026-07-29 15:51:46] [INFO] Epoch  20: train_loss=0.2203 train_acc=0.954 val_loss=0.1562 val_acc=0.688 val_f1=0.590
+[2026-07-29 15:51:49] [INFO] Epoch  30: train_loss=0.2056 train_acc=0.966 val_loss=0.1461 val_acc=0.742 val_f1=0.688
+[2026-07-29 15:51:52] [INFO] Epoch  40: train_loss=0.1894 train_acc=0.972 val_loss=0.1453 val_acc=0.756 val_f1=0.726
+[2026-07-29 15:51:55] [INFO] Epoch  50: train_loss=0.1793 train_acc=0.977 val_loss=0.1407 val_acc=0.765 val_f1=0.739
+[2026-07-29 15:51:57] [INFO] Epoch  60: train_loss=0.1960 train_acc=0.979 val_loss=0.1430 val_acc=0.756 val_f1=0.711
+[2026-07-29 15:52:00] [INFO] Epoch  70: train_loss=0.1921 train_acc=0.978 val_loss=0.1464 val_acc=0.760 val_f1=0.728
+[2026-07-29 15:52:01] [INFO] Early stopping na epoch 75
+[2026-07-29 15:52:02] [INFO] Epoch   1: train_loss=3.5452 train_acc=0.266 val_loss=0.9325 val_acc=0.181 val_f1=0.169
+[2026-07-29 15:52:04] [INFO] Epoch  10: train_loss=0.8744 train_acc=0.375 val_loss=0.7593 val_acc=0.277 val_f1=0.270
+[2026-07-29 15:52:05] [INFO] Epoch  20: train_loss=0.7605 train_acc=0.466 val_loss=0.7672 val_acc=0.373 val_f1=0.365
+[2026-07-29 15:52:07] [INFO] Epoch  30: train_loss=0.6668 train_acc=0.520 val_loss=0.8538 val_acc=0.422 val_f1=0.418
+[2026-07-29 15:52:09] [INFO] Epoch  40: train_loss=0.5893 train_acc=0.590 val_loss=0.9081 val_acc=0.386 val_f1=0.372
+[2026-07-29 15:52:11] [INFO] Epoch  50: train_loss=0.5425 train_acc=0.618 val_loss=0.9470 val_acc=0.373 val_f1=0.351
+[2026-07-29 15:52:13] [INFO] Epoch  60: train_loss=0.4987 train_acc=0.660 val_loss=1.0033 val_acc=0.386 val_f1=0.369
+[2026-07-29 15:52:14] [INFO] Early stopping na epoch 65
+[2026-07-29 15:52:14] [INFO] Epoch   1: train_loss=0.7057 train_acc=0.785 val_loss=0.2974 val_acc=0.633 val_f1=0.524
+[2026-07-29 15:52:17] [INFO] Epoch  10: train_loss=0.2985 train_acc=0.936 val_loss=0.1744 val_acc=0.652 val_f1=0.476
+[2026-07-29 15:52:19] [INFO] Epoch  20: train_loss=0.2669 train_acc=0.952 val_loss=0.1692 val_acc=0.674 val_f1=0.528
+[2026-07-29 15:52:22] [INFO] Epoch  30: train_loss=0.2232 train_acc=0.962 val_loss=0.1479 val_acc=0.738 val_f1=0.668
+[2026-07-29 15:52:25] [INFO] Epoch  40: train_loss=0.2087 train_acc=0.969 val_loss=0.1300 val_acc=0.783 val_f1=0.743
+[2026-07-29 15:52:27] [INFO] Epoch  50: train_loss=0.1982 train_acc=0.977 val_loss=0.1425 val_acc=0.778 val_f1=0.741
+[2026-07-29 15:52:30] [INFO] Epoch  60: train_loss=0.2174 train_acc=0.980 val_loss=0.1457 val_acc=0.783 val_f1=0.751
+[2026-07-29 15:52:33] [INFO] Epoch  70: train_loss=0.2028 train_acc=0.979 val_loss=0.1400 val_acc=0.783 val_f1=0.745
+[2026-07-29 15:52:35] [INFO] Epoch  80: train_loss=0.1966 train_acc=0.978 val_loss=0.1355 val_acc=0.783 val_f1=0.749
+[2026-07-29 15:52:38] [INFO] Epoch  90: train_loss=0.2086 train_acc=0.981 val_loss=0.1337 val_acc=0.805 val_f1=0.781
+[2026-07-29 15:52:41] [INFO] Epoch 100: train_loss=0.2054 train_acc=0.980 val_loss=0.1516 val_acc=0.792 val_f1=0.754
+[2026-07-29 15:52:43] [INFO] Epoch 110: train_loss=0.2073 train_acc=0.982 val_loss=0.1435 val_acc=0.792 val_f1=0.756
+[2026-07-29 15:52:46] [INFO] Epoch 120: train_loss=0.2134 train_acc=0.982 val_loss=0.1457 val_acc=0.787 val_f1=0.749
+[2026-07-29 15:52:49] [INFO] Epoch 130: train_loss=0.2110 train_acc=0.984 val_loss=0.1315 val_acc=0.787 val_f1=0.769
+[2026-07-29 15:52:51] [INFO] Epoch 140: train_loss=0.2226 train_acc=0.984 val_loss=0.1463 val_acc=0.796 val_f1=0.767
+[2026-07-29 15:52:54] [INFO] Epoch 150: train_loss=0.2143 train_acc=0.982 val_loss=0.1336 val_acc=0.787 val_f1=0.757
+[2026-07-29 15:52:57] [INFO] Epoch 160: train_loss=0.2092 train_acc=0.986 val_loss=0.1433 val_acc=0.801 val_f1=0.775
+[2026-07-29 15:52:58] [INFO] Early stopping na epoch 164
+[2026-07-29 15:52:58] [INFO] Epoch   1: train_loss=4.2920 train_acc=0.269 val_loss=0.9465 val_acc=0.253 val_f1=0.244
+[2026-07-29 15:53:00] [INFO] Epoch  10: train_loss=0.9117 train_acc=0.336 val_loss=0.7747 val_acc=0.205 val_f1=0.185
+[2026-07-29 15:53:02] [INFO] Epoch  20: train_loss=0.8188 train_acc=0.420 val_loss=0.7473 val_acc=0.313 val_f1=0.309
+[2026-07-29 15:53:04] [INFO] Epoch  30: train_loss=0.7165 train_acc=0.499 val_loss=0.7309 val_acc=0.373 val_f1=0.372
+[2026-07-29 15:53:06] [INFO] Epoch  40: train_loss=0.6317 train_acc=0.551 val_loss=0.7850 val_acc=0.349 val_f1=0.349
+[2026-07-29 15:53:07] [INFO] Epoch  50: train_loss=0.5764 train_acc=0.606 val_loss=0.8402 val_acc=0.349 val_f1=0.350
+[2026-07-29 15:53:09] [INFO] Epoch  60: train_loss=0.5459 train_acc=0.613 val_loss=0.8781 val_acc=0.325 val_f1=0.318
+[2026-07-29 15:53:11] [INFO] Epoch  70: train_loss=0.5145 train_acc=0.648 val_loss=0.9461 val_acc=0.313 val_f1=0.304
+[2026-07-29 15:53:12] [INFO] Early stopping na epoch 77
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        129            0            2            3            4
+  Laringite                      12            9            0            0            7
+  Disfonia Psicogenica            4            3            8            1            2
+  Disfonia Funcional             11            2            4            4            2
+  Edema de Reinke                 2            3            3            0            6
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8165     0.9348     0.8716
+Laringite                  0.5294     0.3214     0.4000
+Disfonia Psicogenica       0.4706     0.4444     0.4571
+Disfonia Funcional         0.5000     0.1739     0.2581
+Edema de Reinke            0.2857     0.4286     0.3429
+
+=== Metricas Globais ===
+Acuracia:     0.7059
+Macro F1:     0.4659
+Weighted F1:  0.6808
+Total amostras: 221
+[2026-07-29 15:53:12] [INFO] 
+========== FOLD 3/5 (HIERARCHICAL LATE FUSION) ==========
+[2026-07-29 15:53:14] [INFO] Epoch   1: train_loss=0.7756 train_acc=0.809 val_loss=0.3800 val_acc=0.667 val_f1=0.570
+[2026-07-29 15:53:16] [INFO] Epoch  10: train_loss=0.2996 train_acc=0.947 val_loss=0.1539 val_acc=0.712 val_f1=0.595
+[2026-07-29 15:53:19] [INFO] Epoch  20: train_loss=0.2716 train_acc=0.959 val_loss=0.1561 val_acc=0.721 val_f1=0.623
+[2026-07-29 15:53:22] [INFO] Epoch  30: train_loss=0.2354 train_acc=0.968 val_loss=0.1500 val_acc=0.749 val_f1=0.686
+[2026-07-29 15:53:25] [INFO] Epoch  40: train_loss=0.2208 train_acc=0.976 val_loss=0.1348 val_acc=0.785 val_f1=0.752
+[2026-07-29 15:53:27] [INFO] Epoch  50: train_loss=0.1997 train_acc=0.980 val_loss=0.1497 val_acc=0.767 val_f1=0.737
+[2026-07-29 15:53:30] [INFO] Epoch  60: train_loss=0.1890 train_acc=0.977 val_loss=0.1292 val_acc=0.772 val_f1=0.745
+[2026-07-29 15:53:33] [INFO] Epoch  70: train_loss=0.2111 train_acc=0.984 val_loss=0.1438 val_acc=0.758 val_f1=0.719
+[2026-07-29 15:53:35] [INFO] Epoch  80: train_loss=0.2056 train_acc=0.983 val_loss=0.1364 val_acc=0.763 val_f1=0.735
+[2026-07-29 15:53:36] [INFO] Early stopping na epoch 81
+[2026-07-29 15:53:36] [INFO] Epoch   1: train_loss=4.4398 train_acc=0.261 val_loss=0.8415 val_acc=0.366 val_f1=0.362
+[2026-07-29 15:53:38] [INFO] Epoch  10: train_loss=0.9107 train_acc=0.337 val_loss=0.7569 val_acc=0.305 val_f1=0.294
+[2026-07-29 15:53:40] [INFO] Epoch  20: train_loss=0.8097 train_acc=0.422 val_loss=0.7248 val_acc=0.293 val_f1=0.296
+[2026-07-29 15:53:41] [INFO] Epoch  30: train_loss=0.7040 train_acc=0.507 val_loss=0.7285 val_acc=0.378 val_f1=0.376
+[2026-07-29 15:53:43] [INFO] Epoch  40: train_loss=0.6206 train_acc=0.584 val_loss=0.7821 val_acc=0.366 val_f1=0.363
+[2026-07-29 15:53:45] [INFO] Epoch  50: train_loss=0.5595 train_acc=0.616 val_loss=0.8360 val_acc=0.415 val_f1=0.401
+[2026-07-29 15:53:47] [INFO] Epoch  60: train_loss=0.5170 train_acc=0.657 val_loss=0.8940 val_acc=0.451 val_f1=0.442
+[2026-07-29 15:53:49] [INFO] Epoch  70: train_loss=0.4776 train_acc=0.681 val_loss=0.9362 val_acc=0.415 val_f1=0.406
+[2026-07-29 15:53:51] [INFO] Epoch  80: train_loss=0.4537 train_acc=0.720 val_loss=0.9732 val_acc=0.415 val_f1=0.402
+[2026-07-29 15:53:52] [INFO] Epoch  90: train_loss=0.4371 train_acc=0.731 val_loss=1.0304 val_acc=0.415 val_f1=0.401
+[2026-07-29 15:53:52] [INFO] Early stopping na epoch 90
+[2026-07-29 15:53:53] [INFO] Epoch   1: train_loss=0.7005 train_acc=0.728 val_loss=0.3088 val_acc=0.630 val_f1=0.563
+[2026-07-29 15:53:55] [INFO] Epoch  10: train_loss=0.2398 train_acc=0.938 val_loss=0.1561 val_acc=0.689 val_f1=0.553
+[2026-07-29 15:53:58] [INFO] Epoch  20: train_loss=0.2198 train_acc=0.956 val_loss=0.1485 val_acc=0.699 val_f1=0.572
+[2026-07-29 15:54:01] [INFO] Epoch  30: train_loss=0.2107 train_acc=0.966 val_loss=0.1297 val_acc=0.749 val_f1=0.698
+[2026-07-29 15:54:03] [INFO] Epoch  40: train_loss=0.1905 train_acc=0.974 val_loss=0.1286 val_acc=0.799 val_f1=0.767
+[2026-07-29 15:54:06] [INFO] Epoch  50: train_loss=0.1938 train_acc=0.975 val_loss=0.1381 val_acc=0.790 val_f1=0.760
+[2026-07-29 15:54:09] [INFO] Epoch  60: train_loss=0.1885 train_acc=0.978 val_loss=0.1229 val_acc=0.831 val_f1=0.815
+[2026-07-29 15:54:12] [INFO] Epoch  70: train_loss=0.2001 train_acc=0.980 val_loss=0.1262 val_acc=0.831 val_f1=0.811
+[2026-07-29 15:54:14] [INFO] Epoch  80: train_loss=0.2036 train_acc=0.980 val_loss=0.1198 val_acc=0.826 val_f1=0.810
+[2026-07-29 15:54:17] [INFO] Epoch  90: train_loss=0.2014 train_acc=0.982 val_loss=0.1268 val_acc=0.817 val_f1=0.798
+[2026-07-29 15:54:20] [INFO] Epoch 100: train_loss=0.2032 train_acc=0.982 val_loss=0.1274 val_acc=0.831 val_f1=0.814
+[2026-07-29 15:54:21] [INFO] Early stopping na epoch 106
+[2026-07-29 15:54:22] [INFO] Epoch   1: train_loss=4.3361 train_acc=0.262 val_loss=0.8096 val_acc=0.293 val_f1=0.283
+[2026-07-29 15:54:23] [INFO] Epoch  10: train_loss=0.8886 train_acc=0.354 val_loss=0.6941 val_acc=0.354 val_f1=0.350
+[2026-07-29 15:54:25] [INFO] Epoch  20: train_loss=0.7690 train_acc=0.452 val_loss=0.6475 val_acc=0.427 val_f1=0.427
+[2026-07-29 15:54:27] [INFO] Epoch  30: train_loss=0.6801 train_acc=0.529 val_loss=0.6404 val_acc=0.451 val_f1=0.437
+[2026-07-29 15:54:29] [INFO] Epoch  40: train_loss=0.6084 train_acc=0.574 val_loss=0.7342 val_acc=0.427 val_f1=0.410
+[2026-07-29 15:54:31] [INFO] Epoch  50: train_loss=0.5416 train_acc=0.620 val_loss=0.8071 val_acc=0.427 val_f1=0.401
+[2026-07-29 15:54:33] [INFO] Epoch  60: train_loss=0.5122 train_acc=0.646 val_loss=0.8519 val_acc=0.439 val_f1=0.424
+[2026-07-29 15:54:33] [INFO] Early stopping na epoch 63
+[2026-07-29 15:54:34] [INFO] Epoch   1: train_loss=0.7984 train_acc=0.763 val_loss=0.4712 val_acc=0.639 val_f1=0.505
+[2026-07-29 15:54:36] [INFO] Epoch  10: train_loss=0.3327 train_acc=0.938 val_loss=0.2511 val_acc=0.644 val_f1=0.487
+[2026-07-29 15:54:39] [INFO] Epoch  20: train_loss=0.2959 train_acc=0.952 val_loss=0.1654 val_acc=0.685 val_f1=0.562
+[2026-07-29 15:54:42] [INFO] Epoch  30: train_loss=0.2377 train_acc=0.963 val_loss=0.1542 val_acc=0.744 val_f1=0.679
+[2026-07-29 15:54:44] [INFO] Epoch  40: train_loss=0.2080 train_acc=0.971 val_loss=0.1301 val_acc=0.772 val_f1=0.733
+[2026-07-29 15:54:47] [INFO] Epoch  50: train_loss=0.2076 train_acc=0.978 val_loss=0.1410 val_acc=0.767 val_f1=0.729
+[2026-07-29 15:54:50] [INFO] Epoch  60: train_loss=0.2062 train_acc=0.977 val_loss=0.1306 val_acc=0.781 val_f1=0.755
+[2026-07-29 15:54:52] [INFO] Epoch  70: train_loss=0.2210 train_acc=0.980 val_loss=0.1346 val_acc=0.744 val_f1=0.706
+[2026-07-29 15:54:55] [INFO] Epoch  80: train_loss=0.2069 train_acc=0.979 val_loss=0.2058 val_acc=0.772 val_f1=0.738
+[2026-07-29 15:54:58] [INFO] Epoch  90: train_loss=0.2169 train_acc=0.980 val_loss=0.1309 val_acc=0.781 val_f1=0.753
+[2026-07-29 15:55:01] [INFO] Epoch 100: train_loss=0.2245 train_acc=0.980 val_loss=0.1331 val_acc=0.776 val_f1=0.755
+[2026-07-29 15:55:02] [INFO] Early stopping na epoch 105
+[2026-07-29 15:55:03] [INFO] Epoch   1: train_loss=4.2933 train_acc=0.249 val_loss=1.0461 val_acc=0.366 val_f1=0.314
+[2026-07-29 15:55:06] [INFO] Epoch  10: train_loss=0.9164 train_acc=0.319 val_loss=0.9357 val_acc=0.256 val_f1=0.241
+[2026-07-29 15:55:09] [INFO] Epoch  20: train_loss=0.8063 train_acc=0.419 val_loss=0.9153 val_acc=0.317 val_f1=0.299
+[2026-07-29 15:55:13] [INFO] Epoch  30: train_loss=0.7116 train_acc=0.496 val_loss=0.9755 val_acc=0.354 val_f1=0.341
+[2026-07-29 15:55:16] [INFO] Epoch  40: train_loss=0.6359 train_acc=0.562 val_loss=0.8715 val_acc=0.305 val_f1=0.316
+[2026-07-29 15:55:20] [INFO] Epoch  50: train_loss=0.5854 train_acc=0.605 val_loss=1.1303 val_acc=0.366 val_f1=0.353
+[2026-07-29 15:55:23] [INFO] Early stopping na epoch 57
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        123            2            6            6            0
+  Laringite                       9           12            2            2            3
+  Disfonia Psicogenica            3            1            6            6            2
+  Disfonia Funcional              9            0            8            4            1
+  Edema de Reinke                 3            1            0            4            6
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8367     0.8978     0.8662
+Laringite                  0.7500     0.4286     0.5455
+Disfonia Psicogenica       0.2727     0.3333     0.3000
+Disfonia Funcional         0.1818     0.1818     0.1818
+Edema de Reinke            0.5000     0.4286     0.4615
+
+=== Metricas Globais ===
+Acuracia:     0.6895
+Macro F1:     0.4710
+Weighted F1:  0.6840
+Total amostras: 219
+[2026-07-29 15:55:23] [INFO] 
+========== FOLD 4/5 (HIERARCHICAL LATE FUSION) ==========
+[2026-07-29 15:55:25] [INFO] Epoch   1: train_loss=0.7546 train_acc=0.751 val_loss=0.3333 val_acc=0.683 val_f1=0.597
+[2026-07-29 15:55:27] [INFO] Epoch  10: train_loss=0.2475 train_acc=0.943 val_loss=0.1544 val_acc=0.670 val_f1=0.512
+[2026-07-29 15:55:30] [INFO] Epoch  20: train_loss=0.2201 train_acc=0.956 val_loss=0.1548 val_acc=0.683 val_f1=0.555
+[2026-07-29 15:55:32] [INFO] Epoch  30: train_loss=0.2306 train_acc=0.964 val_loss=0.1344 val_acc=0.739 val_f1=0.674
+[2026-07-29 15:55:35] [INFO] Epoch  40: train_loss=0.2261 train_acc=0.974 val_loss=0.1341 val_acc=0.771 val_f1=0.735
+[2026-07-29 15:55:38] [INFO] Epoch  50: train_loss=0.2070 train_acc=0.978 val_loss=0.1502 val_acc=0.775 val_f1=0.733
+[2026-07-29 15:55:41] [INFO] Epoch  60: train_loss=0.2058 train_acc=0.979 val_loss=0.1350 val_acc=0.775 val_f1=0.739
+[2026-07-29 15:55:43] [INFO] Epoch  70: train_loss=0.2182 train_acc=0.980 val_loss=0.1370 val_acc=0.784 val_f1=0.760
+[2026-07-29 15:55:46] [INFO] Epoch  80: train_loss=0.2125 train_acc=0.981 val_loss=0.1403 val_acc=0.766 val_f1=0.729
+[2026-07-29 15:55:49] [INFO] Epoch  90: train_loss=0.2149 train_acc=0.982 val_loss=0.1380 val_acc=0.766 val_f1=0.729
+[2026-07-29 15:55:49] [INFO] Early stopping na epoch 91
+[2026-07-29 15:55:49] [INFO] Epoch   1: train_loss=4.0865 train_acc=0.267 val_loss=0.8637 val_acc=0.272 val_f1=0.268
+[2026-07-29 15:55:51] [INFO] Epoch  10: train_loss=0.9104 train_acc=0.325 val_loss=0.7510 val_acc=0.284 val_f1=0.264
+[2026-07-29 15:55:53] [INFO] Epoch  20: train_loss=0.8198 train_acc=0.418 val_loss=0.6957 val_acc=0.383 val_f1=0.367
+[2026-07-29 15:55:55] [INFO] Epoch  30: train_loss=0.6904 train_acc=0.520 val_loss=0.6935 val_acc=0.444 val_f1=0.430
+[2026-07-29 15:55:57] [INFO] Epoch  40: train_loss=0.6171 train_acc=0.586 val_loss=0.7196 val_acc=0.395 val_f1=0.392
+[2026-07-29 15:55:58] [INFO] Epoch  50: train_loss=0.5532 train_acc=0.629 val_loss=0.7453 val_acc=0.407 val_f1=0.406
+[2026-07-29 15:56:00] [INFO] Epoch  60: train_loss=0.4995 train_acc=0.680 val_loss=0.8090 val_acc=0.395 val_f1=0.392
+[2026-07-29 15:56:02] [INFO] Epoch  70: train_loss=0.4701 train_acc=0.698 val_loss=0.8425 val_acc=0.370 val_f1=0.368
+[2026-07-29 15:56:04] [INFO] Epoch  80: train_loss=0.4371 train_acc=0.728 val_loss=0.8877 val_acc=0.383 val_f1=0.369
+[2026-07-29 15:56:04] [INFO] Early stopping na epoch 81
+[2026-07-29 15:56:05] [INFO] Epoch   1: train_loss=0.6133 train_acc=0.754 val_loss=0.2865 val_acc=0.679 val_f1=0.574
+[2026-07-29 15:56:09] [INFO] Epoch  10: train_loss=0.2205 train_acc=0.942 val_loss=0.1677 val_acc=0.661 val_f1=0.473
+[2026-07-29 15:56:15] [INFO] Epoch  20: train_loss=0.2134 train_acc=0.960 val_loss=0.1590 val_acc=0.711 val_f1=0.594
+[2026-07-29 15:56:20] [INFO] Epoch  30: train_loss=0.1992 train_acc=0.970 val_loss=0.1411 val_acc=0.739 val_f1=0.671
+[2026-07-29 15:56:25] [INFO] Epoch  40: train_loss=0.1898 train_acc=0.976 val_loss=0.1326 val_acc=0.752 val_f1=0.699
+[2026-07-29 15:56:30] [INFO] Epoch  50: train_loss=0.1886 train_acc=0.978 val_loss=0.1173 val_acc=0.789 val_f1=0.760
+[2026-07-29 15:56:35] [INFO] Epoch  60: train_loss=0.1904 train_acc=0.978 val_loss=0.1362 val_acc=0.784 val_f1=0.748
+[2026-07-29 15:56:40] [INFO] Epoch  70: train_loss=0.1932 train_acc=0.979 val_loss=0.1289 val_acc=0.789 val_f1=0.754
+[2026-07-29 15:56:45] [INFO] Epoch  80: train_loss=0.1854 train_acc=0.982 val_loss=0.1141 val_acc=0.794 val_f1=0.761
+[2026-07-29 15:56:51] [INFO] Epoch  90: train_loss=0.1873 train_acc=0.981 val_loss=0.1253 val_acc=0.798 val_f1=0.769
+[2026-07-29 15:56:56] [INFO] Epoch 100: train_loss=0.1904 train_acc=0.983 val_loss=0.1360 val_acc=0.789 val_f1=0.750
+[2026-07-29 15:57:01] [INFO] Epoch 110: train_loss=0.1925 train_acc=0.982 val_loss=0.1312 val_acc=0.775 val_f1=0.741
+[2026-07-29 15:57:04] [INFO] Early stopping na epoch 116
+[2026-07-29 15:57:04] [INFO] Epoch   1: train_loss=3.4745 train_acc=0.270 val_loss=0.7971 val_acc=0.296 val_f1=0.273
+[2026-07-29 15:57:06] [INFO] Epoch  10: train_loss=0.8826 train_acc=0.383 val_loss=0.7327 val_acc=0.296 val_f1=0.283
+[2026-07-29 15:57:08] [INFO] Epoch  20: train_loss=0.7789 train_acc=0.459 val_loss=0.6716 val_acc=0.407 val_f1=0.400
+[2026-07-29 15:57:10] [INFO] Epoch  30: train_loss=0.6803 train_acc=0.522 val_loss=0.6821 val_acc=0.395 val_f1=0.390
+[2026-07-29 15:57:12] [INFO] Epoch  40: train_loss=0.6007 train_acc=0.593 val_loss=0.7226 val_acc=0.358 val_f1=0.340
+[2026-07-29 15:57:13] [INFO] Early stopping na epoch 48
+[2026-07-29 15:57:13] [INFO] Epoch   1: train_loss=0.6932 train_acc=0.803 val_loss=0.3186 val_acc=0.651 val_f1=0.549
+[2026-07-29 15:57:16] [INFO] Epoch  10: train_loss=0.3189 train_acc=0.939 val_loss=0.1672 val_acc=0.665 val_f1=0.493
+[2026-07-29 15:57:19] [INFO] Epoch  20: train_loss=0.2701 train_acc=0.954 val_loss=0.1637 val_acc=0.674 val_f1=0.515
+[2026-07-29 15:57:21] [INFO] Epoch  30: train_loss=0.2636 train_acc=0.964 val_loss=0.1386 val_acc=0.725 val_f1=0.651
+[2026-07-29 15:57:24] [INFO] Epoch  40: train_loss=0.2027 train_acc=0.974 val_loss=0.1354 val_acc=0.766 val_f1=0.726
+[2026-07-29 15:57:27] [INFO] Epoch  50: train_loss=0.1962 train_acc=0.974 val_loss=0.1256 val_acc=0.821 val_f1=0.799
+[2026-07-29 15:57:30] [INFO] Epoch  60: train_loss=0.1867 train_acc=0.978 val_loss=0.1465 val_acc=0.771 val_f1=0.743
+[2026-07-29 15:57:32] [INFO] Epoch  70: train_loss=0.2006 train_acc=0.980 val_loss=0.1319 val_acc=0.798 val_f1=0.778
+[2026-07-29 15:57:35] [INFO] Epoch  80: train_loss=0.1963 train_acc=0.982 val_loss=0.1253 val_acc=0.826 val_f1=0.803
+[2026-07-29 15:57:38] [INFO] Epoch  90: train_loss=0.1984 train_acc=0.978 val_loss=0.1262 val_acc=0.803 val_f1=0.779
+[2026-07-29 15:57:40] [INFO] Epoch 100: train_loss=0.2002 train_acc=0.978 val_loss=0.1250 val_acc=0.817 val_f1=0.791
+[2026-07-29 15:57:41] [INFO] Early stopping na epoch 102
+[2026-07-29 15:57:42] [INFO] Epoch   1: train_loss=4.3548 train_acc=0.258 val_loss=0.9157 val_acc=0.235 val_f1=0.230
+[2026-07-29 15:57:43] [INFO] Epoch  10: train_loss=0.9108 train_acc=0.331 val_loss=0.7556 val_acc=0.321 val_f1=0.318
+[2026-07-29 15:57:45] [INFO] Epoch  20: train_loss=0.8068 train_acc=0.419 val_loss=0.7106 val_acc=0.383 val_f1=0.366
+[2026-07-29 15:57:47] [INFO] Epoch  30: train_loss=0.7151 train_acc=0.508 val_loss=0.7018 val_acc=0.444 val_f1=0.416
+[2026-07-29 15:57:49] [INFO] Epoch  40: train_loss=0.6535 train_acc=0.535 val_loss=0.7435 val_acc=0.407 val_f1=0.391
+[2026-07-29 15:57:51] [INFO] Epoch  50: train_loss=0.5889 train_acc=0.590 val_loss=0.8087 val_acc=0.383 val_f1=0.367
+[2026-07-29 15:57:52] [INFO] Epoch  60: train_loss=0.5460 train_acc=0.623 val_loss=0.8606 val_acc=0.457 val_f1=0.448
+[2026-07-29 15:57:53] [INFO] Early stopping na epoch 63
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        126            4            4            1            2
+  Laringite                      11           10            0            1            6
+  Disfonia Psicogenica            5            2            6            2            3
+  Disfonia Funcional              9            1            6            3            3
+  Edema de Reinke                 0            2            3            0            8
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8344     0.9197     0.8750
+Laringite                  0.5263     0.3571     0.4255
+Disfonia Psicogenica       0.3158     0.3333     0.3243
+Disfonia Funcional         0.4286     0.1364     0.2069
+Edema de Reinke            0.3636     0.6154     0.4571
+
+=== Metricas Globais ===
+Acuracia:     0.7018
+Macro F1:     0.4578
+Weighted F1:  0.6795
+Total amostras: 218
+[2026-07-29 15:57:53] [INFO] 
+========== FOLD 5/5 (HIERARCHICAL LATE FUSION) ==========
+[2026-07-29 15:57:55] [INFO] Epoch   1: train_loss=0.6940 train_acc=0.809 val_loss=0.3366 val_acc=0.665 val_f1=0.598
+[2026-07-29 15:57:57] [INFO] Epoch  10: train_loss=0.2812 train_acc=0.940 val_loss=0.1657 val_acc=0.665 val_f1=0.493
+[2026-07-29 15:58:00] [INFO] Epoch  20: train_loss=0.2425 train_acc=0.959 val_loss=0.1581 val_acc=0.697 val_f1=0.578
+[2026-07-29 15:58:03] [INFO] Epoch  30: train_loss=0.2080 train_acc=0.968 val_loss=0.1421 val_acc=0.784 val_f1=0.739
+[2026-07-29 15:58:05] [INFO] Epoch  40: train_loss=0.1991 train_acc=0.971 val_loss=0.1462 val_acc=0.789 val_f1=0.763
+[2026-07-29 15:58:08] [INFO] Epoch  50: train_loss=0.2020 train_acc=0.977 val_loss=0.1441 val_acc=0.775 val_f1=0.749
+[2026-07-29 15:58:11] [INFO] Epoch  60: train_loss=0.1980 train_acc=0.977 val_loss=0.1409 val_acc=0.775 val_f1=0.745
+[2026-07-29 15:58:14] [INFO] Epoch  70: train_loss=0.2056 train_acc=0.981 val_loss=0.1441 val_acc=0.775 val_f1=0.741
+[2026-07-29 15:58:16] [INFO] Epoch  80: train_loss=0.1960 train_acc=0.980 val_loss=0.1475 val_acc=0.798 val_f1=0.772
+[2026-07-29 15:58:19] [INFO] Epoch  90: train_loss=0.2051 train_acc=0.983 val_loss=0.1460 val_acc=0.798 val_f1=0.770
+[2026-07-29 15:58:22] [INFO] Epoch 100: train_loss=0.2136 train_acc=0.982 val_loss=0.1397 val_acc=0.798 val_f1=0.770
+[2026-07-29 15:58:24] [INFO] Epoch 110: train_loss=0.2211 train_acc=0.984 val_loss=0.1470 val_acc=0.784 val_f1=0.754
+[2026-07-29 15:58:27] [INFO] Epoch 120: train_loss=0.2170 train_acc=0.986 val_loss=0.1469 val_acc=0.780 val_f1=0.753
+[2026-07-29 15:58:30] [INFO] Epoch 130: train_loss=0.2174 train_acc=0.983 val_loss=0.1435 val_acc=0.775 val_f1=0.750
+[2026-07-29 15:58:33] [INFO] Epoch 140: train_loss=0.2113 train_acc=0.982 val_loss=0.1499 val_acc=0.780 val_f1=0.755
+[2026-07-29 15:58:33] [INFO] Early stopping na epoch 142
+[2026-07-29 15:58:34] [INFO] Epoch   1: train_loss=4.7419 train_acc=0.250 val_loss=1.0246 val_acc=0.296 val_f1=0.291
+[2026-07-29 15:58:35] [INFO] Epoch  10: train_loss=0.8784 train_acc=0.351 val_loss=0.7644 val_acc=0.296 val_f1=0.299
+[2026-07-29 15:58:37] [INFO] Epoch  20: train_loss=0.7876 train_acc=0.441 val_loss=0.7159 val_acc=0.370 val_f1=0.365
+[2026-07-29 15:58:39] [INFO] Epoch  30: train_loss=0.6989 train_acc=0.498 val_loss=0.6861 val_acc=0.370 val_f1=0.369
+[2026-07-29 15:58:41] [INFO] Epoch  40: train_loss=0.6048 train_acc=0.584 val_loss=0.7203 val_acc=0.395 val_f1=0.392
+[2026-07-29 15:58:43] [INFO] Epoch  50: train_loss=0.5618 train_acc=0.612 val_loss=0.7557 val_acc=0.346 val_f1=0.342
+[2026-07-29 15:58:44] [INFO] Epoch  60: train_loss=0.5167 train_acc=0.651 val_loss=0.8269 val_acc=0.383 val_f1=0.376
+[2026-07-29 15:58:46] [INFO] Epoch  70: train_loss=0.4830 train_acc=0.675 val_loss=0.8951 val_acc=0.395 val_f1=0.391
+[2026-07-29 15:58:48] [INFO] Epoch  80: train_loss=0.4509 train_acc=0.709 val_loss=0.9190 val_acc=0.407 val_f1=0.405
+[2026-07-29 15:58:50] [INFO] Epoch  90: train_loss=0.4343 train_acc=0.721 val_loss=0.9739 val_acc=0.370 val_f1=0.367
+[2026-07-29 15:58:52] [INFO] Epoch 100: train_loss=0.4263 train_acc=0.740 val_loss=0.9610 val_acc=0.395 val_f1=0.387
+[2026-07-29 15:58:53] [INFO] Early stopping na epoch 105
+[2026-07-29 15:58:53] [INFO] Epoch   1: train_loss=0.8138 train_acc=0.739 val_loss=0.3438 val_acc=0.628 val_f1=0.569
+[2026-07-29 15:58:56] [INFO] Epoch  10: train_loss=0.2257 train_acc=0.934 val_loss=0.1682 val_acc=0.651 val_f1=0.485
+[2026-07-29 15:58:58] [INFO] Epoch  20: train_loss=0.2183 train_acc=0.955 val_loss=0.1670 val_acc=0.665 val_f1=0.516
+[2026-07-29 15:59:01] [INFO] Epoch  30: train_loss=0.2039 train_acc=0.962 val_loss=0.1573 val_acc=0.739 val_f1=0.677
+[2026-07-29 15:59:04] [INFO] Epoch  40: train_loss=0.1968 train_acc=0.970 val_loss=0.1600 val_acc=0.748 val_f1=0.692
+[2026-07-29 15:59:07] [INFO] Epoch  50: train_loss=0.1833 train_acc=0.977 val_loss=0.1609 val_acc=0.743 val_f1=0.712
+[2026-07-29 15:59:09] [INFO] Epoch  60: train_loss=0.1978 train_acc=0.982 val_loss=0.1548 val_acc=0.766 val_f1=0.726
+[2026-07-29 15:59:12] [INFO] Epoch  70: train_loss=0.1836 train_acc=0.981 val_loss=0.1499 val_acc=0.775 val_f1=0.747
+[2026-07-29 15:59:15] [INFO] Epoch  80: train_loss=0.1889 train_acc=0.982 val_loss=0.1630 val_acc=0.739 val_f1=0.694
+[2026-07-29 15:59:18] [INFO] Epoch  90: train_loss=0.1819 train_acc=0.982 val_loss=0.1629 val_acc=0.771 val_f1=0.731
+[2026-07-29 15:59:20] [INFO] Epoch 100: train_loss=0.1890 train_acc=0.982 val_loss=0.1576 val_acc=0.771 val_f1=0.733
+[2026-07-29 15:59:21] [INFO] Early stopping na epoch 102
+[2026-07-29 15:59:21] [INFO] Epoch   1: train_loss=3.3820 train_acc=0.254 val_loss=0.9008 val_acc=0.296 val_f1=0.275
+[2026-07-29 15:59:23] [INFO] Epoch  10: train_loss=0.8836 train_acc=0.353 val_loss=0.7416 val_acc=0.284 val_f1=0.267
+[2026-07-29 15:59:25] [INFO] Epoch  20: train_loss=0.7918 train_acc=0.408 val_loss=0.7034 val_acc=0.420 val_f1=0.400
+[2026-07-29 15:59:27] [INFO] Epoch  30: train_loss=0.7014 train_acc=0.496 val_loss=0.6934 val_acc=0.407 val_f1=0.387
+[2026-07-29 15:59:28] [INFO] Epoch  40: train_loss=0.6241 train_acc=0.552 val_loss=0.6912 val_acc=0.469 val_f1=0.459
+[2026-07-29 15:59:30] [INFO] Epoch  50: train_loss=0.5644 train_acc=0.606 val_loss=0.7354 val_acc=0.469 val_f1=0.468
+[2026-07-29 15:59:32] [INFO] Epoch  60: train_loss=0.5146 train_acc=0.648 val_loss=0.7747 val_acc=0.407 val_f1=0.396
+[2026-07-29 15:59:34] [INFO] Epoch  70: train_loss=0.4810 train_acc=0.669 val_loss=0.8326 val_acc=0.420 val_f1=0.400
+[2026-07-29 15:59:36] [INFO] Epoch  80: train_loss=0.4665 train_acc=0.688 val_loss=0.8675 val_acc=0.358 val_f1=0.332
+[2026-07-29 15:59:37] [INFO] Early stopping na epoch 84
+[2026-07-29 15:59:37] [INFO] Epoch   1: train_loss=0.7738 train_acc=0.764 val_loss=0.3439 val_acc=0.642 val_f1=0.542
+[2026-07-29 15:59:39] [INFO] Epoch  10: train_loss=0.2942 train_acc=0.941 val_loss=0.1778 val_acc=0.638 val_f1=0.451
+[2026-07-29 15:59:42] [INFO] Epoch  20: train_loss=0.2525 train_acc=0.952 val_loss=0.1710 val_acc=0.670 val_f1=0.533
+[2026-07-29 15:59:45] [INFO] Epoch  30: train_loss=0.2211 train_acc=0.964 val_loss=0.1844 val_acc=0.693 val_f1=0.600
+[2026-07-29 15:59:48] [INFO] Epoch  40: train_loss=0.1965 train_acc=0.974 val_loss=0.1745 val_acc=0.748 val_f1=0.705
+[2026-07-29 15:59:50] [INFO] Epoch  50: train_loss=0.1910 train_acc=0.977 val_loss=0.1757 val_acc=0.729 val_f1=0.688
+[2026-07-29 15:59:53] [INFO] Epoch  60: train_loss=0.1918 train_acc=0.978 val_loss=0.1753 val_acc=0.743 val_f1=0.708
+[2026-07-29 15:59:56] [INFO] Epoch  70: train_loss=0.1904 train_acc=0.980 val_loss=0.1786 val_acc=0.752 val_f1=0.716
+[2026-07-29 15:59:58] [INFO] Epoch  80: train_loss=0.2015 train_acc=0.981 val_loss=0.1793 val_acc=0.748 val_f1=0.716
+[2026-07-29 16:00:01] [INFO] Epoch  90: train_loss=0.2017 train_acc=0.981 val_loss=0.1850 val_acc=0.739 val_f1=0.697
+[2026-07-29 16:00:03] [INFO] Early stopping na epoch 95
+[2026-07-29 16:00:03] [INFO] Epoch   1: train_loss=4.1302 train_acc=0.255 val_loss=0.8279 val_acc=0.346 val_f1=0.342
+[2026-07-29 16:00:05] [INFO] Epoch  10: train_loss=0.9176 train_acc=0.312 val_loss=0.7584 val_acc=0.284 val_f1=0.276
+[2026-07-29 16:00:07] [INFO] Epoch  20: train_loss=0.8339 train_acc=0.388 val_loss=0.7168 val_acc=0.346 val_f1=0.341
+[2026-07-29 16:00:08] [INFO] Epoch  30: train_loss=0.7486 train_acc=0.456 val_loss=0.6930 val_acc=0.309 val_f1=0.309
+[2026-07-29 16:00:10] [INFO] Epoch  40: train_loss=0.6529 train_acc=0.523 val_loss=0.6600 val_acc=0.370 val_f1=0.363
+[2026-07-29 16:00:12] [INFO] Epoch  50: train_loss=0.5840 train_acc=0.595 val_loss=0.7124 val_acc=0.383 val_f1=0.379
+[2026-07-29 16:00:14] [INFO] Epoch  60: train_loss=0.5399 train_acc=0.625 val_loss=0.7079 val_acc=0.432 val_f1=0.428
+[2026-07-29 16:00:16] [INFO] Epoch  70: train_loss=0.5117 train_acc=0.654 val_loss=0.7257 val_acc=0.420 val_f1=0.416
+[2026-07-29 16:00:18] [INFO] Epoch  80: train_loss=0.4879 train_acc=0.674 val_loss=0.7396 val_acc=0.444 val_f1=0.432
+[2026-07-29 16:00:19] [INFO] Early stopping na epoch 87
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        125            6            1            4            1
+  Laringite                      11            9            5            1            2
+  Disfonia Psicogenica            7            0            5            3            3
+  Disfonia Funcional              8            3            5            4            2
+  Edema de Reinke                 3            0            1            0            9
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8117     0.9124     0.8591
+Laringite                  0.5000     0.3214     0.3913
+Disfonia Psicogenica       0.2941     0.2778     0.2857
+Disfonia Funcional         0.3333     0.1818     0.2353
+Edema de Reinke            0.5294     0.6923     0.6000
+
+=== Metricas Globais ===
+Acuracia:     0.6972
+Macro F1:     0.4743
+Weighted F1:  0.6733
+Total amostras: 218
+[2026-07-29 16:00:19] [INFO] 
+========== RESULTADOS AGREGADOS ==========
+[2026-07-29 16:00:19] [INFO] Acuracia media: 0.6994  Macro F1 medio: 0.4617
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        635           12           16           15            9
+  Laringite                      55           46            9            7           23
+  Disfonia Psicogenica           26            8           31           14           12
+  Disfonia Funcional             46           10           29           17           10
+  Edema de Reinke                 9            7            8            5           39
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8236     0.9243     0.8711
+Laringite                  0.5542     0.3286     0.4126
+Disfonia Psicogenica       0.3333     0.3407     0.3370
+Disfonia Funcional         0.2931     0.1518     0.2000
+Edema de Reinke            0.4194     0.5735     0.4845
+
+=== Metricas Globais ===
+Acuracia:     0.6995
+Macro F1:     0.4610
+Weighted F1:  0.6759
+Total amostras: 1098
+[2026-07-29 16:00:19] [INFO] 
+========== BOOTSTRAP CI (95%, N=1000, seed=42) ==========
+[2026-07-29 16:00:19] [INFO] CI_ACCURACY:         0.6988 [0.6721, 0.7268]
+[2026-07-29 16:00:19] [INFO] CI_MACRO_F1:         0.4597 [0.4229, 0.4955]
+[2026-07-29 16:00:19] [INFO] CI_F1_NORMAL:        0.8704 [0.8512, 0.8886]
+[2026-07-29 16:00:19] [INFO] CI_F1_LARYNGITE:     0.4120 [0.3273, 0.4933]
+[2026-07-29 16:00:19] [INFO] CI_F1_DISFONIA:      0.3353 [0.2444, 0.4211]
+[2026-07-29 16:00:19] [INFO] CI_F1_FUNC_DISFONIA: 0.1991 [0.1236, 0.2778]
+[2026-07-29 16:00:19] [INFO] CI_F1_REINKE:        0.4818 [0.3867, 0.5714]
+[2026-07-29 16:00:19] [INFO] 
+========== MCNEMAR: MLP vs BASELINES ==========
+[2026-07-29 16:00:19] [INFO] MLP vs MajorityClass: chi2=34.5946 p=0.0000 -- MLP significativamente melhor que MajorityClass (p<0.05)
+[2026-07-29 16:00:19] [INFO] MLP vs kNN:           chi2=20.5714 p=0.0000 -- MLP significativamente melhor que kNN (p<0.05)
+[2026-07-29 16:00:19] [INFO] MLP vs LogisticRegression: chi2=22.3825 p=0.0000 -- MLP significativamente melhor que LogisticRegression (p<0.05)
+[2026-07-29 16:00:19] [INFO] === MODO: TREINAMENTO HIERARQUICO COM LATE FUSION (VOGAIS A, I, U) ===
+[2026-07-29 16:00:19] [INFO] Classe 0 (saudavel): 687 pacientes
+[2026-07-29 16:00:19] [INFO] Classe 1 (laringite): 140 pacientes
+[2026-07-29 16:00:19] [INFO] Classe 2 (disfonia_psicogênica): 91 pacientes
+[2026-07-29 16:00:19] [INFO] Classe 3 (disfonia_funcional): 112 pacientes
+[2026-07-29 16:00:19] [INFO] Classe 4 (edema_de_reinke): 68 pacientes
+[2026-07-29 16:00:19] [INFO] Dataset total: 1098 pacientes
+[2026-07-29 16:00:19] [INFO] CSV lido: 1254 registros de ./overview_merged.csv
+[2026-07-29 16:00:19] [INFO] Pre-calculando aumentacoes de audio (8x per patologico)...
+[2026-07-29 16:21:02] [INFO] 
+========== FOLD 1/5 (HIERARCHICAL LATE FUSION) ==========
+[2026-07-29 16:21:03] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:21:03] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:21:03] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:21:03] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:21:03] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:21:03] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:21:03] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:21:03] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:21:03] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:21:03] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:21:03] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:21:03] [INFO] Epoch   1: train_loss=0.6983 train_acc=0.773 val_loss=0.3331 val_acc=0.667 val_f1=0.605
+[2026-07-29 16:21:06] [INFO] Epoch  10: train_loss=0.2702 train_acc=0.945 val_loss=0.1716 val_acc=0.698 val_f1=0.588
+[2026-07-29 16:21:09] [INFO] Epoch  20: train_loss=0.2493 train_acc=0.958 val_loss=0.1641 val_acc=0.721 val_f1=0.634
+[2026-07-29 16:21:11] [INFO] Epoch  30: train_loss=0.2302 train_acc=0.965 val_loss=0.1455 val_acc=0.784 val_f1=0.752
+[2026-07-29 16:21:14] [INFO] Epoch  40: train_loss=0.2178 train_acc=0.974 val_loss=0.1298 val_acc=0.806 val_f1=0.784
+[2026-07-29 16:21:17] [INFO] Epoch  50: train_loss=0.2095 train_acc=0.979 val_loss=0.1269 val_acc=0.820 val_f1=0.800
+[2026-07-29 16:21:19] [INFO] Epoch  60: train_loss=0.2052 train_acc=0.978 val_loss=0.1276 val_acc=0.793 val_f1=0.768
+[2026-07-29 16:21:22] [INFO] Epoch  70: train_loss=0.2091 train_acc=0.981 val_loss=0.1254 val_acc=0.806 val_f1=0.787
+[2026-07-29 16:21:25] [INFO] Epoch  80: train_loss=0.2239 train_acc=0.981 val_loss=0.1253 val_acc=0.820 val_f1=0.799
+[2026-07-29 16:21:27] [INFO] Epoch  90: train_loss=0.2179 train_acc=0.980 val_loss=0.1276 val_acc=0.811 val_f1=0.795
+[2026-07-29 16:21:28] [INFO] Early stopping na epoch 94
+[2026-07-29 16:21:28] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:21:28] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:21:28] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:21:28] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:21:28] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:21:28] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:21:28] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:21:28] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:21:28] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:21:28] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:21:28] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:21:29] [INFO] Epoch   1: train_loss=4.1060 train_acc=0.267 val_loss=0.8654 val_acc=0.357 val_f1=0.332
+[2026-07-29 16:21:31] [INFO] Epoch  10: train_loss=0.8862 train_acc=0.359 val_loss=0.7226 val_acc=0.345 val_f1=0.339
+[2026-07-29 16:21:32] [INFO] Epoch  20: train_loss=0.7893 train_acc=0.439 val_loss=0.6799 val_acc=0.417 val_f1=0.405
+[2026-07-29 16:21:34] [INFO] Epoch  30: train_loss=0.6843 train_acc=0.535 val_loss=0.6885 val_acc=0.393 val_f1=0.396
+[2026-07-29 16:21:36] [INFO] Epoch  40: train_loss=0.6040 train_acc=0.597 val_loss=0.7608 val_acc=0.405 val_f1=0.403
+[2026-07-29 16:21:38] [INFO] Epoch  50: train_loss=0.5326 train_acc=0.653 val_loss=0.8547 val_acc=0.345 val_f1=0.334
+[2026-07-29 16:21:38] [INFO] Early stopping na epoch 53
+[2026-07-29 16:21:38] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:21:38] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:21:38] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:21:38] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:21:38] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:21:38] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:21:38] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:21:38] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:21:38] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:21:38] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:21:38] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:21:39] [INFO] Epoch   1: train_loss=0.5417 train_acc=0.771 val_loss=0.5092 val_acc=0.667 val_f1=0.547
+[2026-07-29 16:21:41] [INFO] Epoch  10: train_loss=0.2140 train_acc=0.946 val_loss=0.1877 val_acc=0.662 val_f1=0.513
+[2026-07-29 16:21:44] [INFO] Epoch  20: train_loss=0.2285 train_acc=0.959 val_loss=0.2598 val_acc=0.680 val_f1=0.568
+[2026-07-29 16:21:47] [INFO] Epoch  30: train_loss=0.2056 train_acc=0.968 val_loss=0.1495 val_acc=0.743 val_f1=0.694
+[2026-07-29 16:21:49] [INFO] Epoch  40: train_loss=0.2108 train_acc=0.973 val_loss=0.1403 val_acc=0.761 val_f1=0.731
+[2026-07-29 16:21:52] [INFO] Epoch  50: train_loss=0.2001 train_acc=0.979 val_loss=0.1455 val_acc=0.784 val_f1=0.750
+[2026-07-29 16:21:55] [INFO] Epoch  60: train_loss=0.2012 train_acc=0.978 val_loss=0.1329 val_acc=0.820 val_f1=0.799
+[2026-07-29 16:21:57] [INFO] Epoch  70: train_loss=0.2062 train_acc=0.977 val_loss=0.1399 val_acc=0.779 val_f1=0.745
+[2026-07-29 16:22:00] [INFO] Epoch  80: train_loss=0.2181 train_acc=0.978 val_loss=0.1453 val_acc=0.820 val_f1=0.800
+[2026-07-29 16:22:03] [INFO] Epoch  90: train_loss=0.2086 train_acc=0.980 val_loss=0.2116 val_acc=0.797 val_f1=0.777
+[2026-07-29 16:22:05] [INFO] Epoch 100: train_loss=0.2113 train_acc=0.979 val_loss=0.1326 val_acc=0.797 val_f1=0.786
+[2026-07-29 16:22:08] [INFO] Epoch 110: train_loss=0.2038 train_acc=0.981 val_loss=0.1363 val_acc=0.824 val_f1=0.807
+[2026-07-29 16:22:11] [INFO] Epoch 120: train_loss=0.2086 train_acc=0.981 val_loss=0.1345 val_acc=0.802 val_f1=0.785
+[2026-07-29 16:22:13] [INFO] Epoch 130: train_loss=0.2176 train_acc=0.980 val_loss=0.1270 val_acc=0.815 val_f1=0.803
+[2026-07-29 16:22:16] [INFO] Epoch 140: train_loss=0.2308 train_acc=0.983 val_loss=0.1352 val_acc=0.806 val_f1=0.790
+[2026-07-29 16:22:19] [INFO] Epoch 150: train_loss=0.2087 train_acc=0.980 val_loss=0.1280 val_acc=0.820 val_f1=0.802
+[2026-07-29 16:22:20] [INFO] Early stopping na epoch 155
+[2026-07-29 16:22:20] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:22:20] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:22:20] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:22:20] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:22:20] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:22:20] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:22:20] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:22:20] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:22:20] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:22:20] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:22:20] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:22:21] [INFO] Epoch   1: train_loss=3.2520 train_acc=0.289 val_loss=0.9184 val_acc=0.381 val_f1=0.373
+[2026-07-29 16:22:22] [INFO] Epoch  10: train_loss=0.8706 train_acc=0.372 val_loss=0.8857 val_acc=0.381 val_f1=0.374
+[2026-07-29 16:22:24] [INFO] Epoch  20: train_loss=0.7599 train_acc=0.462 val_loss=0.8421 val_acc=0.440 val_f1=0.419
+[2026-07-29 16:22:26] [INFO] Epoch  30: train_loss=0.6606 train_acc=0.531 val_loss=0.8538 val_acc=0.369 val_f1=0.359
+[2026-07-29 16:22:28] [INFO] Epoch  40: train_loss=0.5838 train_acc=0.593 val_loss=0.8847 val_acc=0.381 val_f1=0.389
+[2026-07-29 16:22:29] [INFO] Early stopping na epoch 47
+[2026-07-29 16:22:29] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:22:29] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:22:29] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:22:29] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:22:29] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:22:29] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:22:29] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:22:29] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:22:29] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:22:29] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:22:29] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:22:29] [INFO] Epoch   1: train_loss=0.8068 train_acc=0.799 val_loss=0.3884 val_acc=0.649 val_f1=0.593
+[2026-07-29 16:22:32] [INFO] Epoch  10: train_loss=0.2830 train_acc=0.938 val_loss=0.1672 val_acc=0.658 val_f1=0.523
+[2026-07-29 16:22:35] [INFO] Epoch  20: train_loss=0.2468 train_acc=0.953 val_loss=0.1672 val_acc=0.671 val_f1=0.562
+[2026-07-29 16:22:37] [INFO] Epoch  30: train_loss=0.2298 train_acc=0.962 val_loss=0.1595 val_acc=0.698 val_f1=0.634
+[2026-07-29 16:22:40] [INFO] Epoch  40: train_loss=0.2110 train_acc=0.970 val_loss=0.1560 val_acc=0.725 val_f1=0.678
+[2026-07-29 16:22:43] [INFO] Epoch  50: train_loss=0.1999 train_acc=0.976 val_loss=0.1563 val_acc=0.752 val_f1=0.714
+[2026-07-29 16:22:45] [INFO] Epoch  60: train_loss=0.2063 train_acc=0.980 val_loss=0.1484 val_acc=0.761 val_f1=0.731
+[2026-07-29 16:22:48] [INFO] Epoch  70: train_loss=0.1982 train_acc=0.981 val_loss=0.1470 val_acc=0.784 val_f1=0.758
+[2026-07-29 16:22:51] [INFO] Epoch  80: train_loss=0.1982 train_acc=0.981 val_loss=0.1424 val_acc=0.761 val_f1=0.742
+[2026-07-29 16:22:53] [INFO] Epoch  90: train_loss=0.1883 train_acc=0.983 val_loss=0.1607 val_acc=0.716 val_f1=0.688
+[2026-07-29 16:22:54] [INFO] Early stopping na epoch 94
+[2026-07-29 16:22:54] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:22:54] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:22:54] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:22:54] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:22:54] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:22:54] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:22:54] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:22:54] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:22:54] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:22:54] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:22:54] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:22:55] [INFO] Epoch   1: train_loss=4.8175 train_acc=0.261 val_loss=0.8629 val_acc=0.262 val_f1=0.253
+[2026-07-29 16:22:57] [INFO] Epoch  10: train_loss=0.9190 train_acc=0.325 val_loss=0.7548 val_acc=0.286 val_f1=0.257
+[2026-07-29 16:22:58] [INFO] Epoch  20: train_loss=0.8565 train_acc=0.391 val_loss=0.7278 val_acc=0.357 val_f1=0.332
+[2026-07-29 16:23:00] [INFO] Epoch  30: train_loss=0.7407 train_acc=0.469 val_loss=0.6402 val_acc=0.369 val_f1=0.376
+[2026-07-29 16:23:02] [INFO] Epoch  40: train_loss=0.6571 train_acc=0.534 val_loss=0.6205 val_acc=0.381 val_f1=0.380
+[2026-07-29 16:23:04] [INFO] Epoch  50: train_loss=0.6003 train_acc=0.582 val_loss=0.6427 val_acc=0.417 val_f1=0.419
+[2026-07-29 16:23:06] [INFO] Epoch  60: train_loss=0.5477 train_acc=0.624 val_loss=0.6879 val_acc=0.393 val_f1=0.398
+[2026-07-29 16:23:08] [INFO] Epoch  70: train_loss=0.5199 train_acc=0.652 val_loss=0.6788 val_acc=0.405 val_f1=0.416
+[2026-07-29 16:23:09] [INFO] Epoch  80: train_loss=0.5046 train_acc=0.665 val_loss=0.6998 val_acc=0.452 val_f1=0.461
+[2026-07-29 16:23:11] [INFO] Epoch  90: train_loss=0.4816 train_acc=0.695 val_loss=0.6926 val_acc=0.440 val_f1=0.454
+[2026-07-29 16:23:12] [INFO] Early stopping na epoch 94
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        129            1            1            5            2
+  Laringite                      12            8            2            2            4
+  Disfonia Psicogenica            7            1            7            3            1
+  Disfonia Funcional              8            3            4            6            2
+  Edema de Reinke                 1            1            2            0           10
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8217     0.9348     0.8746
+Laringite                  0.5714     0.2857     0.3810
+Disfonia Psicogenica       0.4375     0.3684     0.4000
+Disfonia Funcional         0.3750     0.2609     0.3077
+Edema de Reinke            0.5263     0.7143     0.6061
+
+=== Metricas Globais ===
+Acuracia:     0.7207
+Macro F1:     0.5139
+Weighted F1:  0.6960
+Total amostras: 222
+[2026-07-29 16:23:12] [INFO] 
+========== FOLD 2/5 (HIERARCHICAL LATE FUSION) ==========
+[2026-07-29 16:23:13] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:23:13] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:23:13] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:23:13] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:23:13] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:23:13] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:23:13] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:23:13] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:23:13] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:23:13] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:23:13] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:23:14] [INFO] Epoch   1: train_loss=0.7032 train_acc=0.786 val_loss=0.3605 val_acc=0.615 val_f1=0.521
+[2026-07-29 16:23:16] [INFO] Epoch  10: train_loss=0.2726 train_acc=0.943 val_loss=0.1647 val_acc=0.665 val_f1=0.528
+[2026-07-29 16:23:19] [INFO] Epoch  20: train_loss=0.2258 train_acc=0.958 val_loss=0.1668 val_acc=0.688 val_f1=0.569
+[2026-07-29 16:23:22] [INFO] Epoch  30: train_loss=0.2229 train_acc=0.969 val_loss=0.1547 val_acc=0.738 val_f1=0.678
+[2026-07-29 16:23:24] [INFO] Epoch  40: train_loss=0.2097 train_acc=0.973 val_loss=0.1525 val_acc=0.747 val_f1=0.712
+[2026-07-29 16:23:27] [INFO] Epoch  50: train_loss=0.2043 train_acc=0.978 val_loss=0.1441 val_acc=0.769 val_f1=0.740
+[2026-07-29 16:23:30] [INFO] Epoch  60: train_loss=0.2117 train_acc=0.981 val_loss=0.1536 val_acc=0.765 val_f1=0.726
+[2026-07-29 16:23:32] [INFO] Epoch  70: train_loss=0.2119 train_acc=0.983 val_loss=0.1550 val_acc=0.751 val_f1=0.709
+[2026-07-29 16:23:35] [INFO] Epoch  80: train_loss=0.2364 train_acc=0.981 val_loss=0.1500 val_acc=0.760 val_f1=0.728
+[2026-07-29 16:23:38] [INFO] Epoch  90: train_loss=0.2440 train_acc=0.983 val_loss=0.1545 val_acc=0.778 val_f1=0.758
+[2026-07-29 16:23:40] [INFO] Epoch 100: train_loss=0.2360 train_acc=0.980 val_loss=0.1574 val_acc=0.742 val_f1=0.705
+[2026-07-29 16:23:43] [INFO] Epoch 110: train_loss=0.2176 train_acc=0.984 val_loss=0.1702 val_acc=0.733 val_f1=0.690
+[2026-07-29 16:23:46] [INFO] Epoch 120: train_loss=0.2076 train_acc=0.983 val_loss=0.1616 val_acc=0.747 val_f1=0.717
+[2026-07-29 16:23:46] [INFO] Early stopping na epoch 120
+[2026-07-29 16:23:46] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:23:46] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:23:46] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:23:46] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:23:46] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:23:46] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:23:46] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:23:46] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:23:46] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:23:46] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:23:46] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:23:46] [INFO] Epoch   1: train_loss=4.4562 train_acc=0.254 val_loss=0.7968 val_acc=0.361 val_f1=0.354
+[2026-07-29 16:23:48] [INFO] Epoch  10: train_loss=0.9080 train_acc=0.316 val_loss=0.7650 val_acc=0.301 val_f1=0.292
+[2026-07-29 16:23:50] [INFO] Epoch  20: train_loss=0.8169 train_acc=0.410 val_loss=0.7440 val_acc=0.313 val_f1=0.302
+[2026-07-29 16:23:52] [INFO] Epoch  30: train_loss=0.6954 train_acc=0.512 val_loss=0.7502 val_acc=0.361 val_f1=0.355
+[2026-07-29 16:23:54] [INFO] Epoch  40: train_loss=0.6134 train_acc=0.580 val_loss=0.8634 val_acc=0.373 val_f1=0.373
+[2026-07-29 16:23:55] [INFO] Epoch  50: train_loss=0.5550 train_acc=0.625 val_loss=0.9381 val_acc=0.398 val_f1=0.405
+[2026-07-29 16:23:56] [INFO] Early stopping na epoch 53
+[2026-07-29 16:23:56] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:23:56] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:23:56] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:23:56] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:23:56] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:23:56] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:23:56] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:23:56] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:23:56] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:23:56] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:23:56] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:23:56] [INFO] Epoch   1: train_loss=0.5934 train_acc=0.760 val_loss=0.3493 val_acc=0.652 val_f1=0.579
+[2026-07-29 16:23:59] [INFO] Epoch  10: train_loss=0.2338 train_acc=0.943 val_loss=0.1688 val_acc=0.683 val_f1=0.541
+[2026-07-29 16:24:02] [INFO] Epoch  20: train_loss=0.2168 train_acc=0.955 val_loss=0.1638 val_acc=0.688 val_f1=0.575
+[2026-07-29 16:24:04] [INFO] Epoch  30: train_loss=0.2085 train_acc=0.970 val_loss=0.1573 val_acc=0.738 val_f1=0.678
+[2026-07-29 16:24:07] [INFO] Epoch  40: train_loss=0.2024 train_acc=0.976 val_loss=0.1518 val_acc=0.742 val_f1=0.703
+[2026-07-29 16:24:10] [INFO] Epoch  50: train_loss=0.1993 train_acc=0.977 val_loss=0.1496 val_acc=0.765 val_f1=0.741
+[2026-07-29 16:24:12] [INFO] Epoch  60: train_loss=0.1957 train_acc=0.978 val_loss=0.1479 val_acc=0.756 val_f1=0.729
+[2026-07-29 16:24:15] [INFO] Epoch  70: train_loss=0.1887 train_acc=0.981 val_loss=0.1511 val_acc=0.760 val_f1=0.735
+[2026-07-29 16:24:16] [INFO] Early stopping na epoch 73
+[2026-07-29 16:24:16] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:24:16] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:24:16] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:24:16] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:24:16] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:24:16] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:24:16] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:24:16] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:24:16] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:24:16] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:24:16] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:24:16] [INFO] Epoch   1: train_loss=3.4277 train_acc=0.269 val_loss=0.8376 val_acc=0.373 val_f1=0.334
+[2026-07-29 16:24:18] [INFO] Epoch  10: train_loss=0.8608 train_acc=0.375 val_loss=0.7170 val_acc=0.301 val_f1=0.300
+[2026-07-29 16:24:20] [INFO] Epoch  20: train_loss=0.7197 train_acc=0.491 val_loss=0.7585 val_acc=0.361 val_f1=0.361
+[2026-07-29 16:24:22] [INFO] Epoch  30: train_loss=0.6420 train_acc=0.541 val_loss=0.8231 val_acc=0.361 val_f1=0.357
+[2026-07-29 16:24:24] [INFO] Epoch  40: train_loss=0.5884 train_acc=0.575 val_loss=0.8921 val_acc=0.386 val_f1=0.340
+[2026-07-29 16:24:25] [INFO] Epoch  50: train_loss=0.5433 train_acc=0.614 val_loss=0.9615 val_acc=0.337 val_f1=0.315
+[2026-07-29 16:24:27] [INFO] Epoch  60: train_loss=0.5092 train_acc=0.653 val_loss=1.0320 val_acc=0.349 val_f1=0.304
+[2026-07-29 16:24:29] [INFO] Epoch  70: train_loss=0.4779 train_acc=0.685 val_loss=1.0847 val_acc=0.325 val_f1=0.303
+[2026-07-29 16:24:29] [INFO] Early stopping na epoch 71
+[2026-07-29 16:24:29] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:24:29] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:24:29] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:24:29] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:24:29] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:24:29] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:24:29] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:24:29] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:24:29] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:24:29] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:24:29] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:24:30] [INFO] Epoch   1: train_loss=0.7182 train_acc=0.753 val_loss=0.3595 val_acc=0.633 val_f1=0.487
+[2026-07-29 16:24:32] [INFO] Epoch  10: train_loss=0.2928 train_acc=0.936 val_loss=0.1735 val_acc=0.647 val_f1=0.465
+[2026-07-29 16:24:35] [INFO] Epoch  20: train_loss=0.2645 train_acc=0.952 val_loss=0.1724 val_acc=0.665 val_f1=0.508
+[2026-07-29 16:24:38] [INFO] Epoch  30: train_loss=0.2313 train_acc=0.960 val_loss=0.1483 val_acc=0.719 val_f1=0.638
+[2026-07-29 16:24:40] [INFO] Epoch  40: train_loss=0.2165 train_acc=0.967 val_loss=0.1411 val_acc=0.769 val_f1=0.718
+[2026-07-29 16:24:43] [INFO] Epoch  50: train_loss=0.2045 train_acc=0.977 val_loss=0.1306 val_acc=0.769 val_f1=0.734
+[2026-07-29 16:24:46] [INFO] Epoch  60: train_loss=0.1956 train_acc=0.978 val_loss=0.1327 val_acc=0.765 val_f1=0.730
+[2026-07-29 16:24:49] [INFO] Epoch  70: train_loss=0.1976 train_acc=0.977 val_loss=0.1375 val_acc=0.787 val_f1=0.751
+[2026-07-29 16:24:51] [INFO] Epoch  80: train_loss=0.2106 train_acc=0.982 val_loss=0.1368 val_acc=0.783 val_f1=0.745
+[2026-07-29 16:24:54] [INFO] Epoch  90: train_loss=0.1909 train_acc=0.979 val_loss=0.1356 val_acc=0.787 val_f1=0.760
+[2026-07-29 16:24:57] [INFO] Epoch 100: train_loss=0.2229 train_acc=0.982 val_loss=0.1405 val_acc=0.787 val_f1=0.749
+[2026-07-29 16:24:59] [INFO] Epoch 110: train_loss=0.2136 train_acc=0.982 val_loss=0.1389 val_acc=0.792 val_f1=0.758
+[2026-07-29 16:25:01] [INFO] Early stopping na epoch 116
+[2026-07-29 16:25:01] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:25:01] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:25:01] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:25:01] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:25:01] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:25:01] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:25:01] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:25:01] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:25:01] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:25:01] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:25:01] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:25:01] [INFO] Epoch   1: train_loss=4.4151 train_acc=0.259 val_loss=0.9417 val_acc=0.217 val_f1=0.212
+[2026-07-29 16:25:03] [INFO] Epoch  10: train_loss=0.9095 train_acc=0.323 val_loss=0.7512 val_acc=0.253 val_f1=0.241
+[2026-07-29 16:25:05] [INFO] Epoch  20: train_loss=0.7989 train_acc=0.429 val_loss=0.7293 val_acc=0.325 val_f1=0.319
+[2026-07-29 16:25:07] [INFO] Epoch  30: train_loss=0.6971 train_acc=0.508 val_loss=0.7467 val_acc=0.349 val_f1=0.347
+[2026-07-29 16:25:09] [INFO] Epoch  40: train_loss=0.6199 train_acc=0.568 val_loss=0.8100 val_acc=0.325 val_f1=0.323
+[2026-07-29 16:25:10] [INFO] Epoch  50: train_loss=0.5673 train_acc=0.602 val_loss=0.8575 val_acc=0.349 val_f1=0.349
+[2026-07-29 16:25:12] [INFO] Epoch  60: train_loss=0.5245 train_acc=0.651 val_loss=0.8867 val_acc=0.373 val_f1=0.370
+[2026-07-29 16:25:14] [INFO] Epoch  70: train_loss=0.5074 train_acc=0.653 val_loss=0.9218 val_acc=0.361 val_f1=0.347
+[2026-07-29 16:25:16] [INFO] Epoch  80: train_loss=0.4808 train_acc=0.687 val_loss=0.9890 val_acc=0.373 val_f1=0.369
+[2026-07-29 16:25:17] [INFO] Early stopping na epoch 86
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        127            2            1            4            4
+  Laringite                      13            8            0            0            7
+  Disfonia Psicogenica            5            3            3            4            3
+  Disfonia Funcional              9            2            5            5            2
+  Edema de Reinke                 1            4            2            2            5
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8194     0.9203     0.8669
+Laringite                  0.4211     0.2857     0.3404
+Disfonia Psicogenica       0.2727     0.1667     0.2069
+Disfonia Funcional         0.3333     0.2174     0.2632
+Edema de Reinke            0.2381     0.3571     0.2857
+
+=== Metricas Globais ===
+Acuracia:     0.6697
+Macro F1:     0.3926
+Weighted F1:  0.6468
+Total amostras: 221
+[2026-07-29 16:25:17] [INFO] 
+========== FOLD 3/5 (HIERARCHICAL LATE FUSION) ==========
+[2026-07-29 16:25:18] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:25:18] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:25:18] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:25:18] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:25:18] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:25:18] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:25:18] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:25:18] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:25:18] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:25:18] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:25:18] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:25:18] [INFO] Epoch   1: train_loss=0.6200 train_acc=0.788 val_loss=0.2687 val_acc=0.676 val_f1=0.577
+[2026-07-29 16:25:21] [INFO] Epoch  10: train_loss=0.3029 train_acc=0.945 val_loss=0.1600 val_acc=0.689 val_f1=0.546
+[2026-07-29 16:25:23] [INFO] Epoch  20: train_loss=0.2731 train_acc=0.958 val_loss=0.1461 val_acc=0.726 val_f1=0.627
+[2026-07-29 16:25:26] [INFO] Epoch  30: train_loss=0.2346 train_acc=0.969 val_loss=0.1313 val_acc=0.767 val_f1=0.725
+[2026-07-29 16:25:29] [INFO] Epoch  40: train_loss=0.2262 train_acc=0.975 val_loss=0.1416 val_acc=0.776 val_f1=0.751
+[2026-07-29 16:25:32] [INFO] Epoch  50: train_loss=0.2081 train_acc=0.978 val_loss=0.1395 val_acc=0.767 val_f1=0.748
+[2026-07-29 16:25:34] [INFO] Epoch  60: train_loss=0.2243 train_acc=0.979 val_loss=0.1331 val_acc=0.776 val_f1=0.749
+[2026-07-29 16:25:37] [INFO] Epoch  70: train_loss=0.2233 train_acc=0.982 val_loss=0.1375 val_acc=0.763 val_f1=0.733
+[2026-07-29 16:25:40] [INFO] Epoch  80: train_loss=0.2097 train_acc=0.980 val_loss=0.1395 val_acc=0.753 val_f1=0.723
+[2026-07-29 16:25:41] [INFO] Early stopping na epoch 84
+[2026-07-29 16:25:41] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:25:41] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:25:41] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:25:41] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:25:41] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:25:41] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:25:41] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:25:41] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:25:41] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:25:41] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:25:41] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:25:41] [INFO] Epoch   1: train_loss=4.7203 train_acc=0.267 val_loss=0.9135 val_acc=0.268 val_f1=0.250
+[2026-07-29 16:25:43] [INFO] Epoch  10: train_loss=0.8963 train_acc=0.353 val_loss=0.7628 val_acc=0.317 val_f1=0.313
+[2026-07-29 16:25:45] [INFO] Epoch  20: train_loss=0.8024 train_acc=0.439 val_loss=0.7180 val_acc=0.366 val_f1=0.350
+[2026-07-29 16:25:47] [INFO] Epoch  30: train_loss=0.7116 train_acc=0.495 val_loss=0.7105 val_acc=0.366 val_f1=0.352
+[2026-07-29 16:25:48] [INFO] Epoch  40: train_loss=0.6201 train_acc=0.569 val_loss=0.7800 val_acc=0.378 val_f1=0.365
+[2026-07-29 16:25:49] [INFO] Early stopping na epoch 45
+[2026-07-29 16:25:49] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:25:49] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:25:49] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:25:49] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:25:49] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:25:49] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:25:49] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:25:49] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:25:49] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:25:49] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:25:49] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:25:50] [INFO] Epoch   1: train_loss=0.4476 train_acc=0.774 val_loss=0.2561 val_acc=0.639 val_f1=0.534
+[2026-07-29 16:25:52] [INFO] Epoch  10: train_loss=0.2114 train_acc=0.947 val_loss=0.1689 val_acc=0.680 val_f1=0.533
+[2026-07-29 16:25:55] [INFO] Epoch  20: train_loss=0.2009 train_acc=0.963 val_loss=0.1439 val_acc=0.726 val_f1=0.631
+[2026-07-29 16:25:58] [INFO] Epoch  30: train_loss=0.2033 train_acc=0.969 val_loss=0.1302 val_acc=0.767 val_f1=0.717
+[2026-07-29 16:26:00] [INFO] Epoch  40: train_loss=0.2030 train_acc=0.977 val_loss=0.1252 val_acc=0.790 val_f1=0.759
+[2026-07-29 16:26:03] [INFO] Epoch  50: train_loss=0.2022 train_acc=0.979 val_loss=0.1247 val_acc=0.808 val_f1=0.784
+[2026-07-29 16:26:06] [INFO] Epoch  60: train_loss=0.1940 train_acc=0.977 val_loss=0.1278 val_acc=0.817 val_f1=0.796
+[2026-07-29 16:26:08] [INFO] Epoch  70: train_loss=0.2108 train_acc=0.981 val_loss=0.1346 val_acc=0.808 val_f1=0.784
+[2026-07-29 16:26:11] [INFO] Epoch  80: train_loss=0.1996 train_acc=0.981 val_loss=0.1317 val_acc=0.795 val_f1=0.770
+[2026-07-29 16:26:12] [INFO] Early stopping na epoch 82
+[2026-07-29 16:26:12] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:26:12] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:26:12] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:26:12] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:26:12] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:26:12] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:26:12] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:26:12] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:26:12] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:26:12] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:26:12] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:26:12] [INFO] Epoch   1: train_loss=3.7096 train_acc=0.258 val_loss=0.8428 val_acc=0.317 val_f1=0.315
+[2026-07-29 16:26:14] [INFO] Epoch  10: train_loss=0.8905 train_acc=0.341 val_loss=0.7200 val_acc=0.329 val_f1=0.307
+[2026-07-29 16:26:16] [INFO] Epoch  20: train_loss=0.7609 train_acc=0.449 val_loss=0.6377 val_acc=0.427 val_f1=0.422
+[2026-07-29 16:26:18] [INFO] Epoch  30: train_loss=0.6728 train_acc=0.514 val_loss=0.6366 val_acc=0.402 val_f1=0.388
+[2026-07-29 16:26:19] [INFO] Epoch  40: train_loss=0.6032 train_acc=0.568 val_loss=0.6905 val_acc=0.378 val_f1=0.361
+[2026-07-29 16:26:21] [INFO] Epoch  50: train_loss=0.5430 train_acc=0.614 val_loss=0.7527 val_acc=0.378 val_f1=0.373
+[2026-07-29 16:26:21] [INFO] Early stopping na epoch 51
+[2026-07-29 16:26:21] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:26:21] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:26:21] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:26:21] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:26:21] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:26:21] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:26:21] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:26:21] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:26:21] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:26:21] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:26:21] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:26:22] [INFO] Epoch   1: train_loss=0.6329 train_acc=0.795 val_loss=0.3915 val_acc=0.662 val_f1=0.575
+[2026-07-29 16:26:24] [INFO] Epoch  10: train_loss=0.3071 train_acc=0.942 val_loss=0.2478 val_acc=0.658 val_f1=0.503
+[2026-07-29 16:26:27] [INFO] Epoch  20: train_loss=0.2640 train_acc=0.955 val_loss=0.1711 val_acc=0.685 val_f1=0.562
+[2026-07-29 16:26:30] [INFO] Epoch  30: train_loss=0.2316 train_acc=0.963 val_loss=0.2245 val_acc=0.726 val_f1=0.672
+[2026-07-29 16:26:33] [INFO] Epoch  40: train_loss=0.2024 train_acc=0.972 val_loss=0.1339 val_acc=0.799 val_f1=0.765
+[2026-07-29 16:26:35] [INFO] Epoch  50: train_loss=0.1845 train_acc=0.975 val_loss=0.1325 val_acc=0.763 val_f1=0.727
+[2026-07-29 16:26:38] [INFO] Epoch  60: train_loss=0.2040 train_acc=0.977 val_loss=0.1318 val_acc=0.781 val_f1=0.762
+[2026-07-29 16:26:41] [INFO] Epoch  70: train_loss=0.2066 train_acc=0.979 val_loss=0.1448 val_acc=0.744 val_f1=0.706
+[2026-07-29 16:26:43] [INFO] Epoch  80: train_loss=0.2013 train_acc=0.978 val_loss=0.1330 val_acc=0.790 val_f1=0.765
+[2026-07-29 16:26:46] [INFO] Early stopping na epoch 88
+[2026-07-29 16:26:46] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:26:46] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:26:46] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:26:46] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:26:46] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:26:46] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:26:46] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:26:46] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:26:46] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:26:46] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:26:46] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:26:46] [INFO] Epoch   1: train_loss=4.6114 train_acc=0.265 val_loss=0.8991 val_acc=0.232 val_f1=0.230
+[2026-07-29 16:26:48] [INFO] Epoch  10: train_loss=0.9290 train_acc=0.311 val_loss=0.9441 val_acc=0.244 val_f1=0.225
+[2026-07-29 16:26:50] [INFO] Epoch  20: train_loss=0.8452 train_acc=0.387 val_loss=0.8986 val_acc=0.354 val_f1=0.330
+[2026-07-29 16:26:51] [INFO] Epoch  30: train_loss=0.7476 train_acc=0.477 val_loss=0.8956 val_acc=0.329 val_f1=0.313
+[2026-07-29 16:26:53] [INFO] Epoch  40: train_loss=0.6464 train_acc=0.540 val_loss=0.9623 val_acc=0.341 val_f1=0.327
+[2026-07-29 16:26:54] [INFO] Early stopping na epoch 45
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        126            0            6            2            3
+  Laringite                       8            9            1            2            8
+  Disfonia Psicogenica            3            0           11            2            2
+  Disfonia Funcional              7            1           10            2            2
+  Edema de Reinke                 4            0            2            1            7
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8514     0.9197     0.8842
+Laringite                  0.9000     0.3214     0.4737
+Disfonia Psicogenica       0.3667     0.6111     0.4583
+Disfonia Funcional         0.2222     0.0909     0.1290
+Edema de Reinke            0.3182     0.5000     0.3889
+
+=== Metricas Globais ===
+Acuracia:     0.7078
+Macro F1:     0.4668
+Weighted F1:  0.6892
+Total amostras: 219
+[2026-07-29 16:26:54] [INFO] 
+========== FOLD 4/5 (HIERARCHICAL LATE FUSION) ==========
+[2026-07-29 16:26:56] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:26:56] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:26:56] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:26:56] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:26:56] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:26:56] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:26:56] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:26:56] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:26:56] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:26:56] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:26:56] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:26:56] [INFO] Epoch   1: train_loss=0.6981 train_acc=0.765 val_loss=0.2438 val_acc=0.674 val_f1=0.576
+[2026-07-29 16:26:59] [INFO] Epoch  10: train_loss=0.2740 train_acc=0.944 val_loss=0.1622 val_acc=0.674 val_f1=0.522
+[2026-07-29 16:27:01] [INFO] Epoch  20: train_loss=0.2583 train_acc=0.956 val_loss=0.1577 val_acc=0.706 val_f1=0.590
+[2026-07-29 16:27:04] [INFO] Epoch  30: train_loss=0.2528 train_acc=0.968 val_loss=0.1319 val_acc=0.780 val_f1=0.737
+[2026-07-29 16:27:07] [INFO] Epoch  40: train_loss=0.2308 train_acc=0.975 val_loss=0.1327 val_acc=0.775 val_f1=0.735
+[2026-07-29 16:27:10] [INFO] Epoch  50: train_loss=0.2193 train_acc=0.975 val_loss=0.1343 val_acc=0.771 val_f1=0.741
+[2026-07-29 16:27:12] [INFO] Epoch  60: train_loss=0.2157 train_acc=0.979 val_loss=0.1351 val_acc=0.771 val_f1=0.744
+[2026-07-29 16:27:15] [INFO] Epoch  70: train_loss=0.2310 train_acc=0.980 val_loss=0.1548 val_acc=0.748 val_f1=0.720
+[2026-07-29 16:27:18] [INFO] Epoch  80: train_loss=0.2444 train_acc=0.982 val_loss=0.1380 val_acc=0.780 val_f1=0.751
+[2026-07-29 16:27:19] [INFO] Early stopping na epoch 86
+[2026-07-29 16:27:19] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:27:19] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:27:19] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:27:19] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:27:19] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:27:19] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:27:19] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:27:19] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:27:19] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:27:19] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:27:19] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:27:20] [INFO] Epoch   1: train_loss=3.7103 train_acc=0.270 val_loss=0.8242 val_acc=0.321 val_f1=0.322
+[2026-07-29 16:27:22] [INFO] Epoch  10: train_loss=0.8982 train_acc=0.346 val_loss=0.7643 val_acc=0.309 val_f1=0.307
+[2026-07-29 16:27:23] [INFO] Epoch  20: train_loss=0.7865 train_acc=0.444 val_loss=0.7235 val_acc=0.407 val_f1=0.399
+[2026-07-29 16:27:25] [INFO] Epoch  30: train_loss=0.6846 train_acc=0.532 val_loss=0.7042 val_acc=0.395 val_f1=0.383
+[2026-07-29 16:27:27] [INFO] Epoch  40: train_loss=0.6044 train_acc=0.591 val_loss=0.7327 val_acc=0.444 val_f1=0.437
+[2026-07-29 16:27:29] [INFO] Epoch  50: train_loss=0.5402 train_acc=0.633 val_loss=0.8180 val_acc=0.407 val_f1=0.396
+[2026-07-29 16:27:31] [INFO] Epoch  60: train_loss=0.4975 train_acc=0.675 val_loss=0.9026 val_acc=0.395 val_f1=0.379
+[2026-07-29 16:27:33] [INFO] Epoch  70: train_loss=0.4567 train_acc=0.712 val_loss=0.9469 val_acc=0.358 val_f1=0.337
+[2026-07-29 16:27:33] [INFO] Early stopping na epoch 70
+[2026-07-29 16:27:33] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:27:33] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:27:33] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:27:33] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:27:33] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:27:33] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:27:33] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:27:33] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:27:33] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:27:33] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:27:33] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:27:33] [INFO] Epoch   1: train_loss=0.5112 train_acc=0.730 val_loss=0.2298 val_acc=0.683 val_f1=0.593
+[2026-07-29 16:27:35] [INFO] Epoch  10: train_loss=0.1936 train_acc=0.944 val_loss=0.1549 val_acc=0.711 val_f1=0.588
+[2026-07-29 16:27:38] [INFO] Epoch  20: train_loss=0.1853 train_acc=0.960 val_loss=0.1501 val_acc=0.711 val_f1=0.615
+[2026-07-29 16:27:41] [INFO] Epoch  30: train_loss=0.2033 train_acc=0.969 val_loss=0.1358 val_acc=0.748 val_f1=0.692
+[2026-07-29 16:27:44] [INFO] Epoch  40: train_loss=0.1742 train_acc=0.977 val_loss=0.1259 val_acc=0.771 val_f1=0.726
+[2026-07-29 16:27:46] [INFO] Epoch  50: train_loss=0.1725 train_acc=0.977 val_loss=0.1255 val_acc=0.789 val_f1=0.750
+[2026-07-29 16:27:49] [INFO] Epoch  60: train_loss=0.1766 train_acc=0.977 val_loss=0.1255 val_acc=0.784 val_f1=0.757
+[2026-07-29 16:27:52] [INFO] Epoch  70: train_loss=0.1853 train_acc=0.982 val_loss=0.1298 val_acc=0.775 val_f1=0.743
+[2026-07-29 16:27:55] [INFO] Epoch  80: train_loss=0.1846 train_acc=0.981 val_loss=0.1295 val_acc=0.803 val_f1=0.773
+[2026-07-29 16:27:57] [INFO] Epoch  90: train_loss=0.1795 train_acc=0.983 val_loss=0.1234 val_acc=0.789 val_f1=0.752
+[2026-07-29 16:28:00] [INFO] Epoch 100: train_loss=0.1837 train_acc=0.981 val_loss=0.1233 val_acc=0.798 val_f1=0.769
+[2026-07-29 16:28:03] [INFO] Epoch 110: train_loss=0.1874 train_acc=0.981 val_loss=0.1308 val_acc=0.794 val_f1=0.757
+[2026-07-29 16:28:05] [INFO] Epoch 120: train_loss=0.1925 train_acc=0.984 val_loss=0.1241 val_acc=0.780 val_f1=0.749
+[2026-07-29 16:28:08] [INFO] Epoch 130: train_loss=0.1878 train_acc=0.984 val_loss=0.1257 val_acc=0.789 val_f1=0.763
+[2026-07-29 16:28:11] [INFO] Epoch 140: train_loss=0.1910 train_acc=0.984 val_loss=0.1383 val_acc=0.780 val_f1=0.741
+[2026-07-29 16:28:14] [INFO] Epoch 150: train_loss=0.1854 train_acc=0.982 val_loss=0.1308 val_acc=0.775 val_f1=0.749
+[2026-07-29 16:28:14] [INFO] Early stopping na epoch 151
+[2026-07-29 16:28:14] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:28:14] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:28:14] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:28:14] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:28:14] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:28:14] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:28:14] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:28:14] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:28:14] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:28:14] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:28:14] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:28:14] [INFO] Epoch   1: train_loss=3.1639 train_acc=0.261 val_loss=0.8066 val_acc=0.383 val_f1=0.323
+[2026-07-29 16:28:16] [INFO] Epoch  10: train_loss=0.8707 train_acc=0.375 val_loss=0.7160 val_acc=0.259 val_f1=0.254
+[2026-07-29 16:28:18] [INFO] Epoch  20: train_loss=0.7568 train_acc=0.470 val_loss=0.6649 val_acc=0.333 val_f1=0.330
+[2026-07-29 16:28:20] [INFO] Epoch  30: train_loss=0.6538 train_acc=0.539 val_loss=0.6795 val_acc=0.358 val_f1=0.342
+[2026-07-29 16:28:20] [INFO] Early stopping na epoch 32
+[2026-07-29 16:28:20] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:28:20] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:28:20] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:28:20] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:28:20] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:28:20] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:28:20] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:28:20] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:28:20] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:28:20] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:28:20] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:28:20] [INFO] Epoch   1: train_loss=0.7531 train_acc=0.792 val_loss=0.3613 val_acc=0.638 val_f1=0.561
+[2026-07-29 16:28:23] [INFO] Epoch  10: train_loss=0.2995 train_acc=0.934 val_loss=0.1745 val_acc=0.665 val_f1=0.493
+[2026-07-29 16:28:26] [INFO] Epoch  20: train_loss=0.2615 train_acc=0.953 val_loss=0.1685 val_acc=0.656 val_f1=0.479
+[2026-07-29 16:28:28] [INFO] Epoch  30: train_loss=0.2476 train_acc=0.963 val_loss=0.1441 val_acc=0.734 val_f1=0.667
+[2026-07-29 16:28:31] [INFO] Epoch  40: train_loss=0.2375 train_acc=0.971 val_loss=0.1318 val_acc=0.771 val_f1=0.731
+[2026-07-29 16:28:34] [INFO] Epoch  50: train_loss=0.1990 train_acc=0.974 val_loss=0.1253 val_acc=0.817 val_f1=0.798
+[2026-07-29 16:28:37] [INFO] Epoch  60: train_loss=0.2012 train_acc=0.978 val_loss=0.1238 val_acc=0.798 val_f1=0.767
+[2026-07-29 16:28:39] [INFO] Epoch  70: train_loss=0.1985 train_acc=0.977 val_loss=0.1290 val_acc=0.794 val_f1=0.771
+[2026-07-29 16:28:42] [INFO] Epoch  80: train_loss=0.1942 train_acc=0.979 val_loss=0.1245 val_acc=0.821 val_f1=0.801
+[2026-07-29 16:28:45] [INFO] Epoch  90: train_loss=0.2051 train_acc=0.981 val_loss=0.1288 val_acc=0.807 val_f1=0.784
+[2026-07-29 16:28:47] [INFO] Epoch 100: train_loss=0.2009 train_acc=0.981 val_loss=0.1351 val_acc=0.812 val_f1=0.790
+[2026-07-29 16:28:50] [INFO] Epoch 110: train_loss=0.2027 train_acc=0.981 val_loss=0.1247 val_acc=0.803 val_f1=0.778
+[2026-07-29 16:28:52] [INFO] Early stopping na epoch 118
+[2026-07-29 16:28:52] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:28:52] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:28:52] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:28:52] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:28:52] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:28:52] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:28:52] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:28:52] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:28:52] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:28:52] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:28:52] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:28:53] [INFO] Epoch   1: train_loss=5.3545 train_acc=0.253 val_loss=0.8589 val_acc=0.309 val_f1=0.312
+[2026-07-29 16:28:54] [INFO] Epoch  10: train_loss=0.9307 train_acc=0.297 val_loss=0.7701 val_acc=0.247 val_f1=0.226
+[2026-07-29 16:28:56] [INFO] Epoch  20: train_loss=0.8664 train_acc=0.358 val_loss=0.7461 val_acc=0.370 val_f1=0.367
+[2026-07-29 16:28:58] [INFO] Epoch  30: train_loss=0.7576 train_acc=0.467 val_loss=0.7173 val_acc=0.469 val_f1=0.463
+[2026-07-29 16:29:00] [INFO] Epoch  40: train_loss=0.6692 train_acc=0.535 val_loss=0.7129 val_acc=0.395 val_f1=0.356
+[2026-07-29 16:29:02] [INFO] Epoch  50: train_loss=0.5992 train_acc=0.583 val_loss=0.7856 val_acc=0.370 val_f1=0.345
+[2026-07-29 16:29:03] [INFO] Early stopping na epoch 55
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        125            7            2            1            2
+  Laringite                      10           10            1            0            7
+  Disfonia Psicogenica            9            3            3            1            2
+  Disfonia Funcional             10            4            3            3            2
+  Edema de Reinke                 1            1            2            0            9
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8065     0.9124     0.8562
+Laringite                  0.4000     0.3571     0.3774
+Disfonia Psicogenica       0.2727     0.1667     0.2069
+Disfonia Funcional         0.6000     0.1364     0.2222
+Edema de Reinke            0.4091     0.6923     0.5143
+
+=== Metricas Globais ===
+Acuracia:     0.6881
+Macro F1:     0.4354
+Weighted F1:  0.6567
+Total amostras: 218
+[2026-07-29 16:29:03] [INFO] 
+========== FOLD 5/5 (HIERARCHICAL LATE FUSION) ==========
+[2026-07-29 16:29:04] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:29:04] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:29:04] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:29:04] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:29:04] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:29:04] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:29:04] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:29:04] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:29:04] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:29:04] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:29:04] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:29:04] [INFO] Epoch   1: train_loss=1.0437 train_acc=0.764 val_loss=0.2383 val_acc=0.702 val_f1=0.648
+[2026-07-29 16:29:07] [INFO] Epoch  10: train_loss=0.2928 train_acc=0.948 val_loss=0.1474 val_acc=0.725 val_f1=0.635
+[2026-07-29 16:29:10] [INFO] Epoch  20: train_loss=0.2351 train_acc=0.957 val_loss=0.1480 val_acc=0.716 val_f1=0.623
+[2026-07-29 16:29:12] [INFO] Epoch  30: train_loss=0.2093 train_acc=0.967 val_loss=0.1394 val_acc=0.766 val_f1=0.724
+[2026-07-29 16:29:15] [INFO] Epoch  40: train_loss=0.1883 train_acc=0.975 val_loss=0.1397 val_acc=0.780 val_f1=0.755
+[2026-07-29 16:29:18] [INFO] Epoch  50: train_loss=0.1879 train_acc=0.978 val_loss=0.1400 val_acc=0.780 val_f1=0.749
+[2026-07-29 16:29:21] [INFO] Epoch  60: train_loss=0.1952 train_acc=0.978 val_loss=0.1464 val_acc=0.761 val_f1=0.737
+[2026-07-29 16:29:23] [INFO] Epoch  70: train_loss=0.1962 train_acc=0.979 val_loss=0.1421 val_acc=0.743 val_f1=0.721
+[2026-07-29 16:29:26] [INFO] Epoch  80: train_loss=0.1877 train_acc=0.981 val_loss=0.1456 val_acc=0.775 val_f1=0.750
+[2026-07-29 16:29:27] [INFO] Early stopping na epoch 85
+[2026-07-29 16:29:27] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:29:27] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:29:27] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:29:27] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:29:27] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:29:27] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:29:27] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:29:27] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:29:27] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:29:27] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:29:27] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:29:28] [INFO] Epoch   1: train_loss=4.2988 train_acc=0.251 val_loss=0.7690 val_acc=0.346 val_f1=0.275
+[2026-07-29 16:29:30] [INFO] Epoch  10: train_loss=0.8894 train_acc=0.362 val_loss=0.7444 val_acc=0.370 val_f1=0.375
+[2026-07-29 16:29:31] [INFO] Epoch  20: train_loss=0.7808 train_acc=0.437 val_loss=0.7064 val_acc=0.395 val_f1=0.395
+[2026-07-29 16:29:33] [INFO] Epoch  30: train_loss=0.6855 train_acc=0.523 val_loss=0.6891 val_acc=0.407 val_f1=0.404
+[2026-07-29 16:29:35] [INFO] Epoch  40: train_loss=0.6012 train_acc=0.586 val_loss=0.7199 val_acc=0.407 val_f1=0.407
+[2026-07-29 16:29:37] [INFO] Epoch  50: train_loss=0.5383 train_acc=0.632 val_loss=0.7609 val_acc=0.420 val_f1=0.417
+[2026-07-29 16:29:39] [INFO] Epoch  60: train_loss=0.4969 train_acc=0.676 val_loss=0.8205 val_acc=0.383 val_f1=0.375
+[2026-07-29 16:29:40] [INFO] Epoch  70: train_loss=0.4680 train_acc=0.688 val_loss=0.8478 val_acc=0.395 val_f1=0.391
+[2026-07-29 16:29:42] [INFO] Epoch  80: train_loss=0.4449 train_acc=0.713 val_loss=0.9208 val_acc=0.383 val_f1=0.374
+[2026-07-29 16:29:44] [INFO] Early stopping na epoch 87
+[2026-07-29 16:29:44] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:29:44] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:29:44] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:29:44] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:29:44] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:29:44] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:29:44] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:29:44] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:29:44] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:29:44] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:29:44] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:29:44] [INFO] Epoch   1: train_loss=0.5739 train_acc=0.741 val_loss=0.2360 val_acc=0.688 val_f1=0.627
+[2026-07-29 16:29:46] [INFO] Epoch  10: train_loss=0.1908 train_acc=0.942 val_loss=0.1675 val_acc=0.665 val_f1=0.485
+[2026-07-29 16:29:49] [INFO] Epoch  20: train_loss=0.1986 train_acc=0.958 val_loss=0.1532 val_acc=0.706 val_f1=0.596
+[2026-07-29 16:29:52] [INFO] Epoch  30: train_loss=0.2020 train_acc=0.968 val_loss=0.1529 val_acc=0.761 val_f1=0.715
+[2026-07-29 16:29:55] [INFO] Epoch  40: train_loss=0.1876 train_acc=0.977 val_loss=0.1457 val_acc=0.748 val_f1=0.694
+[2026-07-29 16:29:58] [INFO] Epoch  50: train_loss=0.1945 train_acc=0.977 val_loss=0.1591 val_acc=0.757 val_f1=0.718
+[2026-07-29 16:30:00] [INFO] Epoch  60: train_loss=0.1837 train_acc=0.979 val_loss=0.1583 val_acc=0.752 val_f1=0.701
+[2026-07-29 16:30:01] [INFO] Early stopping na epoch 64
+[2026-07-29 16:30:01] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:30:01] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:30:01] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:30:01] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:30:01] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:30:01] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:30:01] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:30:01] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:30:01] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:30:01] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:30:01] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:30:02] [INFO] Epoch   1: train_loss=3.8300 train_acc=0.260 val_loss=0.8831 val_acc=0.259 val_f1=0.223
+[2026-07-29 16:30:04] [INFO] Epoch  10: train_loss=0.8883 train_acc=0.358 val_loss=0.7502 val_acc=0.333 val_f1=0.315
+[2026-07-29 16:30:05] [INFO] Epoch  20: train_loss=0.7835 train_acc=0.429 val_loss=0.7237 val_acc=0.370 val_f1=0.358
+[2026-07-29 16:30:07] [INFO] Epoch  30: train_loss=0.6982 train_acc=0.508 val_loss=0.7082 val_acc=0.420 val_f1=0.411
+[2026-07-29 16:30:09] [INFO] Epoch  40: train_loss=0.6175 train_acc=0.551 val_loss=0.7485 val_acc=0.383 val_f1=0.373
+[2026-07-29 16:30:11] [INFO] Epoch  50: train_loss=0.5573 train_acc=0.603 val_loss=0.7856 val_acc=0.370 val_f1=0.365
+[2026-07-29 16:30:12] [INFO] Early stopping na epoch 58
+[2026-07-29 16:30:12] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:30:12] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:30:12] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:30:12] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:30:12] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:30:12] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:30:12] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:30:12] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:30:12] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:30:12] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:30:12] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:30:13] [INFO] Epoch   1: train_loss=0.7167 train_acc=0.779 val_loss=0.4630 val_acc=0.656 val_f1=0.503
+[2026-07-29 16:30:15] [INFO] Epoch  10: train_loss=0.2499 train_acc=0.938 val_loss=0.1909 val_acc=0.647 val_f1=0.437
+[2026-07-29 16:30:18] [INFO] Epoch  20: train_loss=0.2253 train_acc=0.952 val_loss=0.1861 val_acc=0.651 val_f1=0.476
+[2026-07-29 16:30:21] [INFO] Epoch  30: train_loss=0.2167 train_acc=0.962 val_loss=0.1742 val_acc=0.697 val_f1=0.638
+[2026-07-29 16:30:24] [INFO] Epoch  40: train_loss=0.2094 train_acc=0.970 val_loss=0.1769 val_acc=0.734 val_f1=0.697
+[2026-07-29 16:30:26] [INFO] Epoch  50: train_loss=0.2084 train_acc=0.976 val_loss=0.1661 val_acc=0.757 val_f1=0.718
+[2026-07-29 16:30:29] [INFO] Epoch  60: train_loss=0.1958 train_acc=0.976 val_loss=0.1719 val_acc=0.771 val_f1=0.739
+[2026-07-29 16:30:32] [INFO] Epoch  70: train_loss=0.1910 train_acc=0.978 val_loss=0.1736 val_acc=0.766 val_f1=0.738
+[2026-07-29 16:30:34] [INFO] Epoch  80: train_loss=0.1880 train_acc=0.982 val_loss=0.1861 val_acc=0.739 val_f1=0.709
+[2026-07-29 16:30:37] [INFO] Epoch  90: train_loss=0.1893 train_acc=0.980 val_loss=0.1827 val_acc=0.720 val_f1=0.683
+[2026-07-29 16:30:37] [INFO] Early stopping na epoch 90
+[2026-07-29 16:30:37] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.350 -- relaxando para 0.300 (iter 1/10)
+[2026-07-29 16:30:37] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.300 -- relaxando para 0.250 (iter 2/10)
+[2026-07-29 16:30:37] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.250 -- relaxando para 0.200 (iter 3/10)
+[2026-07-29 16:30:37] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.200 -- relaxando para 0.150 (iter 4/10)
+[2026-07-29 16:30:37] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.150 -- relaxando para 0.100 (iter 5/10)
+[2026-07-29 16:30:37] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.100 -- relaxando para 0.050 (iter 6/10)
+[2026-07-29 16:30:37] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=0.050 -- relaxando para -0.000 (iter 7/10)
+[2026-07-29 16:30:37] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.000 -- relaxando para -0.050 (iter 8/10)
+[2026-07-29 16:30:37] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.050 -- relaxando para -0.100 (iter 9/10)
+[2026-07-29 16:30:37] [WARN] paraconsistent_select: 0 features selecionadas com gc_thresh=-0.100 -- relaxando para -0.150 (iter 10/10)
+[2026-07-29 16:30:37] [WARN] paraconsistent_select: relaxamento esgotado (10 iteracoes) sem selecionar nenhuma feature -- fallback para todas as 85 features (mesmo padrao de fallback do SMOTE-03)
+[2026-07-29 16:30:38] [INFO] Epoch   1: train_loss=5.1068 train_acc=0.252 val_loss=0.9559 val_acc=0.247 val_f1=0.237
+[2026-07-29 16:30:39] [INFO] Epoch  10: train_loss=0.9276 train_acc=0.299 val_loss=0.7790 val_acc=0.272 val_f1=0.265
+[2026-07-29 16:30:41] [INFO] Epoch  20: train_loss=0.8439 train_acc=0.391 val_loss=0.7396 val_acc=0.309 val_f1=0.298
+[2026-07-29 16:30:43] [INFO] Epoch  30: train_loss=0.7554 train_acc=0.460 val_loss=0.7036 val_acc=0.383 val_f1=0.385
+[2026-07-29 16:30:45] [INFO] Epoch  40: train_loss=0.6610 train_acc=0.514 val_loss=0.6782 val_acc=0.432 val_f1=0.431
+[2026-07-29 16:30:47] [INFO] Epoch  50: train_loss=0.5979 train_acc=0.581 val_loss=0.6800 val_acc=0.407 val_f1=0.410
+[2026-07-29 16:30:49] [INFO] Epoch  60: train_loss=0.5564 train_acc=0.614 val_loss=0.7116 val_acc=0.383 val_f1=0.384
+[2026-07-29 16:30:50] [INFO] Early stopping na epoch 69
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        125            7            2            1            2
+  Laringite                      11           10            3            2            2
+  Disfonia Psicogenica            9            0            5            0            4
+  Disfonia Funcional              9            1            5            4            3
+  Edema de Reinke                 2            0            2            1            8
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8013     0.9124     0.8532
+Laringite                  0.5556     0.3571     0.4348
+Disfonia Psicogenica       0.2941     0.2778     0.2857
+Disfonia Funcional         0.5000     0.1818     0.2667
+Edema de Reinke            0.4211     0.6154     0.5000
+
+=== Metricas Globais ===
+Acuracia:     0.6972
+Macro F1:     0.4681
+Weighted F1:  0.6724
+Total amostras: 218
+[2026-07-29 16:30:50] [INFO] 
+========== RESULTADOS AGREGADOS ==========
+[2026-07-29 16:30:50] [INFO] Acuracia media: 0.6967  Macro F1 medio: 0.4554
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        632           17           12           13           13
+  Laringite                      54           45            7            6           28
+  Disfonia Psicogenica           33            7           29           10           12
+  Disfonia Funcional             43           11           27           20           11
+  Edema de Reinke                 9            6           10            4           39
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8197     0.9199     0.8669
+Laringite                  0.5233     0.3214     0.3982
+Disfonia Psicogenica       0.3412     0.3187     0.3295
+Disfonia Funcional         0.3774     0.1786     0.2424
+Edema de Reinke            0.3786     0.5735     0.4561
+
+=== Metricas Globais ===
+Acuracia:     0.6967
+Macro F1:     0.4587
+Weighted F1:  0.6735
+Total amostras: 1098
+[2026-07-29 16:30:50] [INFO] 
+========== BOOTSTRAP CI (95%, N=1000, seed=42) ==========
+[2026-07-29 16:30:50] [INFO] CI_ACCURACY:         0.6958 [0.6694, 0.7231]
+[2026-07-29 16:30:50] [INFO] CI_MACRO_F1:         0.4565 [0.4194, 0.4949]
+[2026-07-29 16:30:50] [INFO] CI_F1_NORMAL:        0.8664 [0.8475, 0.8850]
+[2026-07-29 16:30:50] [INFO] CI_F1_LARYNGITE:     0.3974 [0.3131, 0.4891]
+[2026-07-29 16:30:50] [INFO] CI_F1_DISFONIA:      0.3273 [0.2375, 0.4149]
+[2026-07-29 16:30:50] [INFO] CI_F1_FUNC_DISFONIA: 0.2386 [0.1507, 0.3294]
+[2026-07-29 16:30:50] [INFO] CI_F1_REINKE:        0.4531 [0.3636, 0.5444]
+[2026-07-29 16:30:50] [INFO] 
+========== MCNEMAR: MLP vs BASELINES ==========
+[2026-07-29 16:30:50] [INFO] MLP vs MajorityClass: chi2=31.5372 p=0.0000 -- MLP significativamente melhor que MajorityClass (p<0.05)
+[2026-07-29 16:30:50] [INFO] MLP vs kNN:           chi2=18.0500 p=0.0000 -- MLP significativamente melhor que kNN (p<0.05)
+[2026-07-29 16:30:50] [INFO] MLP vs LogisticRegression: chi2=14.4509 p=0.0001 -- MLP significativamente melhor que LogisticRegression (p<0.05)
+EXITCODE:0
