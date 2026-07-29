@@ -98,7 +98,7 @@ WAV files (5 class directories)
 | Batch size | 32 |
 | Max epochs | 500 |
 | Early stopping patience | 30 (val Macro F1) |
-| L2 lambda | 0.003 |
+| L2 lambda | 0.001 |
 | Label smoothing | 0.05 |
 | Gaussian noise | 0.05 |
 | Gradient clip norm | 5.0 |
@@ -163,6 +163,45 @@ WAV files (5 class directories)
 **Empty-borderline-pool fallback**: Fired in 30 of 90 rows in `results/smote_borderline_counts.csv`, but all 30 are structural placeholder rows for class slots each network doesn't use (Master's unused class=1 slot, Expert's unused class=0 slot), always `(0,0,0)` by construction — not real fallback events. Among the 60 real classification rows (Master's healthy class + Expert's 4 pathology classes, across 5 folds × 3 vowels × 2 networks), the fallback fired **zero times** — it did not concentrate in the smallest classes as anticipated.
 
 **Files**: `results/train_log_v32_gap2_smote_ab.txt` (full A/B report + DECISAO sentence), `results/smote_ab_comparison.csv` (machine-readable 7-metric × 2-arm comparison with bootstrap CI), `results/smote_borderline_counts.csv` (90-row safe/borderline/noise counts per fold/vowel/network/class).
+
+## Gap 3 Outcome — Shallow vs Deep MLP Comparison (v33)
+
+**ARCH-01 correction (restated for permanence)**: Config C [128,64] confirmadamente a producao atual antes desta comparacao, correcao ja aplicada no Plano 02-01 — Config A [128] nunca foi a arquitetura em producao, apesar do que o SPEC.md original assumia.
+
+**Comparacao completa** (4 arquiteturas × 3 forcas de regularizacao, mesma seed=42, mesmos 5-folds, SMOTE fixo em Borderline-SMOTE1):
+
+| Arch | Reg | Accuracy | Macro F1 | Params (Master+Expert) | mean_epochs_to_stop |
+|---|---|---|---|---|---|
+| A | light | 0.6831 | 0.4365 | 11266+11524 | 72.47 |
+| A | baseline | 0.6922 | 0.4239 | 11266+11524 | 78.73 |
+| A | strong | 0.6794 | 0.3911 | 11266+11524 | 77.73 |
+| B | light | 0.6940 | 0.4452 | 5634+5764 | 82.60 |
+| B | baseline | 0.6858 | 0.4118 | 5634+5764 | 84.50 |
+| B | strong | 0.6667 | 0.3691 | 5634+5764 | 83.93 |
+| C | light | 0.6876 | 0.4431 | 19394+19524 | 76.67 |
+| **C** | **baseline** | **0.6967** | **0.4587** | **19394+19524** | 80.53 |
+| C | strong | 0.6566 | 0.3723 | 19394+19524 | 74.10 |
+| D | light | 0.7004 | 0.4741 | 21410+21476 | 76.80 |
+| D | baseline | 0.7040 | 0.4718 | 21410+21476 | 87.27 |
+| D | strong | 0.6093 | 0.2777 | 21410+21476 | **46.40** |
+
+(Bold row: adopted arm. Bold+italic epoch count: Pitfall 3 collapse — see below.)
+
+**Best regularization per architecture**: A → light (0.4365) — B → light (0.4452) — C → baseline (0.4587) — D → light (0.4741).
+
+**1-SE band + best overall (`ao`)**: Best overall architecture (`ao`) = D at light regularization, macro_f1=0.4741. SE derived from D/light's bootstrap CI half-width. Band = **[0.4554, 0.4741]**.
+
+**McNemar vs `ao` (D)**: A vs D: chi2=3.2079, p=0.0733 (not significant) — B vs D: chi2=0.4557, p=0.4996 (not significant) — C vs D: chi2=0.1047, **p=0.7463** (not significant). A and B are excluded from adoption anyway because their best-reg macro_f1 (0.4365, 0.4452) falls below the band's lower bound (0.4554), regardless of their McNemar results — the band gate, not McNemar alone, excludes them, per the fixed procedure.
+
+**DECISAO** (verbatim from `results/train_log_v33_gap3_arch_compare.txt`):
+
+> DECISAO: arquitetura adotada = C, regularizacao = baseline, parametros totais = 38918 -- dentro da banda de 1 SE (macro_f1=0.4587 >= 0.4554) e nao significativamente pior que D por McNemar (p=0.7463 >= 0.05).
+
+**No production config.h change required**: The adopted arm (Config C, baseline regularization) is **today's exact compiled production configuration** — `[128,64]` hidden layers, dropout `[0.5,0.4]`, `L2_LAMBDA=0.001f` unmultiplied. No migration to `config.h` is needed as a result of this comparison. Config D scored higher on point-estimate Macro F1 (0.4741 vs 0.4587), but the fixed 1-SE + McNemar + fewest-params procedure correctly determines this gap is not large enough (relative to bootstrap uncertainty) or significant enough (by McNemar) to justify adopting a ~10% larger network (42886 vs 38918 total params). This is a legitimate empirical outcome of the procedure, not a foregone/skipped comparison.
+
+**Pitfall 3 caveat (fixed-hyperparameter "deeper is undertuned" artifact) — must be carried forward**: Config D at strong regularization collapses: `mean_epochs_to_stop`=46.40, roughly half of D's own light (76.80) and baseline (87.27) arms, and far below every other architecture's own strong-regularization arm (A=77.73, B=83.93, C=74.10). D/strong's macro_f1 also crashes to 0.2777 — the lowest of all 12 arms — and is the only one of the 12 arms where the MLP is not statistically distinguishable from the trivial MajorityClass baseline (McNemar p=0.1176 vs MajorityClass). This does **not** change the adoption decision (D's own best regularization is light, not strong, so D/strong was never a decision-procedure candidate), but it is direct evidence that "Config D is worse than C" cannot be fully separated from "Config D needs a lighter, depth-specific regularization schedule than the one tested here." This run cannot distinguish "depth doesn't help" from "depth needs different tuning" — treat any future claim that deeper architectures categorically underperform on this dataset as unproven by this comparison alone.
+
+**Files**: `results/train_log_v33_gap3_arch_compare.txt` (full Portuguese report: complete 12-row table, best-per-architecture summary, 1-SE band, McNemar-vs-`ao` results, verbatim DECISAO sentence), `results/arch_compare_comparison.csv` (13-line machine-readable comparison: 1 header + 12 arm rows).
 
 ## Output Files
 - `results/features.csv` — cached 1098×237 feature matrix (re-extracted if TOTAL_FEATURES changes)
