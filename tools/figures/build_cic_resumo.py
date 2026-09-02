@@ -41,6 +41,19 @@ def set_runs(para, runs, size=BODY):
     return para
 
 
+def find(paras, prefix):
+    """Localiza o paragrafo pelo inicio do texto, nao pela posicao.
+
+    Indexar por posicao tornava o script utilizavel uma unica vez: depois de gravar o
+    resultado sobre o proprio arquivo, a contagem de paragrafos mudava (os espacadores
+    vazios saem) e a segunda execucao estourava o indice.
+    """
+    for para in paras:
+        if para.text.strip().upper().startswith(prefix.upper()):
+            return para
+    raise SystemExit(f"paragrafo iniciado por {prefix!r} nao encontrado no modelo")
+
+
 def drop(para):
     para._element.getparent().remove(para._element)
 
@@ -90,7 +103,7 @@ def build(src, dst, results="results", figs="results/figures"):
     paras = doc.paragraphs
 
     # ---------------- INTRODUCAO
-    set_runs(paras[6], [
+    set_runs(find(paras, "INTRODUÇÃO"), [
         ("INTRODUÇÃO: ", True, False),
         ("O diagnóstico diferencial de distúrbios vocais costuma exigir exame "
          "endoscópico, e o caso mais difícil é separar as disfonias funcionais sem lesão "
@@ -104,7 +117,7 @@ def build(src, dst, results="results", figs="results/figures"):
          False, False)])
 
     # ---------------- MATERIAL E METODOS
-    set_runs(paras[8], [
+    set_runs(find(paras, "MATERIAL E MÉTODOS"), [
         ("MATERIAL E MÉTODOS: ", True, False),
         (f"Usou-se um subconjunto de {K['n_patients']} pacientes da Saarbrücken Voice "
          "Database (BARRY; PÜTZER, 2007), nas cinco classes e nos tamanhos da Tabela 1, "
@@ -131,7 +144,7 @@ def build(src, dst, results="results", figs="results/figures"):
          False, False)])
 
     # ---------------- RESULTADOS E DISCUSSAO
-    set_runs(paras[10], [
+    set_runs(find(paras, "RESULTADOS E DISCUSSÃO"), [
         ("RESULTADOS E DISCUSSÃO: ", True, False),
         (f"A configuração adotada alcançou acurácia de {K['acc_pct']} "
          f"[IC 95%: {br(ci['accuracy'][1]*100, 1)}–{br(ci['accuracy'][2]*100, 1)}%] e "
@@ -158,17 +171,17 @@ def build(src, dst, results="results", figs="results/figures"):
          "disfonias sem lesão estrutural (LEE, 2021; VRBA et al., 2025).", False, False)])
 
     # ---------------- legenda da figura e da tabela
-    set_runs(paras[13], [
+    set_runs(find(paras, "Figura 1"), [
         ("Figura 1. ", True, False),
         (f"Matriz de confusão agregada ({K['n_patients']} pacientes, cinco dobras). "
          "Diagonal = acertos.", False, False)], size=9)
-    set_runs(paras[16], [
+    set_runs(find(paras, "Tabela 1"), [
         ("Tabela 1. ", True, False),
         ("Desempenho por classe (predições fora da dobra de treino).",
          False, False)], size=9)
 
     # ---------------- CONCLUSOES
-    set_runs(paras[18], [
+    set_runs(find(paras, "CONCLUSÕES"), [
         ("CONCLUSÕES: ", True, False),
         (f"A triagem entre voz saudável e patológica mostrou-se viável (Normal: F1 = "
          f"{K['f1_normal']}, recall de {K['recall_normal']}) e o Edema de Reinke foi "
@@ -181,14 +194,15 @@ def build(src, dst, results="results", figs="results/figures"):
          False, False)])
 
     # ---------------- AGRADECIMENTOS
-    set_runs(paras[20], [
+    set_runs(find(paras, "AGRADECIMENTOS"), [
         ("AGRADECIMENTOS: ", True, False),
         ("Ao Prof. Dr. Eng. Rodrigo Capobianco Guido, pela orientação; ao IBILCE/Unesp, "
          "pela infraestrutura; e aos autores da Saarbrücken Voice Database. IC "
          "voluntária, sem bolsa.", False, False)])
 
     # ---------------- REFERENCIAS
-    set_runs(paras[22], [("REFERÊNCIAS", True, False)])
+    ref_head = find(paras, "REFERÊNCIAS")
+    set_runs(ref_head, [("REFERÊNCIAS", True, False)])
     refs = [
         ("BARRY, W. J.; PÜTZER, M. ", "Saarbrücken Voice Database. Universität des "
          "Saarlandes, 2007. Acesso em: 26 jul. 2026."),
@@ -204,18 +218,23 @@ def build(src, dst, results="results", figs="results/figures"):
         ("VRBA, J. et al. ", "Reproducible machine learning-based voice pathology "
          "detection: introducing the pitch difference feature. Journal of Voice, 2025."),
     ]
-    ref_paras = [paras[24], paras[25], paras[26], paras[28]]
+    existing = paras[paras.index(ref_head) + 1:]
+    written = []
+    anchor = ref_head
     for i, (head, tail) in enumerate(refs):
-        if i < len(ref_paras):
-            target = ref_paras[i]
-        else:  # cria os paragrafos extras logo apos o ultimo existente
+        if i < len(existing):
+            target = existing[i]
+        else:
             target = doc.add_paragraph()
-            ref_paras[-1]._element.addnext(target._element)
-            target.alignment = ref_paras[-1].alignment
-            target.style = ref_paras[-1].style
-            ref_paras.append(target)
+            anchor._element.addnext(target._element)
+            target.alignment = anchor.alignment
+            target.style = anchor.style
         set_runs(target, [(head, True, False), (tail, False, False)], size=SMALL)
         tighten(target, after=0, spacing=0.96)
+        written.append(target)
+        anchor = target
+    for extra in existing[len(refs):]:   # sobras do modelo, incluindo espacadores
+        drop(extra)
 
     # ---------------- figura
     height = replace_image(doc, doc.inline_shapes[0],
@@ -256,16 +275,14 @@ def build(src, dst, results="results", figs="results/figures"):
             cell.width = Cm(wcm)
 
     # ---------------- compactar para caber em 1 pagina
-    for para in doc.paragraphs:
-        if not para.text.strip() and not para.runs:
+    # remove espacadores vazios, preservando o paragrafo que carrega a figura
+    for para in list(doc.paragraphs):
+        if para.text.strip():
             continue
-    for idx in sorted([7, 9, 11, 14, 15, 17, 19, 21, 23, 27], reverse=True):
-        if idx < len(paras) and not paras[idx].text.strip() and \
-                not paras[idx]._element.findall(
-                    "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}r/"
-                    "{http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing}"
-                    "inline"):
-            drop(paras[idx])
+        if para._element.findall(".//{http://schemas.openxmlformats.org/"
+                                 "drawingml/2006/wordprocessingDrawing}inline"):
+            continue
+        drop(para)
     for para in doc.paragraphs:
         if para.text.strip():
             tighten(para, after=1, spacing=0.98)

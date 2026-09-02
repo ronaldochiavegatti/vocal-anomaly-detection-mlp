@@ -21,7 +21,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.patches import FancyBboxPatch, PathPatch
+from matplotlib.patches import PathPatch
 from matplotlib.path import Path
 from matplotlib.transforms import blended_transform_factory
 
@@ -158,6 +158,30 @@ def read_confusion(path, supports, accuracy, tol=5e-4):
     return matches[-1]
 
 
+def build_arch_arms(arch_rows, results):
+    """Para cada arquitetura, o braco de melhor regularizacao com seu IC bootstrap.
+
+    A comparacao do Gap 3 varreu 12 combinacoes; o forest plot mostra so o melhor braco
+    de cada arquitetura, que e sobre o que a regra de decisao (banda de 1 erro-padrao +
+    McNemar + menos parametros) de fato opera.
+    """
+    labels = {"A": "A  [128]", "B": "B  [64]", "C": "C  [128, 64]",
+              "D": "D  [128, 64, 32]"}
+    best = {}
+    for row in arch_rows:
+        a, f1 = row["arch"], float(row["macro_f1"])
+        if a not in best or f1 > best[a][0]:
+            best[a] = (f1, row["reg"])
+    arms = []
+    for a in ("A", "B", "C", "D"):
+        f1, reg = best[a]
+        ci = read_ci(os.path.join(results, f"bootstrap_ci_borderline_{a}_{reg}.csv"))
+        adopted = a == "C"
+        arms.append((labels[a], ci["macro_f1"], ORANGE if adopted else BLUE,
+                     "ADOTADA" if adopted else ""))
+    return arms
+
+
 def fmt_p(p):
     return "p < 0,001" if p < 0.001 else f"p = {p:.4f}".replace(".", ",")
 
@@ -195,47 +219,6 @@ def rounded_bars(ax, xs, values, width, color, radius_frac=0.22):
 
 
 # ---------------------------------------------------------------- figuras
-def fig_confusion(cm, per_class, out, figsize=(8.45, 5.0), dpi=300, title=True):
-    recall = cm / cm.sum(axis=1, keepdims=True)
-    fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
-    ramp = matplotlib.colors.LinearSegmentedColormap.from_list(
-        "azul", ["#ffffff", "#dbe9f8", "#9cc2ec", "#4b8ed8", "#15467d"])
-    ax.imshow(recall, cmap=ramp, vmin=0, vmax=1, aspect="auto")
-
-    for i in range(5):
-        for j in range(5):
-            v = recall[i, j]
-            col = "#ffffff" if v > 0.55 else INK
-            diag = i == j
-            ax.text(j, i - (0.13 if diag else 0), f"{cm[i, j]}",
-                    ha="center", va="center", fontsize=13 if diag else 11,
-                    fontweight="bold" if diag else "normal", color=col)
-            if diag:
-                ax.text(j, i + 0.22, f"{v*100:.0f}%", ha="center", va="center",
-                        fontsize=9, color=col)
-    # separadores de 2px na cor da superficie
-    for k in range(6):
-        ax.axhline(k - 0.5, color=SURFACE, linewidth=2)
-        ax.axvline(k - 0.5, color=SURFACE, linewidth=2)
-
-    ax.set_xticks(range(5))
-    ax.set_yticks(range(5))
-    ax.set_xticklabels(CLASSES_ACC, fontsize=9.5)
-    ax.set_yticklabels([f"{c}\n(n={n})" for c, n in zip(CLASSES_ACC, SUPPORT)], fontsize=9.5)
-    ax.set_xlabel("Classe prevista pelo modelo", fontsize=10.5, labelpad=8)
-    ax.set_ylabel("Classe clínica real", fontsize=10.5, labelpad=6)
-    for side in ax.spines.values():
-        side.set_visible(False)
-    ax.tick_params(length=0)
-    if title:
-        ax.set_title("Diagonal = acertos; % = recall da classe", fontsize=9.5,
-                     color=INK2, pad=10, loc="left")
-    fig.tight_layout()
-    fig.savefig(out, bbox_inches="tight")
-    plt.close(fig)
-    return out
-
-
 def fig_confusion_compact(cm, out, figsize=(2.756, 1.68), dpi=600):
     """Matriz de confusao dimensionada para a coluna de 8,22 cm do resumo.
 
@@ -275,37 +258,123 @@ def fig_confusion_compact(cm, out, figsize=(2.756, 1.68), dpi=600):
     return out
 
 
-def fig_f1_classes(per_class, ci, macro, out, figsize=(7.8, 5.0), dpi=300):
-    keys = ["Normal", "Laringite", "Disfonia Psicogenica", "Disfonia Funcional",
-            "Edema de Reinke"]
-    ci_keys = ["f1_normal", "f1_laringite", "f1_disfonia_psicogenica",
-               "f1_disfonia_funcional", "f1_reinke"]
-    vals = [per_class[k]["f1"] for k in keys]
-    los = [ci[k][1] for k in ci_keys]
-    his = [ci[k][2] for k in ci_keys]
+def fig_confusion_poster(cm, out, width_cm=41.0, height_cm=21.5, dpi=200):
+    """Matriz de confusao para o poster A0, gerada no tamanho fisico final.
 
-    fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
-    xs = np.arange(5)
-    # serie unica sobre categorias nominais -> um unico hue (slot 1)
-    rounded_bars(ax, xs, vals, 0.40, BLUE)
-    ax.errorbar(xs, vals, yerr=[np.array(vals) - np.array(los), np.array(his) - np.array(vals)],
-                fmt="none", ecolor=INK2, elinewidth=1.4, capsize=5, capthick=1.4, zorder=5)
-    for x, v, hi in zip(xs, vals, his):
-        ax.text(x, hi + 0.035, br(v, 3), ha="center", va="bottom", fontsize=12,
-                fontweight="bold", color=INK)
-
-    ax.axhline(macro, color=ORANGE, linewidth=2, linestyle=(0, (5, 3)), zorder=4)
-    ax.text(2.5, macro + 0.018, f"Macro F1 = {br(macro)}", ha="center", va="bottom",
-            fontsize=10, color=ORANGE, fontweight="bold")
-
-    style_axes(ax, 1.0, 0.2, "F1-Score (out-of-fold)")
-    ax.set_xticks(xs)
-    ax.set_xticklabels([f"{c}\n(n={n})" for c, n in zip(CLASSES, SUPPORT)], fontsize=9.5)
-    ax.set_xlim(-0.55, 4.55)
-    ax.set_title("Barras = F1 pontual · hastes = IC 95% bootstrap (N=1000)",
-                 fontsize=9.5, color=INK2, pad=10, loc="left")
+    Como a figura e inserida em 1:1, os tamanhos abaixo valem como pontos de
+    impressao: e o que garante legibilidade a alguns metros de distancia. Gerar
+    pequeno e ampliar na colocacao -- o erro da versao anterior -- reduz a fonte
+    efetiva a ~12 pt no papel.
+    """
+    recall = cm / cm.sum(axis=1, keepdims=True)
+    fig, ax = plt.subplots(figsize=(width_cm / 2.54, height_cm / 2.54), dpi=dpi)
+    ramp = matplotlib.colors.LinearSegmentedColormap.from_list(
+        "azul", ["#ffffff", "#dceaf9", "#a8c9ee", "#5b95da", "#1f4e8c"])
+    ax.imshow(recall, cmap=ramp, vmin=0, vmax=1, aspect="auto")
+    for i in range(5):
+        for j in range(5):
+            v = recall[i, j]
+            col = "#ffffff" if v > 0.5 else INK
+            if i == j:
+                ax.text(j, i - 0.10, f"{cm[i, j]}", ha="center", va="center",
+                        fontsize=46, fontweight="bold", color=col)
+                ax.text(j, i + 0.26, f"{v*100:.0f}%", ha="center", va="center",
+                        fontsize=26, color=col)
+            else:
+                ax.text(j, i, f"{cm[i, j]}", ha="center", va="center", fontsize=32,
+                        color=col)
+    for k in range(6):
+        ax.axhline(k - 0.5, color="#ffffff", linewidth=4)
+        ax.axvline(k - 0.5, color="#ffffff", linewidth=4)
+    labels = ["Normal", "Laringite", "Disfonia\nPsicogênica", "Disfonia\nFuncional",
+              "Edema de\nReinke"]
+    ax.set_xticks(range(5))
+    ax.set_yticks(range(5))
+    ax.set_xticklabels(labels, fontsize=26)
+    ax.set_yticklabels([f"{c}\n{n} pacientes" for c, n in zip(labels, SUPPORT)],
+                       fontsize=25)
+    ax.set_xlabel("classe prevista pelo modelo", fontsize=28, labelpad=16, color=INK2)
+    ax.set_ylabel("classe clínica real", fontsize=28, labelpad=16, color=INK2)
+    ax.tick_params(length=0, pad=10)
+    for side in ax.spines.values():
+        side.set_visible(False)
     fig.tight_layout()
-    fig.savefig(out, bbox_inches="tight")
+    fig.savefig(out, bbox_inches="tight", pad_inches=0.05)
+    plt.close(fig)
+    return out
+
+
+def fig_gaps_poster(smote, para, arch_arms, mcn_p_smote, mcn_p_para, mcn_p_arch, out,
+                    width_cm=41.8, height_cm=22.0, dpi=200):
+    """Forest plot com as decisoes A/B dos tres gaps, no tamanho fisico do poster.
+
+    Reune num unico grafico legivel o que antes eram duas figuras (este forest plot e
+    um grafico de 12 barras para as arquiteturas). Todos os pontos sao medias bootstrap
+    com IC 95%, para nao misturar estimativa pontual crua com media bootstrap na mesma
+    escala.
+    """
+    fig, (axl, ax) = plt.subplots(1, 2, figsize=(width_cm / 2.54, height_cm / 2.54),
+                                  dpi=dpi,
+                                  gridspec_kw=dict(width_ratios=[1, 1.5], wspace=0.02))
+    groups = [
+        dict(title="Balanceamento das classes",
+             arms=[("SMOTE padrão", smote["macro_f1"][0], BLUE, ""),
+                   ("Borderline-SMOTE1", smote["macro_f1"][1], ORANGE, "ADOTADO")],
+             p=mcn_p_smote, badge_color=GOOD),
+        dict(title="Profundidade da rede",
+             arms=arch_arms, p=mcn_p_arch, badge_color=GOOD),
+        dict(title="Seleção paraconsistente",
+             arms=[("sem seleção", para["macro_f1"][0], BLUE, "MANTIDO"),
+                   ("com seleção", para["macro_f1"][1], ORANGE, "REJEITADA")],
+             p=mcn_p_para, badge_color=CRIT),
+    ]
+    rows, y = [], 0.0
+    for g in groups:
+        g["head_y"] = y
+        for lab, v, col, badge in g["arms"]:
+            y -= 1.0
+            rows.append((y, lab, v, col, badge, g["badge_color"]))
+        g["foot_y"] = y - 0.68
+        y -= 1.72
+
+    for a in (axl, ax):
+        a.set_ylim(y + 0.42, 0.62)
+        for side in a.spines.values():
+            side.set_visible(False)
+        a.tick_params(length=0)
+        a.set_yticks([])
+    axl.set_xlim(0, 1)
+    axl.set_xticks([])
+    ax.patch.set_visible(False)
+
+    for g in groups:
+        axl.text(0.0, g["head_y"], g["title"], fontsize=31, fontweight="bold",
+                 color=INK, va="center", clip_on=False)
+        axl.text(0.0, g["foot_y"], f"McNemar {fmt_p(g['p'])} · não significativo",
+                 fontsize=24, color=MUTED, va="center", clip_on=False)
+
+    trans = blended_transform_factory(ax.transAxes, ax.transData)
+    for (yy, lab, v, col, badge, badge_col) in rows:
+        axl.text(0.045, yy, lab, fontsize=28, color=INK2, va="center", clip_on=False)
+        ax.errorbar(v[0], yy, xerr=[[v[0] - v[1]], [v[2] - v[0]]], fmt="o", color=col,
+                    markersize=22, elinewidth=4, capsize=12, capthick=4,
+                    markeredgecolor="#ffffff", markeredgewidth=4, zorder=3)
+        ax.text(1.025, yy, br(v[0]), fontsize=31, fontweight="bold", color=INK,
+                va="center", transform=trans, clip_on=False)
+        if badge:
+            ax.text(1.28, yy, badge, fontsize=27, fontweight="bold", color=badge_col,
+                    va="center", transform=trans, clip_on=False)
+
+    ax.set_xlim(0.383, 0.522)
+    ticks = np.arange(0.40, 0.5201, 0.04)
+    ax.set_xticks(ticks)
+    ax.set_xticklabels([br(v, 2) for v in ticks], fontsize=25)
+    ax.xaxis.grid(True, color=GRID, linewidth=2)
+    ax.set_axisbelow(True)
+    ax.set_xlabel("Macro F1 (média bootstrap, IC 95%) — mesma seed, mesmas 5 dobras",
+                  fontsize=26, labelpad=12, color=INK2)
+    fig.subplots_adjust(left=0.004, right=0.655, top=0.99, bottom=0.115)
+    fig.savefig(out, bbox_inches="tight", pad_inches=0.05)
     plt.close(fig)
     return out
 
@@ -365,117 +434,6 @@ def fig_arch_sweep(rows, out, figsize=(12.0, 3.76), dpi=300):
     return out
 
 
-def fig_gaps_ab(smote, para, mcn_p_smote, mcn_p_para, out, figsize=(12.0, 3.76), dpi=300):
-    """Gap 2 e Gap 1 como forest plot: um braco por linha, IC 95% e decisao.
-
-    Layout em duas colunas de eixos (rotulos | grafico) para que nenhum texto
-    dependa de posicao em coordenada de dados -- foi assim que a versao anterior
-    desta figura colidia.
-    """
-    fig, (axl, ax) = plt.subplots(1, 2, figsize=figsize, dpi=dpi,
-                                  gridspec_kw=dict(width_ratios=[1, 1.55], wspace=0.02))
-
-    groups = [
-        dict(title="GAP 2 — Balanceamento de classes",
-             arms=[("SMOTE padrão", smote["macro_f1"][0], BLUE, ""),
-                   ("Borderline-SMOTE1", smote["macro_f1"][1], ORANGE, "ADOTADO")],
-             p=mcn_p_smote, badge_color=GOOD,
-             note="ganho concentrado nas duas disfonias funcionais"),
-        dict(title="GAP 1 — Seleção paraconsistente (LPA2v)",
-             arms=[("sem seleção", para["macro_f1"][0], BLUE, "MANTIDO"),
-                   ("com seleção", para["macro_f1"][1], ORANGE, "REJEITADA")],
-             p=mcn_p_para, badge_color=CRIT,
-             note="0% de redução: nenhuma característica passou do limiar"),
-    ]
-
-    # posicoes verticais: 2 bracos por grupo, com folga entre grupos
-    rows, y = [], 0.0
-    for gi, g in enumerate(groups):
-        head = y
-        for lab, v, col, badge in g["arms"]:
-            y -= 1.0
-            rows.append((y, lab, v, col, badge, g["badge_color"]))
-        g["head_y"], g["foot_y"] = head, y - 0.72
-        y -= 1.95
-    top, bottom = 0.55, y + 1.1
-
-    for a in (axl, ax):
-        a.set_ylim(bottom, top)
-        for side in a.spines.values():
-            side.set_visible(False)
-        a.tick_params(length=0)
-        a.set_yticks([])
-    axl.set_xlim(0, 1)
-    axl.set_xticks([])
-    ax.patch.set_visible(False)   # deixa os titulos da coluna esquerda transbordarem
-
-    for g in groups:
-        axl.text(0.0, g["head_y"], g["title"], fontsize=10.5, fontweight="bold",
-                 color=INK, va="center", clip_on=False)
-        axl.text(0.0, g["foot_y"], f"McNemar {fmt_p(g['p'])} · não significativo",
-                 fontsize=9, color=INK2, va="center", clip_on=False)
-        axl.text(0.0, g["foot_y"] - 0.42, g["note"], fontsize=8.5, color=MUTED,
-                 va="center", style="italic", clip_on=False)
-
-    trans = blended_transform_factory(ax.transAxes, ax.transData)
-    for (yy, lab, v, col, badge, badge_col) in rows:
-        axl.text(0.055, yy, lab, fontsize=10, color=INK, va="center", clip_on=False)
-        ax.errorbar(v[0], yy, xerr=[[v[0] - v[1]], [v[2] - v[0]]], fmt="o", color=col,
-                    markersize=10, elinewidth=1.6, capsize=5, capthick=1.6,
-                    markeredgecolor=SURFACE, markeredgewidth=1.8, zorder=3)
-        # valor e decisao a direita do grafico (as hastes ja mostram o IC)
-        ax.text(1.02, yy, br(v[0]), fontsize=10.5, fontweight="bold", color=INK,
-                va="center", transform=trans, clip_on=False)
-        if badge:
-            ax.text(1.17, yy, badge, fontsize=9.5, fontweight="bold", color=badge_col,
-                    va="center", transform=trans, clip_on=False)
-
-    ax.set_xlim(0.39, 0.505)
-    ticks = np.arange(0.40, 0.5001, 0.02)
-    ax.set_xticks(ticks)
-    ax.set_xticklabels([br(v, 2) for v in ticks], fontsize=9)
-    ax.xaxis.grid(True, color=GRID, linewidth=0.8)
-    ax.set_axisbelow(True)
-    ax.spines["bottom"].set_visible(True)
-    ax.spines["bottom"].set_color(GRID)
-    ax.set_xlabel("Macro F1 (média bootstrap, N=1000) com IC 95% — mesma seed, mesmos 5 folds",
-                  fontsize=9.5)
-    fig.subplots_adjust(left=0.005, right=0.735, top=0.97, bottom=0.13)
-    fig.savefig(out, bbox_inches="tight")
-    plt.close(fig)
-    return out
-
-
-def fig_mcnemar(mcn, out, figsize=(6.4, 3.5), dpi=300):
-    """Painel de significancia: MLP vs os 3 baselines (chi2 e p de McNemar)."""
-    order = [("MajorityClass", "Classe majoritária"), ("kNN", "k-NN (k=5)"),
-             ("LogisticRegression", "Regressão logística")]
-    fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
-    ax.axis("off")
-    ax.set_xlim(0, 10); ax.set_ylim(0, 10)
-    ax.text(0, 9.4, "Teste de McNemar — MLP hierárquico vs. baselines", fontsize=11.5,
-            fontweight="bold", color=INK, va="center")
-    ax.text(0, 8.3, "mesmas predições out-of-fold, correção de Edwards", fontsize=9.5,
-            color=MUTED, va="center", style="italic")
-    y = 6.6
-    for key, label in order:
-        chi2, p = mcn[key]
-        ax.add_patch(FancyBboxPatch((0, y - 0.95), 10, 1.75,
-                                    boxstyle="round,pad=0,rounding_size=0.25",
-                                    linewidth=0, facecolor="#f1f5f9"))
-        ax.text(0.4, y, label, fontsize=10.5, color=INK, va="center", fontweight="bold")
-        ax.text(5.5, y, f"χ² = {br(chi2, 2)}", fontsize=10, color=INK2, va="center")
-        ax.text(7.5, y, fmt_p(p), fontsize=10, color=GOOD, va="center",
-                fontweight="bold")
-        y -= 2.15
-    ax.text(0, 0.2, "MLP superior aos três baselines com significância estatística (p < 0,05)",
-            fontsize=9.5, color=GOOD, va="center", fontweight="bold")
-    fig.tight_layout()
-    fig.savefig(out, bbox_inches="tight")
-    plt.close(fig)
-    return out
-
-
 # ---------------------------------------------------------------- main
 def main():
     ap = argparse.ArgumentParser()
@@ -487,8 +445,6 @@ def main():
 
     per_class, macro, acc, weighted = read_metrics(
         os.path.join(R, "metrics_global_borderline_C_baseline.csv"))
-    ci = read_ci(os.path.join(R, "bootstrap_ci_borderline_C_baseline.csv"))
-    mcn = read_mcnemar(os.path.join(R, "mcnemar_vs_baselines_borderline_C_baseline.csv"))
     class_keys = ["Normal", "Laringite", "Disfonia Psicogenica", "Disfonia Funcional",
                   "Edema de Reinke"]
     cm = read_confusion(os.path.join(R, "train_log_v32_gap2_smote_ab_console.txt"),
@@ -497,6 +453,7 @@ def main():
     para = read_ab(os.path.join(R, "paraconsistent_ab_comparison.csv"),
                    "without_selection", "with_selection", "without", "with")
     arch = read_arch(os.path.join(R, "arch_compare_comparison.csv"))
+    arch_arms = build_arch_arms(arch, R)
 
     # conferencia: a matriz de confusao tem de reproduzir a acuracia do CSV
     assert cm.sum() == 1098, f"matriz soma {cm.sum()}, esperado 1098"
@@ -510,11 +467,10 @@ def main():
 
     made = [
         fig_confusion_compact(cm, os.path.join(O, "resumo_fig1_confusao.png")),
-        fig_confusion(cm, per_class, os.path.join(O, "poster_confusao.png")),
-        fig_f1_classes(per_class, ci, macro, os.path.join(O, "poster_f1_classes.png")),
+        fig_confusion_poster(cm, os.path.join(O, "poster_confusao.png")),
+        fig_gaps_poster(smote, para, arch_arms, 0.6606, 0.8220, 0.7463,
+                        os.path.join(O, "poster_gaps_ab.png")),
         fig_arch_sweep(arch, os.path.join(O, "poster_arquiteturas.png")),
-        fig_gaps_ab(smote, para, 0.6606, 0.8220, os.path.join(O, "poster_gaps_ab.png")),
-        fig_mcnemar(mcn, os.path.join(O, "poster_mcnemar.png")),
     ]
     print(f"acuracia {acc:.6f} · macro F1 {macro:.6f} · weighted F1 {weighted:.6f}")
     print(f"matriz de confusao conferida (soma {cm.sum()}, acuracia {acc_cm:.6f})")
