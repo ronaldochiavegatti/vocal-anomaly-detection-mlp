@@ -79,6 +79,7 @@
 #define MLP_HIDDEN3_SIZE      32
 #define MLP_OUTPUT_SIZE       NUM_CLASSES      /* 5 - Para o modo legacy */
 #define MLP_NUM_LAYERS        3
+#define MLP_MAX_LAYERS        5  /* headroom para Config D (3 ocultas + 1 saida = 4 camadas) */
 
 /* Classificacao Hierarquica */
 #define MLP_BINARY_OUTPUT     2                /* Normal vs Patologico */
@@ -120,5 +121,15 @@
 #define CLASS_WEIGHT_DYSPHONIA      1.20f
 #define CLASS_WEIGHT_FUNC_DYSPHONIA 1.20f
 #define CLASS_WEIGHT_REINKE         1.40f
+
+/* ========== Selecao Paraconsistente (Gap 1) ========== */
+/* Limiar minimo de Gc (grau de certeza) para uma feature ser selecionada */
+#define PARA_GC_THRESH        0.35f
+/* |Gct| (grau de contradicao) maximo tolerado para uma feature ser selecionada */
+#define PARA_GCT_MAX          0.3f
+/* Cap do laco de relaxamento de gc_thresh (nunca relaxa indefinidamente) */
+#define PARA_MAX_RELAX_ITERS  10
+/* Passo de relaxamento de gc_thresh por iteracao do laco */
+#define PARA_GC_RELAX_STEP    0.05f
 
 #endif /* CONFIG_H */

@@ -77,6 +77,7 @@ WAV files (5 class directories)
 
 ### MLP Architecture (config.h)
 - **Layers**: Input(~160) → Dense(128) + LeakyReLU + Dropout(0.5) → Dense(64) + LeakyReLU + Dropout(0.4) → Dense(5) + Softmax
+- A producao atual (2 camadas ocultas [128,64]) e a "Config C" da comparacao da Fase 2/Gap 3 -- NAO a "Config A [128]" que o SPEC.md original assumia estar em producao; nenhuma configuracao rasa de 1 camada oculta jamais rodou em producao.
 - `MLP_NUM_LAYERS=3` is a preprocessor constant used with `#if` guards in `mlp.c`
 - For variable input sizes use `mlp_init_dynamic(net, input_size)` (not `mlp_init()`)
 
@@ -84,11 +85,11 @@ WAV files (5 class directories)
 | Level | Count | Components |
 |-------|-------|------------|
 | Temporal/vowel | 10 | jitter×3, shimmer×4, energy, HNR, ZCR |
-| Spectral/vowel | 51 | f0×2, F1-F4, entropy, centroid, rolloff, MFCC×13, δMFCC×13, δδMFCC×13, CPP×3 |
+| Spectral/vowel | 55 | f0×2, F1-F4, entropy, centroid, rolloff, MFCC×13, δMFCC×13, δδMFCC×13, CPP×3, glottal source×4 (Oq/Sq/NAQ/H1-H2 — previously undocumented in this table) |
 | Wavelet/vowel | 18 | 6 levels × (mean, variance, energy) |
-| **Per vowel** | **79** | |
-| **Total (3 vowels)** | **237** | |
-| After selection | ~150-190 | Varies per fold |
+| **Per vowel** | **83** | |
+| **Total (3 vowels)** | **251** | 3×83=249 + 2 metadata features (idade/sexo, `NUM_METADATA_FEATURES`) |
+| After selection (paraconsistent, Gap 1, v34) | 85 of 85 per vowel-network (0.0% reduction) | `mean_n_selected` from `results/paraconsistent_ab_comparison.csv` — gc-threshold relaxation exhausted in 30/30 (fold,vowel,network) combos, always falling back to "keep all"; see Gap 1 Outcome below |
 
 ### Key Hyperparameters (config.h)
 | Parameter | Value |
@@ -97,7 +98,7 @@ WAV files (5 class directories)
 | Batch size | 32 |
 | Max epochs | 500 |
 | Early stopping patience | 30 (val Macro F1) |
-| L2 lambda | 0.003 |
+| L2 lambda | 0.001 |
 | Label smoothing | 0.05 |
 | Gaussian noise | 0.05 |
 | Gradient clip norm | 5.0 |
@@ -131,13 +132,122 @@ WAV files (5 class directories)
 
 ## Important Constraints
 
-**What works**: Wider layers (128+), LeakyReLU, Dropout, gradient clipping, Borderline-SMOTE, feature selection, mild class weights, std of delta MFCCs, Macro F1 early stopping, feature caching, OpenMP extraction.
+**What works**: Wider layers (128+), LeakyReLU, Dropout, gradient clipping, Borderline-SMOTE1 (Han/Wang/Mao 2005, validated by reproducible A/B in v32 — see `results/train_log_v32_gap2_smote_ab.txt`; Macro F1 +0.0235 point-estimate delta, McNemar p=0.66 not statistically significant), feature selection, mild class weights, std of delta MFCCs, Macro F1 early stopping, feature caching, OpenMP extraction.
 
 **What doesn't work** (do not re-attempt): SWA, ensemble averaging, focal loss, strong class weights + SMOTE, inter-vowel difference features, Mixup augmentation, Batch Normalization (hurts on small datasets), post-hoc probability boosting, wavelet denoising on initial features (removes pathological markers), mean delta MFCCs (near-zero for sustained vowels).
 
 **Fundamental bottleneck**: Acoustic ceiling for Disfonia Psicogênica vs Disfonia Funcional — AUC one-vs-rest ≈ 0.62-0.64 for these two classes. They are acoustically nearly indistinguishable (both functional dysphonias without structural lesion). No architecture/hyperparameter change can break this ceiling with acoustic features alone.
 
 **5-class reality**: Accuracy targets >75% and Macro F1 >0.55 are optimistic given the ceiling. Realistic expectations: Accuracy 62-68%, Macro F1 0.40-0.50. Edema de Reinke (structural lesion) should be separable; the two functional dysphonias are the hard problem.
+
+## Gap 2 Outcome — Borderline-SMOTE A/B (v32)
+
+**DECISAO** (verbatim from `results/train_log_v32_gap2_smote_ab.txt`):
+
+> DECISAO: Borderline-SMOTE ADOTADO (Macro F1 borderline=0.4587 >= padrao=0.4351, delta=+0.0235, McNemar chi2=0.1928 p=0.6606)
+
+**Comparison** (bootstrap mean [95% CI], N=1000, seed=42, same 5-folds):
+
+| Metric | Standard (Padrão) | Borderline-SMOTE1 |
+|---|---|---|
+| Accuracy | 0.6915 [0.6648, 0.7177] | 0.6958 [0.6694, 0.7231] |
+| **Macro F1** | **0.4338 [0.3976, 0.4713]** | **0.4565 [0.4194, 0.4949]** |
+| Normal F1 | 0.8725 | 0.8664 |
+| Laringite F1 | 0.3884 | 0.3974 |
+| Disfonia Psicogênica F1 | 0.2648 | 0.3273 |
+| Disfonia Funcional F1 | 0.1892 | 0.2386 |
+| Edema de Reinke F1 | 0.4540 | 0.4531 |
+
+**Significance caveat**: Direct McNemar test between the two arms' out-of-fold predictions: chi2=0.1928, **p=0.6606 — NOT statistically significant (p >= 0.05)**. The Macro F1 delta (point-estimate +0.0235) is directionally positive under both the raw point estimate and the bootstrap-CI mean readings, but this is a fixed adopt/reject rule (`borderline_macro_f1 >= standard_macro_f1`) with no significance gate — do not present this as a proven/statistically significant improvement, only as the outcome of that rule. Gains concentrate in the two hardest/smallest classes (Disfonia Psicogênica +0.063, Disfonia Funcional +0.049), with a small give-back on Normal (-0.006) and Reinke (-0.001).
+
+**Empty-borderline-pool fallback**: Fired in 30 of 90 rows in `results/smote_borderline_counts.csv`, but all 30 are structural placeholder rows for class slots each network doesn't use (Master's unused class=1 slot, Expert's unused class=0 slot), always `(0,0,0)` by construction — not real fallback events. Among the 60 real classification rows (Master's healthy class + Expert's 4 pathology classes, across 5 folds × 3 vowels × 2 networks), the fallback fired **zero times** — it did not concentrate in the smallest classes as anticipated.
+
+**Files**: `results/train_log_v32_gap2_smote_ab.txt` (full A/B report + DECISAO sentence), `results/smote_ab_comparison.csv` (machine-readable 7-metric × 2-arm comparison with bootstrap CI), `results/smote_borderline_counts.csv` (90-row safe/borderline/noise counts per fold/vowel/network/class).
+
+## Gap 3 Outcome — Shallow vs Deep MLP Comparison (v33)
+
+**ARCH-01 correction (restated for permanence)**: Config C [128,64] confirmadamente a producao atual antes desta comparacao, correcao ja aplicada no Plano 02-01 — Config A [128] nunca foi a arquitetura em producao, apesar do que o SPEC.md original assumia.
+
+**Comparacao completa** (4 arquiteturas × 3 forcas de regularizacao, mesma seed=42, mesmos 5-folds, SMOTE fixo em Borderline-SMOTE1):
+
+| Arch | Reg | Accuracy | Macro F1 | Params (Master+Expert) | mean_epochs_to_stop |
+|---|---|---|---|---|---|
+| A | light | 0.6831 | 0.4365 | 11266+11524 | 72.47 |
+| A | baseline | 0.6922 | 0.4239 | 11266+11524 | 78.73 |
+| A | strong | 0.6794 | 0.3911 | 11266+11524 | 77.73 |
+| B | light | 0.6940 | 0.4452 | 5634+5764 | 82.60 |
+| B | baseline | 0.6858 | 0.4118 | 5634+5764 | 84.50 |
+| B | strong | 0.6667 | 0.3691 | 5634+5764 | 83.93 |
+| C | light | 0.6876 | 0.4431 | 19394+19524 | 76.67 |
+| **C** | **baseline** | **0.6967** | **0.4587** | **19394+19524** | 80.53 |
+| C | strong | 0.6566 | 0.3723 | 19394+19524 | 74.10 |
+| D | light | 0.7004 | 0.4741 | 21410+21476 | 76.80 |
+| D | baseline | 0.7040 | 0.4718 | 21410+21476 | 87.27 |
+| D | strong | 0.6093 | 0.2777 | 21410+21476 | **46.40** |
+
+(Bold row: adopted arm. Bold+italic epoch count: Pitfall 3 collapse — see below.)
+
+**Best regularization per architecture**: A → light (0.4365) — B → light (0.4452) — C → baseline (0.4587) — D → light (0.4741).
+
+**1-SE band + best overall (`ao`)**: Best overall architecture (`ao`) = D at light regularization, macro_f1=0.4741. SE derived from D/light's bootstrap CI half-width. Band = **[0.4554, 0.4741]**.
+
+**McNemar vs `ao` (D)**: A vs D: chi2=3.2079, p=0.0733 (not significant) — B vs D: chi2=0.4557, p=0.4996 (not significant) — C vs D: chi2=0.1047, **p=0.7463** (not significant). A and B are excluded from adoption anyway because their best-reg macro_f1 (0.4365, 0.4452) falls below the band's lower bound (0.4554), regardless of their McNemar results — the band gate, not McNemar alone, excludes them, per the fixed procedure.
+
+**DECISAO** (verbatim from `results/train_log_v33_gap3_arch_compare.txt`):
+
+> DECISAO: arquitetura adotada = C, regularizacao = baseline, parametros totais = 38918 -- dentro da banda de 1 SE (macro_f1=0.4587 >= 0.4554) e nao significativamente pior que D por McNemar (p=0.7463 >= 0.05).
+
+**No production config.h change required**: The adopted arm (Config C, baseline regularization) is **today's exact compiled production configuration** — `[128,64]` hidden layers, dropout `[0.5,0.4]`, `L2_LAMBDA=0.001f` unmultiplied. No migration to `config.h` is needed as a result of this comparison. Config D scored higher on point-estimate Macro F1 (0.4741 vs 0.4587), but the fixed 1-SE + McNemar + fewest-params procedure correctly determines this gap is not large enough (relative to bootstrap uncertainty) or significant enough (by McNemar) to justify adopting a ~10% larger network (42886 vs 38918 total params). This is a legitimate empirical outcome of the procedure, not a foregone/skipped comparison.
+
+**Pitfall 3 caveat (fixed-hyperparameter "deeper is undertuned" artifact) — must be carried forward**: Config D at strong regularization collapses: `mean_epochs_to_stop`=46.40, roughly half of D's own light (76.80) and baseline (87.27) arms, and far below every other architecture's own strong-regularization arm (A=77.73, B=83.93, C=74.10). D/strong's macro_f1 also crashes to 0.2777 — the lowest of all 12 arms — and is the only one of the 12 arms where the MLP is not statistically distinguishable from the trivial MajorityClass baseline (McNemar p=0.1176 vs MajorityClass). This does **not** change the adoption decision (D's own best regularization is light, not strong, so D/strong was never a decision-procedure candidate), but it is direct evidence that "Config D is worse than C" cannot be fully separated from "Config D needs a lighter, depth-specific regularization schedule than the one tested here." This run cannot distinguish "depth doesn't help" from "depth needs different tuning" — treat any future claim that deeper architectures categorically underperform on this dataset as unproven by this comparison alone.
+
+**Files**: `results/train_log_v33_gap3_arch_compare.txt` (full Portuguese report: complete 12-row table, best-per-architecture summary, 1-SE band, McNemar-vs-`ao` results, verbatim DECISAO sentence), `results/arch_compare_comparison.csv` (13-line machine-readable comparison: 1 header + 12 arm rows).
+
+## Gap 1 Outcome — Paraconsistent Feature Selection (LPA2v, v34)
+
+**DECISAO** (verbatim from `results/train_log_v34_gap1_paraconsistent_ab.txt`):
+
+> DECISAO: Selecao Paraconsistente REJEITADA (Macro F1 sem-selecao=0.4610 > com-selecao=0.4587, delta=-0.0024, reducao de features=0.0% insuficiente para o trade-off do SPEC.md, McNemar chi2=0.0506 p=0.8220) -- mantendo pipeline sem selecao paraconsistente em producao
+
+**Comparison** (bootstrap mean [95% CI], N=1000, seed=42, same 5-folds, fixed at Borderline-SMOTE1 + Config C baseline regularization — same production config as Gap 2/Gap 3's adopted arm):
+
+| Metric | Sem selecao (off_res) | Com selecao (on_res) |
+|---|---|---|
+| Accuracy | 0.6988 [0.6721, 0.7268] | 0.6958 [0.6694, 0.7231] |
+| **Macro F1** | **0.4597 [0.4229, 0.4955]** | **0.4565 [0.4194, 0.4949]** |
+| Normal F1 | 0.8704 [0.8512, 0.8886] | 0.8664 [0.8475, 0.8850] |
+| Laringite F1 | 0.4120 [0.3273, 0.4933] | 0.3974 [0.3131, 0.4891] |
+| Disfonia Psicogênica F1 | 0.3353 [0.2444, 0.4211] | 0.3273 [0.2375, 0.4149] |
+| Disfonia Funcional F1 | 0.1991 [0.1236, 0.2778] | 0.2386 [0.1507, 0.3294] |
+| Edema de Reinke F1 | 0.4818 [0.3867, 0.5714] | 0.4531 [0.3636, 0.5444] |
+| `mean_n_selected` | — | 85.0 of 85 |
+| `feature_reduction` | — | 0.0% |
+
+Raw (concatenated out-of-fold) point estimates, per the DECISAO sentence: Macro F1 sem-selecao=0.4610, com-selecao=0.4587, delta=-0.0024.
+
+**Direct McNemar** (com-selecao vs sem-selecao arms): chi2=0.0506, **p=0.8220 — NOT statistically significant (p >= 0.05)**, same pattern as Gap 2's and Gap 3's own not-significant McNemar comparisons — no arm is proven definitively better, the fixed adopt/reject rule (below) is what actually decides.
+
+**mu/lambda formula substitution (documented, deliberate deviation from SPEC.md's literal pseudocode)**: `mu` is computed as one-way ANOVA **eta-squared** (η² = SSB/SST, naturally bounded [0,1]), **not** SPEC.md's non-standard per-class Fisher ratio (which required an extra cross-fold min-max normalization pass). `lambda` is the **unweighted mean of per-class σ/global-σ ratio** (clipped to [0,1]), **not** SPEC.md's `CV = std/mean` (which explodes for near-zero-mean delta-MFCC features — a degeneracy already documented elsewhere in this file under "What doesn't work": mean delta MFCCs are near-zero for sustained vowels). This substitution is a documented, deliberate deviation, not an oversight or a silent change: the domain-specific precedent papers (Costa et al. 2019 DPM; a 2025 wavelet+paraconsistent paper; a 2021 grid-fault paper) that would normally ground the exact λ formula remain paywalled (see `03-RESEARCH.md`'s Assumptions Log A1), so this ANOVA-η²/global-variance-ratio substitute is a researcher-synthesized stand-in — a future update with institutional access to those papers may revise the exact λ formula.
+
+**Universal fallback finding**: the gc-threshold relaxation loop (`PARA_MAX_RELAX_ITERS=10`, `PARA_GC_RELAX_STEP=0.05`, starting `PARA_GC_THRESH=0.35` down to -0.15) found **zero** features clearing the paraconsistent-selection threshold, in **all 30 of 30** (fold, vowel, network) combinations (confirmed via `grep -c "relaxamento esgotado" results/train_log_v34_gap1_paraconsistent_ab_console.txt` = 30) — every run fell back to "select all 85 features," exactly explaining the 0.0% `feature_reduction`. This is a first-order empirical finding about the paraconsistent method's behavior on this acoustic feature space, not a bug in the comparison.
+
+**CLAUDE.md 0.42 Macro F1 regression-floor check**: both arms clear the floor comfortably — off_res raw 0.4610 / bootstrap-mean 0.4597, on_res raw 0.4587 / bootstrap-mean 0.4565, both well above the project's 0.42 floor. **PASS, explicitly checked, no exception needed.**
+
+**Files**: `results/train_log_v34_gap1_paraconsistent_ab.txt` (full A/B report + DECISAO sentence), `results/paraconsistent_ab_comparison.csv` (machine-readable 7-metric × 2-arm comparison with bootstrap CI, plus `mean_n_selected`/`feature_reduction` rows), `results/paraconsistent_selection_freq.csv` (2550-row per-fold/vowel/network/feature μ/λ/Gc/Gct/selected table).
+
+## Gap Adoption Status (Milestone Closure)
+
+All 3 SPEC.md gaps are now closed with explicit, evidence-backed adopt/reject outcomes (reproduced verbatim from `results/gap_adoption_status.csv`):
+
+| Gap | Decision | Macro F1 delta | McNemar p | Citation status |
+|-----|----------|-----------------|-----------|------------------|
+| Gap 2 (Borderline-SMOTE) | ADOTADO | +0.0235 | 0.6606 | Han/Wang/Mao 2005 (Borderline-SMOTE1) |
+| Gap 3 (Config C 2-hidden-layer) | ADOTADO (sem mudanca em config.h) | n/a (ja em producao) | 0.7463 | N/A - comparacao metodologica interna |
+| Gap 1 (Selecao Paraconsistente LPA2v) | REJEITADO (mantendo pipeline sem selecao paraconsistente) | -0.0024 | 0.8220 | N/A - tecnica nao ativa no modelo final (CROSS-02) |
+
+**mode_train() default-CLI disclosure (CROSS-02)**: `mode_train()`/`make train`/`make full`'s default CLI path (`mode_train_ex(base_dir, ..., NULL)`) remains on `SMOTE_STANDARD` + `PARA_SELECT_OFF` + Config C at baseline regularization for regression-safety reasons — an explicit Phase 1 decision (documented in `STATE.md`), unchanged by Phase 2 or Phase 3. The actually-adopted configuration per gap (Borderline-SMOTE, since Gap 2's row reads ADOTADO; paraconsistent selection is **not** adopted, since Gap 1's row reads REJEITADO) is only reachable via the dedicated comparison CLI modes (`smote-ab`, `arch-compare`, `paraconsistent-ab`), never via the plain `train`/`full` entry point. This is the CROSS-02-mandated disclosure that prevents a future citation/reality mismatch — e.g., a poster or report claiming "production uses Borderline-SMOTE" while `make train` still runs `SMOTE_STANDARD` — and it applies with even less risk to Gap 1 specifically, since paraconsistent selection was rejected and carries no citation at all (per its own row above).
+
+**Milestone status**: with this plan, all 3 SPEC.md gaps (Gap 2: Borderline-SMOTE, Gap 3: shallow-vs-deep architecture, Gap 1: paraconsistent feature selection) have been compared A/B with reproducible evidence (same seed, same 5-folds) and closed with an explicit adopt/reject decision each, per the project's Core Value. This closes CROSS-01 (consolidated Gap Adoption Status table, above) and CROSS-02 (default-CLI disclosure, above).
 
 ## Output Files
 - `results/features.csv` — cached 1098×237 feature matrix (re-extracted if TOTAL_FEATURES changes)
@@ -161,3 +271,244 @@ WAV files (5 class directories)
 - **McNemar test**: Compares MLP vs all 3 baselines using Edwards continuity correction; p-value via `erfc()`
 - **CPP**: Computed via cepstrum (FFT → log|spec| → FFT → peak in F0 quefrency range); see `src/feature_spectral.c`
 - **Bootstrap CI**: N=1000, seed=42, on concatenated out-of-fold predictions
+
+<!-- GSD:project-start source:PROJECT.md -->
+## Project
+
+**Detecção de Anomalias Vocais (MLP em C)**
+
+Pipeline de aprendizado de máquina em C99 puro (sem frameworks externos) que classifica
+pacientes em 5 classes (Normal, Laringite, Disfonia Psicogênica, Disfonia Funcional,
+Edema de Reinke) a partir de gravações de voz (base SVD, ~1098 pacientes). É o produto
+de uma Iniciação Científica (PIBIC) e a arquitetura HEAD atual (v29, `Hierarchical Late
+Fusion`, commit `e63483a`) usa um ensemble Master binário + Expert 4 classes, replicado
+por vogal (/a/, /i/, /u/), com fusão tardia por média de probabilidades.
+
+**Core Value:** Fechar, com rigor metodológico comprovável por comparação A/B (mesma seed, mesmos
+5-folds), os 3 gaps entre a implementação atual e a proposta PIBIC original — sem
+piorar o baseline de referência (Macro F1 0,4423 / Acurácia 69,4%, `results/metrics_global.csv`).
+
+### Constraints
+
+- **Metodológico**: Nenhuma mudança é incorporada sem comparação A/B reprodutível (mesma seed `RANDOM_SEED=42`, mesmos 5-folds), log salvo em `results/train_log_vXX_<nome-do-gap>.txt` — exigência do SPEC.md para rigor acadêmico perante a banca PIBIC
+- **Regressão**: Reverter ou manter apenas como experimento documentado qualquer mudança que derrube o Macro F1 global abaixo de 0,42
+- **Tech stack**: C99 puro, sem dependências externas de ML — `gcc -O2 -Wall -Wextra -Wno-format-truncation -std=c99 -Iinclude -fopenmp -lm`
+- **Ordem de implementação**: Gap 2 → Gap 3 → Gap 1 (do SPEC.md — Gap 2 valida o fluxo de comparação A/B com baixo risco; Gap 1 é o mais complexo e deve incorporar as melhores config/modo já validados nos passos anteriores)
+- **Documentação**: Atualizar `CLAUDE.md` (Optimization History / What Worked / What Didn't Work) ao final de cada gap, independentemente do resultado
+<!-- GSD:project-end -->
+
+<!-- GSD:stack-start source:codebase/STACK.md -->
+## Technology Stack
+
+## Languages
+- C (C99 standard, `-std=c99`) - 100% of the codebase: `src/*.c` (19 files, ~5,666 total lines across `src/` and `include/`), `include/*.h` (17 headers)
+- None. No Python, shell scripts, or other languages are part of the build/runtime pipeline. (Non-code artifacts in the repo root — `.docx`/`.pptx` files, `overview_merged.csv` — are academic/documentation/data assets, not part of the toolchain.)
+## Runtime
+- Native compiled binary (ELF executable), no VM/interpreter. Built and run directly on Linux (developed/tested on Ubuntu 24.04, gcc 13.3.0, kernel 6.17).
+- No containerization (no `Dockerfile`, no `docker-compose.yml` in repo).
+- None. There is no language-level package manager (no `pip`, `npm`, `cargo`, `conan`, `vcpkg`). All dependencies are system libraries linked directly by the compiler (`libm`, OpenMP runtime `libgomp`).
+- Lockfile: not applicable — no dependency manifest exists.
+## Frameworks
+- None. No ML/DL framework (no TensorFlow, PyTorch, ONNX, scikit-learn). The Multi-Layer Perceptron is hand-implemented from scratch in `src/mlp.c` / `src/mlp_train.c` (forward pass with LeakyReLU + Dropout + Softmax, manual backprop, Adam optimizer, cosine LR annealing, gradient clipping).
+- Baseline classifiers (kNN in `src/knn.c`, logistic regression in `src/logreg.c`) are also hand-implemented, not from a library.
+- None detected. No unit test framework (no CUnit, Check, Unity). The `Makefile` defines a `test` target (`./build/vocal_detect test`) but this mode is explicitly **not implemented** in `src/main.c` (per `CLAUDE.md`). There is no `tests/` directory and no automated test suite.
+- GNU Make (`Makefile`, GNU Make syntax with `$(wildcard ...)`, pattern rules) - drives the entire build.
+- GCC 13.3.0 (`gcc`) - sole compiler; flags: `-O2 -Wall -Wextra -Wno-format-truncation -std=c99 -Iinclude -fopenmp`.
+- OpenMP 4.5 (`_OPENMP 201511`, via `-fopenmp`) - used for parallel feature extraction (`#pragma omp parallel for reduction(+:errors)` in `src/feature_extract.c`), giving ~6.5× speedup (257s → ~39-42s for 1098 patients).
+## Key Dependencies
+- `libm` (math library, linked via `-lm`) - all DSP math (FFT, autocorrelation, log, trig, `erfc` for McNemar test p-values).
+- `libgomp` (OpenMP runtime, linked via `-fopenmp`) - parallelizes the per-patient feature-extraction loop across CPU cores.
+- Standard C library (`libc`) headers used throughout: `stdio.h`, `stdlib.h`, `string.h`, `math.h`, `time.h`, `stdint.h`, `stddef.h`, `stdarg.h`, `dirent.h`, `sys/stat.h`. No third-party C libraries (no libsndfile, no FFTW, no BLAS/LAPACK) — WAV parsing, FFT, and CSV parsing are all custom implementations.
+- None. No message queues, caches, or service dependencies. The only "infrastructure" is the local filesystem (input WAV directories, `overview_merged.csv`, and generated `results/`/`models/` directories).
+## Configuration
+- No environment variables are read anywhere in `src/` (no `getenv` calls found). All tunables are compile-time constants.
+- All configuration lives in a single header: `include/config.h` — paths, audio parameters, class definitions, feature counts, MLP architecture, hyperparameters, class weights, random seed. Changing any of these requires recompilation (`make clean && make`).
+- Command-line arguments select pipeline mode: `./build/vocal_detect {extract|train|full} [base_dir]` (parsed in `src/main.c`); `base_dir` defaults to the current working directory if omitted.
+- `Makefile` (root) — single build config file; no CMake, no Meson, no Autotools.
+- No `tsconfig.json`/`eslint.config`/`package.json`-equivalent exists; this is a pure C project with no auxiliary tool configs beyond the Makefile and `include/config.h`.
+## Platform Requirements
+- Linux (developed on Ubuntu 24.04 LTS, kernel 6.17).
+- `gcc` supporting C99 and OpenMP (tested with gcc 13.3.0).
+- `make` (GNU Make).
+- Multi-core CPU recommended (OpenMP feature extraction scales with core count).
+- Local copies of the SVD (Saarbrücken Voice Database) WAV files, organized into 5 class directories (`saudavel/`, `laringite/`, `disfonia_psicogênica/`, `disfonia_funcional/`, `edema_de_reinke/`) plus `overview_merged.csv` metadata, placed in the working directory (not checked into git — see `.gitignore`).
+- `results/` and `models/` directories must be created manually (`mkdir -p results models`) before running.
+- No deployment target — this is a research/academic pipeline run locally via CLI (`./build/vocal_detect train`), not a deployed service. Output artifacts (`results/*.csv`, `models/*.bin`) are consumed manually/offline for analysis, not served.
+- Portable to any POSIX-like system with a C99 compiler and OpenMP support (Linux primarily; not verified on macOS/Windows). Uses POSIX-specific APIs (`dirent.h`, `sys/stat.h`, `_POSIX_C_SOURCE 200809L` in `src/dataset.c`), so Windows would require WSL/MinGW/Cygwin.
+<!-- GSD:stack-end -->
+
+<!-- GSD:conventions-start source:CONVENTIONS.md -->
+## Conventions
+
+## Language & Compiler
+- **Standard:** C99 (`-std=c99`)
+- **Compiler:** gcc, flags `-O2 -Wall -Wextra -Wno-format-truncation -std=c99 -Iinclude -fopenmp`
+- **Linker:** `-lm -fopenmp`
+- Code must compile cleanly under `-Wall -Wextra` (format-truncation warnings from `snprintf` path building are the only suppressed class). Treat any new warning as a bug to fix, not to suppress.
+- `_POSIX_C_SOURCE` is defined at the top of files that need POSIX APIs (e.g. `#define _POSIX_C_SOURCE 199309L` in `src/utils.c` for `clock_gettime`, `#define _POSIX_C_SOURCE 200809L` in `src/dataset.c` for `dirent.h`/`sys/stat.h`). Add this **before any `#include`** when a new file needs POSIX-only functions.
+- There is a repo hook (`.claude/hooks/compile-check.sh`) that automatically runs `make` after any edit to a `.c`/`.h` file — code is expected to build after every change, not just at the end of a task.
+## File Organization
+## Naming Patterns
+- `mlp_forward`, `mlp_backward`, `mlp_init_dynamic`, `mlp_save_checkpoint` (module `mlp`)
+- `norm_fit`, `norm_transform`, `norm_save`, `norm_load`, `norm_free` (module `norm`)
+- `kfold_split`, `kfold_free` (module `kfold`)
+- `metrics_compute`, `metrics_print`, `metrics_bootstrap_ci`, `metrics_mcnemar` (module `metrics`)
+- `dataset_load`, `dataset_free` (module `dataset`)
+- `rng_seed`, `rng_uniform`, `rng_int`, `rng_normal`, `rng_shuffle_int` (module `rng`, lives in `utils.c`)
+- `log_debug`, `log_info`, `log_warn`, `log_error` (module `log`, lives in `utils.c`)
+## Comments
+- All prose comments are in **Portuguese** (matching the academic/PIBIC context of the project) — code identifiers themselves are in English/technical terms (`weights`, `dropout_mask`, `forward`).
+- Comment style: `/* ... */` block comments for section headers and function documentation; `//` is essentially absent from the code (grep found none used as a marker) — do not introduce `//` line comments, stay consistent with `/* */`.
+- Section dividers inside header files use a consistent banner: `/* ========== Nome da Secao ========== */` (see `config.h`, `utils.h`, `mlp_train.c`'s "Checkpoint buffers" style groupings are inline, but constants files always use this banner).
+- Every non-trivial public function in a `.h` file has a `/* ... */` doc comment above its declaration describing parameters and return value semantics (see `metrics.h` for the most complete example — every function documents input array shapes with `[n]` / `[n x m]` notation and cites the algorithm's academic source, e.g. "Teste de McNemar ... (Edwards, 1948)", "Breiman, 2001" for permutation importance).
+- No TODO/FIXME/HACK/XXX markers exist anywhere in `src/` or `include/` — the project's own convention is to resolve or document issues in `SPEC.md`/`CLAUDE.md` rather than leave inline markers.
+## Error Handling
+## Logging
+## Function Design
+## Module Design
+<!-- GSD:conventions-end -->
+
+<!-- GSD:architecture-start source:ARCHITECTURE.md -->
+## Architecture
+
+## System Overview
+```text
+```
+## Component Responsibilities
+| Component | Responsibility | File |
+|-----------|----------------|------|
+| Dataset enumeration | Walk 5 class dirs, validate 3 vowel WAVs exist, join CSV metadata | `src/dataset.c`, `src/csv_parser.c` |
+| WAV I/O | Parse non-standard RIFF/PCM16 WAV into float samples | `src/wav_io.c` |
+| DSP primitives | Pre-emphasis, Hamming window, autocorrelation, radix-2 FFT, Haar wavelet denoise | `src/dsp_utils.c` |
+| Temporal features | Jitter (local/RAP/PPQ5), Shimmer (local/APQ3/5/11), energy, HNR, ZCR | `src/feature_temporal.c` |
+| Spectral features | F0, formants (LPC), spectral entropy/centroid/rolloff, MFCC+Δ+ΔΔ (std-dev), CPP, glottal source (Oq/Sq/NAQ/H1-H2) | `src/feature_spectral.c` |
+| Wavelet features | 6-level Daubechies-4 DWT, mean/variance/energy per level | `src/feature_wavelet.c` |
+| Feature orchestration | Per-patient extraction loop (OpenMP parallel), CSV export/cache | `src/feature_extract.c` |
+| Audio augmentation | Noise/gain/stretch/pitch-shift on raw audio (minority classes only) | `src/wav_augment.c` |
+| Fold splitting | Stratified, patient-level 5-fold assignment | `src/kfold.c` |
+| Normalization | Z-score fit/transform, fit only on original (non-augmented) training rows | `src/normalize.c` |
+| SMOTE oversampling | Standard SMOTE (interpolation between same-class k-NN) — implemented inline | `src/main.c` (`smote_oversample`, `find_knn`) |
+| MLP core | Layer struct, forward/backward, Adam optimizer, LeakyReLU+Dropout, unused BatchNorm plumbing | `src/mlp.c`, `include/mlp.h` |
+| Training loop | Mini-batch SGD, cosine-annealed LR, Gaussian noise injection, Macro-F1 early stopping, unused SWA accumulation | `src/mlp_train.c` |
+| Hierarchical fusion orchestration | Builds per-vowel Master/Expert pairs, fold loop, late-fusion prediction, aggregate metrics | `src/main.c` |
+| Metrics | Confusion matrix, P/R/F1, macro/weighted F1; also unused-in-current-flow bootstrap CI/ROC/PR/McNemar/permutation importance | `src/metrics.c`, `include/metrics.h` |
+| Legacy baselines (dormant) | kNN and multinomial LogReg baselines from earlier PRD iterations; headers included but never invoked in current `mode_train` | `src/knn.c`, `src/logreg.c` |
+| Legacy feature selection (dormant) | Binary persistence of selected feature indices from earlier variance/correlation-based selection; header included but selection logic never called in current flow | `src/feature_select.c` |
+| Config constants | All architectural/hyperparameter constants (paths, feature counts, network sizes, training hyperparameters, class weights) | `include/config.h` |
+## Pattern Overview
+- No dynamic dispatch/polymorphism: C structs + free functions, one `.c`/`.h` pair per concern (SRP at file granularity).
+- Hierarchical decomposition of the classification problem itself: a binary "sick vs. healthy" gate (Master) followed by a 4-way pathology classifier (Expert), rather than one flat 5-class softmax.
+- Per-vowel model replication: the Master/Expert pair is trained independently for each of 3 sustained vowels (`/a/`, `/i/`, `/u/`), then fused by probability averaging at inference time (late fusion, not feature concatenation).
+- Aggressive feature caching: `results/features.csv` is a materialized view of the entire (expensive, ~1min) extraction step, column-count-validated against `TOTAL_FEATURES` at load time so stale caches self-invalidate.
+- OpenMP data parallelism at the patient level only (`#pragma omp parallel for` in `feature_extract.c` and in `precalculate_augmentations`); no other multithreading (training is single-threaded).
+- Everything is parameterized through `include/config.h` preprocessor constants — no runtime config file, no CLI flags beyond `<mode> [base_dir]`.
+- The codebase carries substantial **dormant code** from prior PRD iterations (feature selection, kNN/LogReg baselines, bootstrap CI, ROC/AUC, McNemar test, model checkpoint persistence, BatchNorm, SWA) that still compiles and links but is not exercised by the current `mode_train` path — see Anti-Patterns and dedicated section below.
+## Layers
+- Purpose: turn on-disk WAV files + CSV metadata into an in-memory `Dataset`
+- Location: `src/dataset.c`, `src/csv_parser.c`, `src/wav_io.c`
+- Contains: directory walking, RIFF/PCM16 parsing, CSV field parsing
+- Depends on: POSIX `dirent.h`/`sys/stat.h`, nothing else in the pipeline
+- Used by: feature extraction orchestrator (`feature_extract.c`), augmentation precompute (`main.c`)
+- Purpose: convert raw audio samples into fixed-length numeric feature vectors
+- Location: `src/dsp_utils.c`, `src/feature_temporal.c`, `src/feature_spectral.c`, `src/feature_wavelet.c`, `src/feature_extract.c`
+- Contains: pure numeric DSP functions (no I/O except in the orchestrator)
+- Depends on: `dataset.h`/`wav_io.h` types, `config.h` constants (frame sizes, F0 range, feature counts)
+- Used by: `main.c` (both the cached-CSV path and the on-the-fly augmentation path via `extract_vowel_from_float`)
+- Purpose: fold splitting, normalization, class balancing
+- Location: `src/kfold.c`, `src/normalize.c`, SMOTE code inline in `src/main.c`
+- Contains: stratification logic, Z-score stats, k-NN-based synthetic sample generation
+- Depends on: `FeatureMatrix`/`Dataset` types
+- Used by: `main.c` fold loop
+- Purpose: neural network definition, training, and inference
+- Location: `src/mlp.c`, `src/mlp_train.c`, `include/mlp.h`, `include/mlp_train.h`
+- Contains: `Layer`/`MLP` structs, forward/backward pass, Adam optimizer, loss functions, checkpoint save/load (checkpoint here means best-epoch-in-RAM, not disk — see Anti-Patterns)
+- Depends on: `config.h` (`MLP_NUM_LAYERS`, hidden sizes, dropout rates, Adam betas, etc.) and `utils.c` RNG/log helpers
+- Used by: `main.c` (instantiates `net_master[3]` and `net_expert[3]` per fold)
+- Purpose: wire every other layer together into the two CLI modes
+- Location: `src/main.c`
+- Contains: `mode_extract()`, `mode_train()` (the actual pipeline), `mode_validate_external()` (stub, returns 0 without doing anything), CSV feature-cache load/store, hierarchical-fusion prediction, SMOTE, augmentation caching
+- Depends on: every other layer
+- Used by: nothing (entry point)
+- Purpose: turn predictions into reportable numbers
+- Location: `src/metrics.c`, `include/metrics.h`
+- Contains: confusion matrix, precision/recall/F1, plus a larger surface (bootstrap CI, ROC/AUC, PR curves, McNemar test, permutation importance) inherited from earlier single-model PRD iterations
+- Depends on: `MLP` type (for permutation importance only)
+- Used by: `main.c` — but only `metrics_compute`/`metrics_print`/`metrics_export_csv` are actually called in the current `mode_train`; the rest is dead from the orchestrator's perspective (still unit-testable/linkable)
+## Data Flow
+### Primary Request Path (training run: `./build/vocal_detect train .`)
+### Feature Extraction Path (`./build/vocal_detect extract .`)
+- No persistent application state between runs beyond the two on-disk caches: `results/features.csv` (feature cache, self-invalidating) and stale `models/*.bin` files (see Anti-Patterns — no longer written by the current `mode_train`).
+- Within a run, all state is stack/heap-allocated C structs passed by pointer; RNG state is a single global seeded once via `rng_seed(RANDOM_SEED)` in `src/utils.c`.
+## Key Abstractions
+- Purpose: in-memory catalogue of every patient's class label, demographic metadata, and the 3 WAV file paths needed for feature extraction
+- Examples: `src/dataset.c`, `include/dataset.h`
+- Pattern: flat array of fixed-size structs (`Patient patients[]`), no per-record heap pointers except the struct itself
+- Purpose: dense row-major `count × TOTAL_FEATURES` matrix + parallel `labels[]` array — the single source of truth once extraction is done
+- Examples: `include/feature_extract.h`
+- Pattern: plain `float*`/`int*` buffers with manual `count`/`num_features` bookkeeping; consumed directly by fold-splitting, normalization, and per-vowel slicing code
+- Purpose: a small feedforward network (this codebase currently always instantiates 2 hidden layers via `MLP_NUM_LAYERS=3`, i.e. Input→Hidden1→Hidden2→Output)
+- Examples: `include/mlp.h`, `src/mlp.c`
+- Pattern: `Layer[MLP_NUM_LAYERS]` fixed-size array inside `MLP`; `mlp_init_dynamic(net, input_size, output_size)` is the variant actually used because per-vowel-per-network input/output sizes vary (85→2 for Master, 85→4 for Expert); `mlp_init()`/`MLP_OUTPUT_SIZE` (5-class legacy path) is unused by `main.c`.
+- Purpose: precomputed train/val index arrays per fold, stratified by class at the patient level
+- Examples: `include/kfold.h`, `src/kfold.c`
+- Pattern: index-array based (no data copying at split time — copying happens later per-fold in `main.c`)
+- Purpose: decompose 5-class classification into an easier binary decision (Normal vs. Pathological) followed by a 4-way decision only among pathological classes, then average that decomposition's confidence across 3 independent per-vowel views of the same patient
+- Examples: `net_master[3]`, `net_expert[3]` arrays in `src/main.c:273`, fusion logic in `predict_hierarchical_late_fusion()` (`src/main.c:39-69`)
+- Pattern: 2 (Master/Expert) × 3 (vowels) = 6 independently trained MLPs per fold, 30 MLPs total across 5-fold CV; probabilities are averaged (not stacked/concatenated) at inference — this is what "late fusion" means here, as opposed to feeding all 3 vowels' features into one wider network
+## Entry Points
+- Location: `src/main.c`
+- Triggers: CLI invocation `./build/vocal_detect <mode> [base_dir]`
+- Responsibilities: parse mode string (`extract`|`train`|`full`|`external`), set log level, dispatch
+- Location: `src/main.c`
+- Triggers: `mode == "extract"`
+- Responsibilities: dataset load → feature extraction → CSV export only (no training)
+- Location: `src/main.c`
+- Triggers: `mode == "train"` or `mode == "full"` (both are aliases — there is no separate "load cache vs. force re-extract" distinction beyond the cache validity check already inside `mode_train`)
+- Responsibilities: the entire pipeline described in Data Flow above
+- Location: `src/main.c`
+- Triggers: `mode == "external"`
+- Responsibilities: **stub only** — logs a message and returns 0 immediately; the docstring-style comment says "Implementar carregando os 6 best_models se necessario" (not implemented). Do not assume external validation works.
+- Triggers `./build/vocal_detect test`, but no `mode == "test"` branch exists in `main()` — running this returns exit code 1 with the usage message. Treat as non-functional.
+## Architectural Constraints
+- **Threading:** OpenMP `parallel for` only around (1) the per-patient feature extraction loop in `features_extract_all()` and (2) the per-patient augmented-feature precomputation loop in `precalculate_augmentations()`. Training itself (`mlp_train`) is single-threaded; do not assume thread-safety of `MLP`/`Layer` structs — each fold/vowel/network combination must own its own `MLP` instance (the code already does this via `net_master[3]`/`net_expert[3]` arrays, never sharing one `MLP` across threads).
+- **Global state:** RNG is process-global (`rng_seed()`/`rng_uniform()`/`rng_normal()` in `src/utils.c`) and reseeded exactly once at `RANDOM_SEED=42` before `kfold_split()`. Any code path that calls `rng_*` after that point (SMOTE, dropout masks, noise injection, augmentation choice) consumes from the same shared stream — call order matters for exact reproducibility.
+- **Fixed-size stack buffers:** several hot paths use fixed-size stack arrays sized from `config.h` constants (e.g. `float xv[251]` in `src/main.c:325`, `char vowel_paths[NUM_VOWELS][4096]` in `dataset.h`). Changing `TOTAL_FEATURES`/`FEATURES_PER_VOWEL` requires auditing these literals, not just `config.h`.
+- **Cache/constant coupling:** `results/features.csv` encodes `TOTAL_FEATURES` in its column count; `features_load_csv()` rejects the cache silently (returns -1, triggers re-extraction) if `config.h` feature counts change. There is no versioning beyond this column-count check.
+- **No inter-module circular dependencies observed:** the dependency graph is a DAG rooted at `main.c`; lower layers (`dsp_utils`, `wav_io`, `utils`) have no upward includes.
+## Anti-Patterns
+### Dormant/dead modules still compiled and linked
+### In-RAM "checkpoint" naming conflated with disk persistence
+### Disabled features left fully wired (BatchNorm, SWA)
+### Fixed hard-coded per-vowel feature width duplicated in three places
+## Error Handling
+- File-open failures in loaders (`features_load_csv`, `wav_read`, `csv_parse`) return `-1` and are checked by the caller, which falls back to re-extraction/re-computation rather than crashing.
+- NaN/Inf produced by degenerate audio (e.g., silence, all-zero signal) is swept to 0.0 in a post-extraction pass (`src/feature_extract.c:136-146`) rather than rejecting the patient.
+- No error propagation beyond `int` return codes (0 success / -1 failure); no `errno`-style detail, just `log_error()` messages via `src/utils.c`.
+## Cross-Cutting Concerns
+<!-- GSD:architecture-end -->
+
+<!-- GSD:skills-start source:skills/ -->
+## Project Skills
+
+No project skills found. Add skills to any of: `.claude/skills/`, `.agents/skills/`, `.cursor/skills/`, `.github/skills/`, or `.codex/skills/` with a `SKILL.md` index file.
+<!-- GSD:skills-end -->
+
+<!-- GSD:workflow-start source:GSD defaults -->
+## GSD Workflow Enforcement
+
+Before using Edit, Write, or other file-changing tools, start work through a GSD command so planning artifacts and execution context stay in sync.
+
+Use these entry points:
+- `/gsd-quick` for small fixes, doc updates, and ad-hoc tasks
+- `/gsd-debug` for investigation and bug fixing
+- `/gsd-execute-phase` for planned phase work
+
+Do not make direct repo edits outside a GSD workflow unless the user explicitly asks to bypass it.
+<!-- GSD:workflow-end -->
+
+<!-- GSD:profile-start -->
+## Developer Profile
+
+> Profile not yet configured. Run `/gsd-profile-user` to generate your developer profile.
+> This section is managed by `generate-claude-profile` -- do not edit manually.
+<!-- GSD:profile-end -->

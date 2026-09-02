@@ -60,7 +60,8 @@ typedef struct {
 
 /* Rede MLP completa */
 typedef struct {
-    Layer layers[MLP_NUM_LAYERS];  /* 3 camadas: hidden1, hidden2, output */
+    Layer layers[MLP_MAX_LAYERS];  /* dimensionado com folga para Config D (4 camadas); numero
+                                       real de camadas em uso e sempre num_layers, nunca a macro */
     int num_layers;
     int timestep;                  /* contador para Adam */
 } MLP;
@@ -75,6 +76,22 @@ void mlp_init(MLP *net);
  * Inicializa MLP com tamanho de entrada e saida dinamicos.
  */
 void mlp_init_dynamic(MLP *net, int input_size, int output_size);
+
+/*
+ * Inicializa MLP com arquitetura configuravel: hidden_sizes[n_hidden] define a largura
+ * de cada camada oculta, dropout_rates[n_hidden] a taxa de dropout correspondente.
+ * net->num_layers e definido internamente como (n_hidden + 1).
+ */
+void mlp_init_multi(MLP *net, int input_size, int output_size,
+                     const int *hidden_sizes, int n_hidden,
+                     const float *dropout_rates);
+
+/*
+ * Retorna o numero total de parametros treinaveis (pesos + biases) somados sobre
+ * todas as net->num_layers camadas. BN esta desabilitado em todo o pipeline atual
+ * (use_bn=0 em todas as chamadas de layer_init), portanto nao contribui.
+ */
+int mlp_count_params(const MLP *net);
 
 /*
  * Forward pass: calcula a saida da rede para uma entrada.

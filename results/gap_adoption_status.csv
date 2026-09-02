@@ -1,0 +1,4 @@
+gap,decision,macro_f1_delta,mcnemar_p,citation_status
+Gap 2 (Borderline-SMOTE),ADOTADO,+0.0235,0.6606,Han/Wang/Mao 2005 (Borderline-SMOTE1)
+Gap 3 (Config C 2-hidden-layer),ADOTADO (sem mudanca em config.h),n/a (ja em producao),0.7463,N/A - comparacao metodologica interna
+Gap 1 (Selecao Paraconsistente LPA2v),REJEITADO (mantendo pipeline sem selecao paraconsistente),-0.0024,0.8220,N/A - tecnica nao ativa no modelo final (CROSS-02)

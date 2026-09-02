@@ -217,27 +217,34 @@ void mlp_init(MLP *net)
     mlp_init_dynamic(net, MLP_INPUT_SIZE, MLP_OUTPUT_SIZE);
 }
 
-void mlp_init_dynamic(MLP *net, int input_size, int output_size)
+void mlp_init_multi(MLP *net, int input_size, int output_size,
+                     const int *hidden_sizes, int n_hidden,
+                     const float *dropout_rates)
 {
-    net->num_layers = MLP_NUM_LAYERS;
+    net->num_layers = n_hidden + 1;
     net->timestep = 0;
 
-#if MLP_NUM_LAYERS == 3
-    int sizes[] = { input_size, MLP_HIDDEN1_SIZE, MLP_HIDDEN2_SIZE, output_size };
-    float dropout_rates[] = { DROPOUT_RATE_HIDDEN1, DROPOUT_RATE_HIDDEN2, 0.0f };
-    int use_bn[] = { 0, 0, 0 };
-#else
-    int sizes[] = { input_size, MLP_HIDDEN1_SIZE, MLP_HIDDEN2_SIZE,
-                    MLP_HIDDEN3_SIZE, output_size };
-    float dropout_rates[] = { DROPOUT_RATE_HIDDEN1, DROPOUT_RATE_HIDDEN2,
-                              DROPOUT_RATE_HIDDEN3, 0.0f };
-    int use_bn[] = { 0, 0, 0, 0 };
-#endif
+    int sizes[MLP_MAX_LAYERS + 1];
+    sizes[0] = input_size;
+    for (int i = 0; i < n_hidden; i++) sizes[i + 1] = hidden_sizes[i];
+    sizes[n_hidden + 1] = output_size;
 
     for (int i = 0; i < net->num_layers; i++) {
-        layer_init(&net->layers[i], sizes[i], sizes[i + 1], use_bn[i]);
-        net->layers[i].dropout_rate = dropout_rates[i];
+        layer_init(&net->layers[i], sizes[i], sizes[i + 1], /*use_bn=*/0);
+        net->layers[i].dropout_rate = (i < n_hidden) ? dropout_rates[i] : 0.0f;
     }
+}
+
+/*
+ * Wrapper fino que preserva o comportamento exato de hoje (2 camadas ocultas
+ * [128, 64], dropout [0.5, 0.4]) -- Config C, a producao atual. Mantido para
+ * todos os chamadores existentes continuarem funcionando sem alteracao.
+ */
+void mlp_init_dynamic(MLP *net, int input_size, int output_size)
+{
+    int hidden[] = { MLP_HIDDEN1_SIZE, MLP_HIDDEN2_SIZE };
+    float drop[] = { DROPOUT_RATE_HIDDEN1, DROPOUT_RATE_HIDDEN2 };
+    mlp_init_multi(net, input_size, output_size, hidden, 2, drop);
 }
 
 void mlp_forward(MLP *net, const float *input, float *output, int training)
@@ -283,8 +290,13 @@ void mlp_backward(MLP *net, const float *target, float class_weight)
 {
     int nl = net->num_layers;
 
-    /* Allocate delta buffers sized for largest hidden layer */
-    int max_size = MLP_HIDDEN1_SIZE;
+    /* Allocate delta buffers sized dynamically for the actual widest hidden
+     * layer of this network instance (exclui a camada de saida) -- nao mais
+     * um MLP_HIDDEN1_SIZE hardcoded, que so era seguro por coincidencia. */
+    int max_size = 0;
+    for (int i = 0; i < net->num_layers - 1; i++) {
+        if (net->layers[i].output_size > max_size) max_size = net->layers[i].output_size;
+    }
     float *delta = (float *)safe_malloc(max_size * sizeof(float));
     float *delta_next = (float *)safe_malloc(max_size * sizeof(float));
 
@@ -596,4 +608,14 @@ void mlp_free(MLP *net)
     for (int i = 0; i < net->num_layers; i++) {
         layer_free(&net->layers[i]);
     }
+}
+
+int mlp_count_params(const MLP *net)
+{
+    int total = 0;
+    for (int i = 0; i < net->num_layers; i++) {
+        const Layer *l = &net->layers[i];
+        total += l->output_size * l->input_size + l->output_size;
+    }
+    return total;
 }

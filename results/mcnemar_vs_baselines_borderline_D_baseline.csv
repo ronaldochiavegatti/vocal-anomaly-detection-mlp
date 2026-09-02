@@ -1,0 +1,4 @@
+baseline,chi2,p_value
+MajorityClass,39.266304,0.000000
+kNN,23.472221,0.000001
+LogisticRegression,19.917099,0.000008

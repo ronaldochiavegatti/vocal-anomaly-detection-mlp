@@ -21,6 +21,10 @@ edema_de_reinke/
 results/features.csv
 results/extract_log.txt
 
+# Regeneratable RNG-determinism verification cache (produced by `verify-rng` mode;
+# not durable evidence itself -- results/rng_reproducibility_check.txt is)
+results/aug_cache_verify.bin
+
 # Stale/empty planning files
 plan.md
 plan2.md
@@ -32,3 +36,7 @@ lastcld.md
 
 # Object files in root (legacy, should be in build/)
 *.o
+
+# Cache do Python dos utilitarios de geracao de material academico (tools/figures)
+__pycache__/
+*.pyc

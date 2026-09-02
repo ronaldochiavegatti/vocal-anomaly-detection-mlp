@@ -1,0 +1,18 @@
+=== COMPARACAO A/B: SELECAO PARACONSISTENTE (Gap 1): SEM vs COM selecao ===
+Mesma seed (RANDOM_SEED=42), mesmos 5 folds, fixo em Borderline-SMOTE1 + Config C + regularizacao baseline
+
+Metrica                      Sem selecao [IC 95%%]            Com selecao [IC 95%%]           
+accuracy                     0.6988 [0.6721, 0.7268]      0.6958 [0.6694, 0.7231]
+macro_f1                     0.4597 [0.4229, 0.4955]      0.4565 [0.4194, 0.4949]
+Normal                       0.8704 [0.8512, 0.8886]      0.8664 [0.8475, 0.8850]
+Laringite                    0.4120 [0.3273, 0.4933]      0.3974 [0.3131, 0.4891]
+Disfonia Psicogenica         0.3353 [0.2444, 0.4211]      0.3273 [0.2375, 0.4149]
+Disfonia Funcional           0.1991 [0.1236, 0.2778]      0.2386 [0.1507, 0.3294]
+Edema de Reinke              0.4818 [0.3867, 0.5714]      0.4531 [0.3636, 0.5444]
+
+McNemar direto (Com-selecao vs Sem-selecao): chi2=0.0506 p=0.8220 -- diferenca nao estatisticamente significativa (p>=0.05)
+
+Media de features selecionadas (braco com-selecao): 85.0 de 85 (0.0% de reducao)
+Tabela completa mu/lambda/Gc/Gct/selected por feature: ver results/paraconsistent_selection_freq.csv
+
+DECISAO: Selecao Paraconsistente REJEITADA (Macro F1 sem-selecao=0.4610 > com-selecao=0.4587, delta=-0.0024, reducao de features=0.0% insuficiente para o trade-off do SPEC.md, McNemar chi2=0.0506 p=0.8220) -- mantendo pipeline sem selecao paraconsistente em producao

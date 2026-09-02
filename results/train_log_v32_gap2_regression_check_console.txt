@@ -1,0 +1,467 @@
+[2026-07-27 20:12:18] [INFO] Classificador Vocals - Hierarchical Late Fusion
+[2026-07-27 20:12:18] [INFO] === MODO: TREINAMENTO HIERARQUICO COM LATE FUSION (VOGAIS A, I, U) ===
+[2026-07-27 20:12:18] [INFO] Classe 0 (saudavel): 687 pacientes
+[2026-07-27 20:12:18] [INFO] Classe 1 (laringite): 140 pacientes
+[2026-07-27 20:12:18] [INFO] Classe 2 (disfonia_psicogênica): 91 pacientes
+[2026-07-27 20:12:18] [INFO] Classe 3 (disfonia_funcional): 112 pacientes
+[2026-07-27 20:12:18] [INFO] Classe 4 (edema_de_reinke): 68 pacientes
+[2026-07-27 20:12:18] [INFO] Dataset total: 1098 pacientes
+[2026-07-27 20:12:18] [INFO] CSV lido: 1254 registros de ./overview_merged.csv
+[2026-07-27 20:13:03] [INFO] Extracao completa: 1098 pacientes, 0 erros, 45.2s
+[2026-07-27 20:13:03] [INFO] Features exportadas: results/features.csv (1098 x 251)
+[2026-07-27 20:13:03] [INFO] Pre-calculando aumentacoes de audio (8x per patologico)...
+[2026-07-27 20:33:55] [INFO] 
+========== FOLD 1/5 (HIERARCHICAL LATE FUSION) ==========
+[2026-07-27 20:33:56] [INFO] Epoch   1: train_loss=0.6270 train_acc=0.774 val_loss=0.3114 val_acc=0.680 val_f1=0.601
+[2026-07-27 20:33:59] [INFO] Epoch  10: train_loss=0.2976 train_acc=0.945 val_loss=0.1783 val_acc=0.671 val_f1=0.539
+[2026-07-27 20:34:01] [INFO] Epoch  20: train_loss=0.2603 train_acc=0.959 val_loss=0.1607 val_acc=0.716 val_f1=0.622
+[2026-07-27 20:34:04] [INFO] Epoch  30: train_loss=0.2276 train_acc=0.966 val_loss=0.1362 val_acc=0.739 val_f1=0.693
+[2026-07-27 20:34:07] [INFO] Epoch  40: train_loss=0.2211 train_acc=0.974 val_loss=0.1279 val_acc=0.788 val_f1=0.754
+[2026-07-27 20:34:09] [INFO] Epoch  50: train_loss=0.2117 train_acc=0.979 val_loss=0.1355 val_acc=0.802 val_f1=0.775
+[2026-07-27 20:34:12] [INFO] Epoch  60: train_loss=0.2075 train_acc=0.978 val_loss=0.1263 val_acc=0.806 val_f1=0.781
+[2026-07-27 20:34:15] [INFO] Epoch  70: train_loss=0.2132 train_acc=0.979 val_loss=0.1253 val_acc=0.811 val_f1=0.784
+[2026-07-27 20:34:17] [INFO] Epoch  80: train_loss=0.2235 train_acc=0.982 val_loss=0.1300 val_acc=0.811 val_f1=0.789
+[2026-07-27 20:34:20] [INFO] Early stopping na epoch 89
+[2026-07-27 20:34:20] [INFO] Epoch   1: train_loss=3.7006 train_acc=0.254 val_loss=0.8485 val_acc=0.333 val_f1=0.329
+[2026-07-27 20:34:22] [INFO] Epoch  10: train_loss=0.9143 train_acc=0.304 val_loss=0.7683 val_acc=0.286 val_f1=0.241
+[2026-07-27 20:34:24] [INFO] Epoch  20: train_loss=0.8248 train_acc=0.407 val_loss=0.7285 val_acc=0.345 val_f1=0.331
+[2026-07-27 20:34:25] [INFO] Epoch  30: train_loss=0.7145 train_acc=0.493 val_loss=0.7067 val_acc=0.369 val_f1=0.360
+[2026-07-27 20:34:27] [INFO] Epoch  40: train_loss=0.6211 train_acc=0.585 val_loss=0.7710 val_acc=0.345 val_f1=0.352
+[2026-07-27 20:34:29] [INFO] Epoch  50: train_loss=0.5591 train_acc=0.635 val_loss=0.8295 val_acc=0.345 val_f1=0.349
+[2026-07-27 20:34:30] [INFO] Early stopping na epoch 54
+[2026-07-27 20:34:30] [INFO] Epoch   1: train_loss=0.5390 train_acc=0.778 val_loss=0.4304 val_acc=0.644 val_f1=0.526
+[2026-07-27 20:34:33] [INFO] Epoch  10: train_loss=0.2251 train_acc=0.945 val_loss=0.2466 val_acc=0.667 val_f1=0.529
+[2026-07-27 20:34:35] [INFO] Epoch  20: train_loss=0.2209 train_acc=0.960 val_loss=0.1731 val_acc=0.685 val_f1=0.577
+[2026-07-27 20:34:38] [INFO] Epoch  30: train_loss=0.2008 train_acc=0.967 val_loss=0.1639 val_acc=0.739 val_f1=0.682
+[2026-07-27 20:34:41] [INFO] Epoch  40: train_loss=0.1897 train_acc=0.973 val_loss=0.1370 val_acc=0.775 val_f1=0.737
+[2026-07-27 20:34:43] [INFO] Epoch  50: train_loss=0.1949 train_acc=0.974 val_loss=0.1480 val_acc=0.802 val_f1=0.779
+[2026-07-27 20:34:46] [INFO] Epoch  60: train_loss=0.1916 train_acc=0.976 val_loss=0.1325 val_acc=0.802 val_f1=0.777
+[2026-07-27 20:34:49] [INFO] Epoch  70: train_loss=0.1963 train_acc=0.980 val_loss=0.1329 val_acc=0.806 val_f1=0.787
+[2026-07-27 20:34:52] [INFO] Epoch  80: train_loss=0.1996 train_acc=0.981 val_loss=0.1339 val_acc=0.811 val_f1=0.795
+[2026-07-27 20:34:54] [INFO] Epoch  90: train_loss=0.2083 train_acc=0.978 val_loss=0.1327 val_acc=0.797 val_f1=0.768
+[2026-07-27 20:34:57] [INFO] Epoch 100: train_loss=0.2002 train_acc=0.982 val_loss=0.1249 val_acc=0.833 val_f1=0.819
+[2026-07-27 20:35:00] [INFO] Epoch 110: train_loss=0.2145 train_acc=0.979 val_loss=0.1346 val_acc=0.815 val_f1=0.793
+[2026-07-27 20:35:02] [INFO] Early stopping na epoch 118
+[2026-07-27 20:35:02] [INFO] Epoch   1: train_loss=3.9161 train_acc=0.272 val_loss=1.0015 val_acc=0.310 val_f1=0.308
+[2026-07-27 20:35:04] [INFO] Epoch  10: train_loss=0.8756 train_acc=0.361 val_loss=0.9123 val_acc=0.357 val_f1=0.334
+[2026-07-27 20:35:05] [INFO] Epoch  20: train_loss=0.7786 train_acc=0.427 val_loss=0.6699 val_acc=0.429 val_f1=0.424
+[2026-07-27 20:35:07] [INFO] Epoch  30: train_loss=0.6816 train_acc=0.517 val_loss=0.8614 val_acc=0.440 val_f1=0.422
+[2026-07-27 20:35:09] [INFO] Epoch  40: train_loss=0.5931 train_acc=0.580 val_loss=0.8807 val_acc=0.381 val_f1=0.384
+[2026-07-27 20:35:11] [INFO] Early stopping na epoch 49
+[2026-07-27 20:35:11] [INFO] Epoch   1: train_loss=0.6627 train_acc=0.808 val_loss=0.3439 val_acc=0.676 val_f1=0.601
+[2026-07-27 20:35:14] [INFO] Epoch  10: train_loss=0.3049 train_acc=0.940 val_loss=0.1629 val_acc=0.662 val_f1=0.526
+[2026-07-27 20:35:16] [INFO] Epoch  20: train_loss=0.2525 train_acc=0.956 val_loss=0.1674 val_acc=0.694 val_f1=0.584
+[2026-07-27 20:35:19] [INFO] Epoch  30: train_loss=0.2248 train_acc=0.962 val_loss=0.1501 val_acc=0.757 val_f1=0.701
+[2026-07-27 20:35:22] [INFO] Epoch  40: train_loss=0.1969 train_acc=0.969 val_loss=0.1403 val_acc=0.779 val_f1=0.739
+[2026-07-27 20:35:24] [INFO] Epoch  50: train_loss=0.1910 train_acc=0.977 val_loss=0.1491 val_acc=0.784 val_f1=0.753
+[2026-07-27 20:35:27] [INFO] Epoch  60: train_loss=0.1933 train_acc=0.979 val_loss=0.1476 val_acc=0.748 val_f1=0.716
+[2026-07-27 20:35:30] [INFO] Epoch  70: train_loss=0.1949 train_acc=0.980 val_loss=0.1473 val_acc=0.779 val_f1=0.753
+[2026-07-27 20:35:33] [INFO] Epoch  80: train_loss=0.1930 train_acc=0.981 val_loss=0.1620 val_acc=0.784 val_f1=0.752
+[2026-07-27 20:35:34] [INFO] Early stopping na epoch 86
+[2026-07-27 20:35:35] [INFO] Epoch   1: train_loss=5.2287 train_acc=0.253 val_loss=0.8116 val_acc=0.310 val_f1=0.308
+[2026-07-27 20:35:38] [INFO] Epoch  10: train_loss=0.9090 train_acc=0.337 val_loss=0.7647 val_acc=0.262 val_f1=0.223
+[2026-07-27 20:35:41] [INFO] Epoch  20: train_loss=0.8417 train_acc=0.394 val_loss=0.7350 val_acc=0.298 val_f1=0.272
+[2026-07-27 20:35:45] [INFO] Epoch  30: train_loss=0.7541 train_acc=0.487 val_loss=0.6739 val_acc=0.369 val_f1=0.352
+[2026-07-27 20:35:49] [INFO] Epoch  40: train_loss=0.6644 train_acc=0.547 val_loss=0.6427 val_acc=0.369 val_f1=0.359
+[2026-07-27 20:35:52] [INFO] Epoch  50: train_loss=0.5985 train_acc=0.600 val_loss=0.6460 val_acc=0.369 val_f1=0.370
+[2026-07-27 20:35:56] [INFO] Epoch  60: train_loss=0.5526 train_acc=0.625 val_loss=0.6628 val_acc=0.393 val_f1=0.382
+[2026-07-27 20:35:59] [INFO] Epoch  70: train_loss=0.5255 train_acc=0.651 val_loss=0.7157 val_acc=0.417 val_f1=0.407
+[2026-07-27 20:36:03] [INFO] Epoch  80: train_loss=0.4935 train_acc=0.672 val_loss=0.7101 val_acc=0.464 val_f1=0.459
+[2026-07-27 20:36:07] [INFO] Epoch  90: train_loss=0.4673 train_acc=0.698 val_loss=0.7450 val_acc=0.452 val_f1=0.448
+[2026-07-27 20:36:10] [INFO] Epoch 100: train_loss=0.4581 train_acc=0.709 val_loss=0.7727 val_acc=0.440 val_f1=0.435
+[2026-07-27 20:36:14] [INFO] Epoch 110: train_loss=0.4459 train_acc=0.723 val_loss=0.7669 val_acc=0.440 val_f1=0.436
+[2026-07-27 20:36:14] [INFO] Early stopping na epoch 110
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        130            1            2            3            2
+  Laringite                      11            8            1            2            6
+  Disfonia Psicogenica            7            2            5            2            3
+  Disfonia Funcional              8            4            7            2            2
+  Edema de Reinke                 0            1            2            0           11
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8333     0.9420     0.8844
+Laringite                  0.5000     0.2857     0.3636
+Disfonia Psicogenica       0.2941     0.2632     0.2778
+Disfonia Funcional         0.2222     0.0870     0.1250
+Edema de Reinke            0.4583     0.7857     0.5789
+
+=== Metricas Globais ===
+Acuracia:     0.7027
+Macro F1:     0.4459
+Weighted F1:  0.6688
+Total amostras: 222
+[2026-07-27 20:36:14] [INFO] 
+========== FOLD 2/5 (HIERARCHICAL LATE FUSION) ==========
+[2026-07-27 20:36:15] [INFO] Epoch   1: train_loss=0.7968 train_acc=0.791 val_loss=0.4213 val_acc=0.665 val_f1=0.589
+[2026-07-27 20:36:18] [INFO] Epoch  10: train_loss=0.2901 train_acc=0.946 val_loss=0.1565 val_acc=0.674 val_f1=0.559
+[2026-07-27 20:36:20] [INFO] Epoch  20: train_loss=0.2461 train_acc=0.955 val_loss=0.1590 val_acc=0.697 val_f1=0.587
+[2026-07-27 20:36:23] [INFO] Epoch  30: train_loss=0.2211 train_acc=0.967 val_loss=0.1517 val_acc=0.760 val_f1=0.710
+[2026-07-27 20:36:26] [INFO] Epoch  40: train_loss=0.2035 train_acc=0.973 val_loss=0.1577 val_acc=0.756 val_f1=0.716
+[2026-07-27 20:36:29] [INFO] Epoch  50: train_loss=0.2089 train_acc=0.978 val_loss=0.1664 val_acc=0.756 val_f1=0.720
+[2026-07-27 20:36:31] [INFO] Epoch  60: train_loss=0.2239 train_acc=0.977 val_loss=0.1602 val_acc=0.756 val_f1=0.724
+[2026-07-27 20:36:34] [INFO] Epoch  70: train_loss=0.2249 train_acc=0.981 val_loss=0.1582 val_acc=0.747 val_f1=0.716
+[2026-07-27 20:36:37] [INFO] Epoch  80: train_loss=0.2072 train_acc=0.981 val_loss=0.1738 val_acc=0.738 val_f1=0.709
+[2026-07-27 20:36:39] [INFO] Epoch  90: train_loss=0.2157 train_acc=0.984 val_loss=0.1591 val_acc=0.760 val_f1=0.733
+[2026-07-27 20:36:42] [INFO] Epoch 100: train_loss=0.2206 train_acc=0.981 val_loss=0.1589 val_acc=0.765 val_f1=0.736
+[2026-07-27 20:36:45] [INFO] Epoch 110: train_loss=0.2178 train_acc=0.983 val_loss=0.1689 val_acc=0.719 val_f1=0.696
+[2026-07-27 20:36:47] [INFO] Epoch 120: train_loss=0.2197 train_acc=0.982 val_loss=0.1688 val_acc=0.738 val_f1=0.711
+[2026-07-27 20:36:50] [INFO] Early stopping na epoch 129
+[2026-07-27 20:36:50] [INFO] Epoch   1: train_loss=4.2294 train_acc=0.270 val_loss=0.9606 val_acc=0.313 val_f1=0.312
+[2026-07-27 20:36:52] [INFO] Epoch  10: train_loss=0.8867 train_acc=0.358 val_loss=0.7391 val_acc=0.337 val_f1=0.337
+[2026-07-27 20:36:54] [INFO] Epoch  20: train_loss=0.7815 train_acc=0.465 val_loss=0.7140 val_acc=0.458 val_f1=0.456
+[2026-07-27 20:36:55] [INFO] Epoch  30: train_loss=0.6731 train_acc=0.530 val_loss=0.7548 val_acc=0.386 val_f1=0.388
+[2026-07-27 20:36:57] [INFO] Epoch  40: train_loss=0.5845 train_acc=0.605 val_loss=0.8235 val_acc=0.434 val_f1=0.431
+[2026-07-27 20:36:59] [INFO] Epoch  50: train_loss=0.5248 train_acc=0.648 val_loss=0.9173 val_acc=0.373 val_f1=0.378
+[2026-07-27 20:37:01] [INFO] Epoch  60: train_loss=0.4922 train_acc=0.683 val_loss=0.9778 val_acc=0.410 val_f1=0.415
+[2026-07-27 20:37:03] [INFO] Epoch  70: train_loss=0.4600 train_acc=0.699 val_loss=0.9789 val_acc=0.410 val_f1=0.416
+[2026-07-27 20:37:03] [INFO] Early stopping na epoch 71
+[2026-07-27 20:37:03] [INFO] Epoch   1: train_loss=0.5842 train_acc=0.773 val_loss=0.3407 val_acc=0.683 val_f1=0.586
+[2026-07-27 20:37:06] [INFO] Epoch  10: train_loss=0.2160 train_acc=0.936 val_loss=0.1657 val_acc=0.674 val_f1=0.514
+[2026-07-27 20:37:08] [INFO] Epoch  20: train_loss=0.2041 train_acc=0.955 val_loss=0.1540 val_acc=0.692 val_f1=0.578
+[2026-07-27 20:37:11] [INFO] Epoch  30: train_loss=0.1939 train_acc=0.965 val_loss=0.1448 val_acc=0.733 val_f1=0.671
+[2026-07-27 20:37:14] [INFO] Epoch  40: train_loss=0.1948 train_acc=0.973 val_loss=0.1336 val_acc=0.783 val_f1=0.747
+[2026-07-27 20:37:16] [INFO] Epoch  50: train_loss=0.1781 train_acc=0.978 val_loss=0.1469 val_acc=0.778 val_f1=0.745
+[2026-07-27 20:37:19] [INFO] Epoch  60: train_loss=0.1824 train_acc=0.976 val_loss=0.1502 val_acc=0.796 val_f1=0.769
+[2026-07-27 20:37:22] [INFO] Epoch  70: train_loss=0.1876 train_acc=0.981 val_loss=0.1478 val_acc=0.778 val_f1=0.745
+[2026-07-27 20:37:24] [INFO] Epoch  80: train_loss=0.1942 train_acc=0.981 val_loss=0.1379 val_acc=0.801 val_f1=0.777
+[2026-07-27 20:37:27] [INFO] Epoch  90: train_loss=0.1927 train_acc=0.979 val_loss=0.1397 val_acc=0.774 val_f1=0.744
+[2026-07-27 20:37:30] [INFO] Epoch 100: train_loss=0.2021 train_acc=0.982 val_loss=0.1478 val_acc=0.774 val_f1=0.744
+[2026-07-27 20:37:31] [INFO] Early stopping na epoch 103
+[2026-07-27 20:37:31] [INFO] Epoch   1: train_loss=3.8881 train_acc=0.277 val_loss=0.9847 val_acc=0.313 val_f1=0.303
+[2026-07-27 20:37:33] [INFO] Epoch  10: train_loss=0.8625 train_acc=0.386 val_loss=0.7428 val_acc=0.373 val_f1=0.371
+[2026-07-27 20:37:34] [INFO] Epoch  20: train_loss=0.7366 train_acc=0.479 val_loss=0.7599 val_acc=0.301 val_f1=0.301
+[2026-07-27 20:37:36] [INFO] Epoch  30: train_loss=0.6545 train_acc=0.534 val_loss=0.8116 val_acc=0.337 val_f1=0.332
+[2026-07-27 20:37:37] [INFO] Early stopping na epoch 35
+[2026-07-27 20:37:38] [INFO] Epoch   1: train_loss=0.8839 train_acc=0.808 val_loss=0.5643 val_acc=0.656 val_f1=0.551
+[2026-07-27 20:37:40] [INFO] Epoch  10: train_loss=0.3326 train_acc=0.931 val_loss=0.1648 val_acc=0.670 val_f1=0.518
+[2026-07-27 20:37:43] [INFO] Epoch  20: train_loss=0.2649 train_acc=0.949 val_loss=0.1749 val_acc=0.656 val_f1=0.487
+[2026-07-27 20:37:46] [INFO] Epoch  30: train_loss=0.2279 train_acc=0.959 val_loss=0.1444 val_acc=0.719 val_f1=0.638
+[2026-07-27 20:37:48] [INFO] Epoch  40: train_loss=0.2051 train_acc=0.969 val_loss=0.1426 val_acc=0.765 val_f1=0.724
+[2026-07-27 20:37:51] [INFO] Epoch  50: train_loss=0.1950 train_acc=0.972 val_loss=0.1333 val_acc=0.787 val_f1=0.757
+[2026-07-27 20:37:54] [INFO] Epoch  60: train_loss=0.2062 train_acc=0.979 val_loss=0.1498 val_acc=0.751 val_f1=0.702
+[2026-07-27 20:37:56] [INFO] Epoch  70: train_loss=0.1874 train_acc=0.977 val_loss=0.1284 val_acc=0.787 val_f1=0.753
+[2026-07-27 20:37:59] [INFO] Epoch  80: train_loss=0.2091 train_acc=0.981 val_loss=0.1385 val_acc=0.796 val_f1=0.766
+[2026-07-27 20:38:02] [INFO] Epoch  90: train_loss=0.2132 train_acc=0.980 val_loss=0.1380 val_acc=0.787 val_f1=0.757
+[2026-07-27 20:38:04] [INFO] Epoch 100: train_loss=0.2011 train_acc=0.982 val_loss=0.1436 val_acc=0.801 val_f1=0.775
+[2026-07-27 20:38:07] [INFO] Epoch 110: train_loss=0.2038 train_acc=0.982 val_loss=0.1506 val_acc=0.792 val_f1=0.761
+[2026-07-27 20:38:10] [INFO] Epoch 120: train_loss=0.2240 train_acc=0.982 val_loss=0.1391 val_acc=0.796 val_f1=0.769
+[2026-07-27 20:38:11] [INFO] Early stopping na epoch 126
+[2026-07-27 20:38:11] [INFO] Epoch   1: train_loss=4.1678 train_acc=0.254 val_loss=0.8784 val_acc=0.217 val_f1=0.223
+[2026-07-27 20:38:13] [INFO] Epoch  10: train_loss=0.8778 train_acc=0.366 val_loss=0.7413 val_acc=0.373 val_f1=0.377
+[2026-07-27 20:38:15] [INFO] Epoch  20: train_loss=0.7728 train_acc=0.449 val_loss=0.7182 val_acc=0.313 val_f1=0.313
+[2026-07-27 20:38:17] [INFO] Epoch  30: train_loss=0.6869 train_acc=0.524 val_loss=0.7225 val_acc=0.386 val_f1=0.379
+[2026-07-27 20:38:17] [INFO] Early stopping na epoch 33
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        130            2            2            2            2
+  Laringite                      14            7            0            0            7
+  Disfonia Psicogenica            2            3            6            4            3
+  Disfonia Funcional             10            5            3            2            3
+  Edema de Reinke                 1            4            1            1            7
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8280     0.9420     0.8814
+Laringite                  0.3333     0.2500     0.2857
+Disfonia Psicogenica       0.5000     0.3333     0.4000
+Disfonia Funcional         0.2222     0.0870     0.1250
+Edema de Reinke            0.3182     0.5000     0.3889
+
+=== Metricas Globais ===
+Acuracia:     0.6878
+Macro F1:     0.4162
+Weighted F1:  0.6568
+Total amostras: 221
+[2026-07-27 20:38:17] [INFO] 
+========== FOLD 3/5 (HIERARCHICAL LATE FUSION) ==========
+[2026-07-27 20:38:19] [INFO] Epoch   1: train_loss=0.6811 train_acc=0.791 val_loss=0.3030 val_acc=0.735 val_f1=0.671
+[2026-07-27 20:38:21] [INFO] Epoch  10: train_loss=0.2701 train_acc=0.948 val_loss=0.1573 val_acc=0.712 val_f1=0.595
+[2026-07-27 20:38:24] [INFO] Epoch  20: train_loss=0.2356 train_acc=0.961 val_loss=0.1577 val_acc=0.740 val_f1=0.648
+[2026-07-27 20:38:26] [INFO] Epoch  30: train_loss=0.2120 train_acc=0.968 val_loss=0.1367 val_acc=0.758 val_f1=0.703
+[2026-07-27 20:38:29] [INFO] Epoch  40: train_loss=0.2056 train_acc=0.976 val_loss=0.1441 val_acc=0.758 val_f1=0.711
+[2026-07-27 20:38:32] [INFO] Epoch  50: train_loss=0.1920 train_acc=0.975 val_loss=0.1288 val_acc=0.781 val_f1=0.752
+[2026-07-27 20:38:35] [INFO] Epoch  60: train_loss=0.2048 train_acc=0.980 val_loss=0.1398 val_acc=0.785 val_f1=0.758
+[2026-07-27 20:38:37] [INFO] Epoch  70: train_loss=0.2033 train_acc=0.982 val_loss=0.1389 val_acc=0.776 val_f1=0.749
+[2026-07-27 20:38:40] [INFO] Early stopping na epoch 79
+[2026-07-27 20:38:40] [INFO] Epoch   1: train_loss=3.9043 train_acc=0.278 val_loss=0.8343 val_acc=0.268 val_f1=0.233
+[2026-07-27 20:38:42] [INFO] Epoch  10: train_loss=0.8959 train_acc=0.357 val_loss=0.7540 val_acc=0.293 val_f1=0.276
+[2026-07-27 20:38:44] [INFO] Epoch  20: train_loss=0.7894 train_acc=0.439 val_loss=0.6994 val_acc=0.329 val_f1=0.327
+[2026-07-27 20:38:45] [INFO] Epoch  30: train_loss=0.6997 train_acc=0.507 val_loss=0.6950 val_acc=0.427 val_f1=0.420
+[2026-07-27 20:38:47] [INFO] Epoch  40: train_loss=0.6103 train_acc=0.565 val_loss=0.7508 val_acc=0.451 val_f1=0.439
+[2026-07-27 20:38:49] [INFO] Epoch  50: train_loss=0.5545 train_acc=0.619 val_loss=0.7900 val_acc=0.439 val_f1=0.429
+[2026-07-27 20:38:51] [INFO] Epoch  60: train_loss=0.5050 train_acc=0.667 val_loss=0.8670 val_acc=0.451 val_f1=0.433
+[2026-07-27 20:38:53] [INFO] Epoch  70: train_loss=0.4756 train_acc=0.696 val_loss=0.8961 val_acc=0.402 val_f1=0.376
+[2026-07-27 20:38:54] [INFO] Early stopping na epoch 75
+[2026-07-27 20:38:54] [INFO] Epoch   1: train_loss=0.6872 train_acc=0.759 val_loss=0.3916 val_acc=0.699 val_f1=0.632
+[2026-07-27 20:38:56] [INFO] Epoch  10: train_loss=0.2211 train_acc=0.941 val_loss=0.1549 val_acc=0.694 val_f1=0.563
+[2026-07-27 20:38:59] [INFO] Epoch  20: train_loss=0.2043 train_acc=0.957 val_loss=0.1556 val_acc=0.708 val_f1=0.591
+[2026-07-27 20:39:02] [INFO] Epoch  30: train_loss=0.2056 train_acc=0.966 val_loss=0.1323 val_acc=0.776 val_f1=0.723
+[2026-07-27 20:39:05] [INFO] Epoch  40: train_loss=0.1934 train_acc=0.971 val_loss=0.1433 val_acc=0.776 val_f1=0.733
+[2026-07-27 20:39:07] [INFO] Epoch  50: train_loss=0.1839 train_acc=0.977 val_loss=0.1199 val_acc=0.808 val_f1=0.786
+[2026-07-27 20:39:10] [INFO] Epoch  60: train_loss=0.1827 train_acc=0.977 val_loss=0.1272 val_acc=0.808 val_f1=0.788
+[2026-07-27 20:39:13] [INFO] Epoch  70: train_loss=0.1803 train_acc=0.981 val_loss=0.1309 val_acc=0.808 val_f1=0.788
+[2026-07-27 20:39:15] [INFO] Epoch  80: train_loss=0.1828 train_acc=0.979 val_loss=0.1364 val_acc=0.826 val_f1=0.806
+[2026-07-27 20:39:18] [INFO] Epoch  90: train_loss=0.1883 train_acc=0.977 val_loss=0.1302 val_acc=0.826 val_f1=0.807
+[2026-07-27 20:39:21] [INFO] Epoch 100: train_loss=0.1878 train_acc=0.983 val_loss=0.1309 val_acc=0.804 val_f1=0.783
+[2026-07-27 20:39:23] [INFO] Epoch 110: train_loss=0.1997 train_acc=0.981 val_loss=0.1333 val_acc=0.808 val_f1=0.787
+[2026-07-27 20:39:24] [INFO] Early stopping na epoch 111
+[2026-07-27 20:39:24] [INFO] Epoch   1: train_loss=4.0338 train_acc=0.259 val_loss=0.8570 val_acc=0.378 val_f1=0.374
+[2026-07-27 20:39:25] [INFO] Epoch  10: train_loss=0.8933 train_acc=0.360 val_loss=0.7149 val_acc=0.378 val_f1=0.372
+[2026-07-27 20:39:27] [INFO] Epoch  20: train_loss=0.7799 train_acc=0.444 val_loss=0.6490 val_acc=0.463 val_f1=0.453
+[2026-07-27 20:39:29] [INFO] Epoch  30: train_loss=0.6854 train_acc=0.520 val_loss=0.6325 val_acc=0.439 val_f1=0.439
+[2026-07-27 20:39:31] [INFO] Epoch  40: train_loss=0.6113 train_acc=0.565 val_loss=0.6554 val_acc=0.439 val_f1=0.429
+[2026-07-27 20:39:33] [INFO] Epoch  50: train_loss=0.5480 train_acc=0.627 val_loss=0.6934 val_acc=0.439 val_f1=0.431
+[2026-07-27 20:39:35] [INFO] Epoch  60: train_loss=0.5089 train_acc=0.653 val_loss=0.7689 val_acc=0.439 val_f1=0.430
+[2026-07-27 20:39:37] [INFO] Epoch  70: train_loss=0.4772 train_acc=0.681 val_loss=0.8258 val_acc=0.415 val_f1=0.392
+[2026-07-27 20:39:38] [INFO] Early stopping na epoch 79
+[2026-07-27 20:39:39] [INFO] Epoch   1: train_loss=0.6779 train_acc=0.817 val_loss=0.5117 val_acc=0.653 val_f1=0.527
+[2026-07-27 20:39:41] [INFO] Epoch  10: train_loss=0.3224 train_acc=0.942 val_loss=0.2523 val_acc=0.644 val_f1=0.455
+[2026-07-27 20:39:44] [INFO] Epoch  20: train_loss=0.2736 train_acc=0.950 val_loss=0.1711 val_acc=0.662 val_f1=0.499
+[2026-07-27 20:39:47] [INFO] Epoch  30: train_loss=0.2305 train_acc=0.964 val_loss=0.1542 val_acc=0.712 val_f1=0.637
+[2026-07-27 20:39:49] [INFO] Epoch  40: train_loss=0.2028 train_acc=0.972 val_loss=0.1292 val_acc=0.758 val_f1=0.716
+[2026-07-27 20:39:52] [INFO] Epoch  50: train_loss=0.1946 train_acc=0.975 val_loss=0.1242 val_acc=0.758 val_f1=0.723
+[2026-07-27 20:39:55] [INFO] Epoch  60: train_loss=0.1875 train_acc=0.977 val_loss=0.1326 val_acc=0.763 val_f1=0.727
+[2026-07-27 20:39:58] [INFO] Epoch  70: train_loss=0.1965 train_acc=0.976 val_loss=0.1284 val_acc=0.767 val_f1=0.737
+[2026-07-27 20:40:00] [INFO] Epoch  80: train_loss=0.2011 train_acc=0.978 val_loss=0.1308 val_acc=0.758 val_f1=0.719
+[2026-07-27 20:40:02] [INFO] Early stopping na epoch 87
+[2026-07-27 20:40:02] [INFO] Epoch   1: train_loss=4.9676 train_acc=0.261 val_loss=1.0679 val_acc=0.268 val_f1=0.259
+[2026-07-27 20:40:04] [INFO] Epoch  10: train_loss=0.9209 train_acc=0.331 val_loss=0.9513 val_acc=0.280 val_f1=0.271
+[2026-07-27 20:40:06] [INFO] Epoch  20: train_loss=0.8338 train_acc=0.405 val_loss=0.9209 val_acc=0.341 val_f1=0.329
+[2026-07-27 20:40:08] [INFO] Epoch  30: train_loss=0.7460 train_acc=0.480 val_loss=0.7158 val_acc=0.366 val_f1=0.344
+[2026-07-27 20:40:10] [INFO] Epoch  40: train_loss=0.6617 train_acc=0.534 val_loss=0.9682 val_acc=0.378 val_f1=0.370
+[2026-07-27 20:40:11] [INFO] Epoch  50: train_loss=0.5814 train_acc=0.603 val_loss=1.0852 val_acc=0.366 val_f1=0.344
+[2026-07-27 20:40:13] [INFO] Epoch  60: train_loss=0.5514 train_acc=0.622 val_loss=1.1423 val_acc=0.415 val_f1=0.396
+[2026-07-27 20:40:15] [INFO] Epoch  70: train_loss=0.5057 train_acc=0.664 val_loss=1.1999 val_acc=0.366 val_f1=0.330
+[2026-07-27 20:40:16] [INFO] Early stopping na epoch 74
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        126            3            4            3            1
+  Laringite                       8           11            2            4            3
+  Disfonia Psicogenica            5            1            6            4            2
+  Disfonia Funcional              9            2            4            6            1
+  Edema de Reinke                 4            2            0            1            7
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8289     0.9197     0.8720
+Laringite                  0.5789     0.3929     0.4681
+Disfonia Psicogenica       0.3750     0.3333     0.3529
+Disfonia Funcional         0.3333     0.2727     0.3000
+Edema de Reinke            0.5000     0.5000     0.5000
+
+=== Metricas Globais ===
+Acuracia:     0.7123
+Macro F1:     0.4986
+Weighted F1:  0.6964
+Total amostras: 219
+[2026-07-27 20:40:16] [INFO] 
+========== FOLD 4/5 (HIERARCHICAL LATE FUSION) ==========
+[2026-07-27 20:40:18] [INFO] Epoch   1: train_loss=0.7715 train_acc=0.807 val_loss=0.2975 val_acc=0.697 val_f1=0.647
+[2026-07-27 20:40:21] [INFO] Epoch  10: train_loss=0.3078 train_acc=0.946 val_loss=0.1452 val_acc=0.702 val_f1=0.592
+[2026-07-27 20:40:23] [INFO] Epoch  20: train_loss=0.2575 train_acc=0.956 val_loss=0.1444 val_acc=0.720 val_f1=0.617
+[2026-07-27 20:40:26] [INFO] Epoch  30: train_loss=0.2135 train_acc=0.967 val_loss=0.1308 val_acc=0.766 val_f1=0.699
+[2026-07-27 20:40:29] [INFO] Epoch  40: train_loss=0.2033 train_acc=0.974 val_loss=0.1182 val_acc=0.780 val_f1=0.737
+[2026-07-27 20:40:32] [INFO] Epoch  50: train_loss=0.2101 train_acc=0.978 val_loss=0.1278 val_acc=0.780 val_f1=0.747
+[2026-07-27 20:40:34] [INFO] Epoch  60: train_loss=0.2057 train_acc=0.979 val_loss=0.1183 val_acc=0.780 val_f1=0.749
+[2026-07-27 20:40:37] [INFO] Epoch  70: train_loss=0.2140 train_acc=0.981 val_loss=0.1302 val_acc=0.775 val_f1=0.741
+[2026-07-27 20:40:40] [INFO] Epoch  80: train_loss=0.2077 train_acc=0.982 val_loss=0.1337 val_acc=0.775 val_f1=0.737
+[2026-07-27 20:40:42] [INFO] Early stopping na epoch 87
+[2026-07-27 20:40:42] [INFO] Epoch   1: train_loss=3.4315 train_acc=0.259 val_loss=0.8021 val_acc=0.309 val_f1=0.303
+[2026-07-27 20:40:44] [INFO] Epoch  10: train_loss=0.9016 train_acc=0.334 val_loss=0.7379 val_acc=0.346 val_f1=0.345
+[2026-07-27 20:40:45] [INFO] Epoch  20: train_loss=0.7989 train_acc=0.438 val_loss=0.7134 val_acc=0.383 val_f1=0.379
+[2026-07-27 20:40:47] [INFO] Epoch  30: train_loss=0.6809 train_acc=0.525 val_loss=0.7028 val_acc=0.432 val_f1=0.423
+[2026-07-27 20:40:49] [INFO] Epoch  40: train_loss=0.5954 train_acc=0.602 val_loss=0.7666 val_acc=0.407 val_f1=0.402
+[2026-07-27 20:40:51] [INFO] Epoch  50: train_loss=0.5379 train_acc=0.642 val_loss=0.8071 val_acc=0.407 val_f1=0.408
+[2026-07-27 20:40:53] [INFO] Epoch  60: train_loss=0.4921 train_acc=0.683 val_loss=0.8558 val_acc=0.407 val_f1=0.412
+[2026-07-27 20:40:55] [INFO] Epoch  70: train_loss=0.4485 train_acc=0.724 val_loss=0.9103 val_acc=0.370 val_f1=0.369
+[2026-07-27 20:40:57] [INFO] Epoch  80: train_loss=0.4306 train_acc=0.734 val_loss=0.9786 val_acc=0.358 val_f1=0.351
+[2026-07-27 20:40:57] [INFO] Early stopping na epoch 82
+[2026-07-27 20:40:57] [INFO] Epoch   1: train_loss=0.6120 train_acc=0.775 val_loss=0.2830 val_acc=0.670 val_f1=0.598
+[2026-07-27 20:41:00] [INFO] Epoch  10: train_loss=0.2360 train_acc=0.944 val_loss=0.1563 val_acc=0.702 val_f1=0.575
+[2026-07-27 20:41:02] [INFO] Epoch  20: train_loss=0.2204 train_acc=0.958 val_loss=0.1617 val_acc=0.702 val_f1=0.569
+[2026-07-27 20:41:05] [INFO] Epoch  30: train_loss=0.2028 train_acc=0.966 val_loss=0.1406 val_acc=0.752 val_f1=0.686
+[2026-07-27 20:41:08] [INFO] Epoch  40: train_loss=0.1815 train_acc=0.973 val_loss=0.1363 val_acc=0.771 val_f1=0.721
+[2026-07-27 20:41:11] [INFO] Epoch  50: train_loss=0.1808 train_acc=0.975 val_loss=0.1345 val_acc=0.766 val_f1=0.726
+[2026-07-27 20:41:13] [INFO] Epoch  60: train_loss=0.1769 train_acc=0.976 val_loss=0.1329 val_acc=0.780 val_f1=0.744
+[2026-07-27 20:41:16] [INFO] Epoch  70: train_loss=0.1844 train_acc=0.981 val_loss=0.1353 val_acc=0.780 val_f1=0.744
+[2026-07-27 20:41:19] [INFO] Epoch  80: train_loss=0.1793 train_acc=0.980 val_loss=0.1349 val_acc=0.784 val_f1=0.744
+[2026-07-27 20:41:20] [INFO] Early stopping na epoch 85
+[2026-07-27 20:41:20] [INFO] Epoch   1: train_loss=3.0466 train_acc=0.274 val_loss=0.8393 val_acc=0.222 val_f1=0.219
+[2026-07-27 20:41:22] [INFO] Epoch  10: train_loss=0.8695 train_acc=0.388 val_loss=0.7168 val_acc=0.309 val_f1=0.293
+[2026-07-27 20:41:24] [INFO] Epoch  20: train_loss=0.7615 train_acc=0.475 val_loss=0.6885 val_acc=0.321 val_f1=0.315
+[2026-07-27 20:41:26] [INFO] Epoch  30: train_loss=0.6518 train_acc=0.546 val_loss=0.7068 val_acc=0.370 val_f1=0.357
+[2026-07-27 20:41:28] [INFO] Epoch  40: train_loss=0.5954 train_acc=0.599 val_loss=0.7360 val_acc=0.383 val_f1=0.369
+[2026-07-27 20:41:29] [INFO] Epoch  50: train_loss=0.5375 train_acc=0.649 val_loss=0.8213 val_acc=0.383 val_f1=0.376
+[2026-07-27 20:41:31] [INFO] Epoch  60: train_loss=0.5005 train_acc=0.664 val_loss=0.8488 val_acc=0.346 val_f1=0.315
+[2026-07-27 20:41:33] [INFO] Epoch  70: train_loss=0.4668 train_acc=0.705 val_loss=0.8830 val_acc=0.346 val_f1=0.316
+[2026-07-27 20:41:35] [INFO] Epoch  80: train_loss=0.4424 train_acc=0.726 val_loss=0.9236 val_acc=0.309 val_f1=0.269
+[2026-07-27 20:41:35] [INFO] Early stopping na epoch 81
+[2026-07-27 20:41:36] [INFO] Epoch   1: train_loss=0.6944 train_acc=0.793 val_loss=0.4338 val_acc=0.661 val_f1=0.570
+[2026-07-27 20:41:38] [INFO] Epoch  10: train_loss=0.2506 train_acc=0.942 val_loss=0.1683 val_acc=0.670 val_f1=0.504
+[2026-07-27 20:41:41] [INFO] Epoch  20: train_loss=0.2059 train_acc=0.951 val_loss=0.1550 val_acc=0.688 val_f1=0.546
+[2026-07-27 20:41:44] [INFO] Epoch  30: train_loss=0.1946 train_acc=0.960 val_loss=0.1281 val_acc=0.757 val_f1=0.706
+[2026-07-27 20:41:46] [INFO] Epoch  40: train_loss=0.2041 train_acc=0.972 val_loss=0.1269 val_acc=0.766 val_f1=0.717
+[2026-07-27 20:41:49] [INFO] Epoch  50: train_loss=0.1960 train_acc=0.977 val_loss=0.1302 val_acc=0.784 val_f1=0.746
+[2026-07-27 20:41:52] [INFO] Epoch  60: train_loss=0.2014 train_acc=0.977 val_loss=0.1186 val_acc=0.821 val_f1=0.799
+[2026-07-27 20:41:54] [INFO] Epoch  70: train_loss=0.1955 train_acc=0.979 val_loss=0.1284 val_acc=0.807 val_f1=0.776
+[2026-07-27 20:41:57] [INFO] Epoch  80: train_loss=0.2139 train_acc=0.981 val_loss=0.1225 val_acc=0.821 val_f1=0.797
+[2026-07-27 20:42:00] [INFO] Epoch  90: train_loss=0.2085 train_acc=0.980 val_loss=0.1277 val_acc=0.803 val_f1=0.781
+[2026-07-27 20:42:03] [INFO] Epoch 100: train_loss=0.2078 train_acc=0.980 val_loss=0.1163 val_acc=0.839 val_f1=0.822
+[2026-07-27 20:42:05] [INFO] Epoch 110: train_loss=0.2055 train_acc=0.983 val_loss=0.1334 val_acc=0.812 val_f1=0.782
+[2026-07-27 20:42:06] [INFO] Early stopping na epoch 114
+[2026-07-27 20:42:07] [INFO] Epoch   1: train_loss=4.8048 train_acc=0.264 val_loss=0.8284 val_acc=0.321 val_f1=0.322
+[2026-07-27 20:42:08] [INFO] Epoch  10: train_loss=0.9180 train_acc=0.314 val_loss=0.7722 val_acc=0.259 val_f1=0.252
+[2026-07-27 20:42:10] [INFO] Epoch  20: train_loss=0.8435 train_acc=0.385 val_loss=0.7417 val_acc=0.272 val_f1=0.267
+[2026-07-27 20:42:12] [INFO] Epoch  30: train_loss=0.7340 train_acc=0.486 val_loss=0.6914 val_acc=0.432 val_f1=0.400
+[2026-07-27 20:42:14] [INFO] Epoch  40: train_loss=0.6419 train_acc=0.552 val_loss=0.7072 val_acc=0.420 val_f1=0.376
+[2026-07-27 20:42:16] [INFO] Epoch  50: train_loss=0.5739 train_acc=0.599 val_loss=0.7565 val_acc=0.420 val_f1=0.407
+[2026-07-27 20:42:17] [INFO] Epoch  60: train_loss=0.5174 train_acc=0.658 val_loss=0.8147 val_acc=0.346 val_f1=0.328
+[2026-07-27 20:42:18] [INFO] Early stopping na epoch 63
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        128            5            2            0            2
+  Laringite                      11            9            0            1            7
+  Disfonia Psicogenica            9            2            4            2            1
+  Disfonia Funcional             10            2            6            3            1
+  Edema de Reinke                 1            2            2            0            8
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8050     0.9343     0.8649
+Laringite                  0.4500     0.3214     0.3750
+Disfonia Psicogenica       0.2857     0.2222     0.2500
+Disfonia Funcional         0.5000     0.1364     0.2143
+Edema de Reinke            0.4211     0.6154     0.5000
+
+=== Metricas Globais ===
+Acuracia:     0.6972
+Macro F1:     0.4408
+Weighted F1:  0.6638
+Total amostras: 218
+[2026-07-27 20:42:18] [INFO] 
+========== FOLD 5/5 (HIERARCHICAL LATE FUSION) ==========
+[2026-07-27 20:42:19] [INFO] Epoch   1: train_loss=0.5953 train_acc=0.783 val_loss=0.2950 val_acc=0.702 val_f1=0.620
+[2026-07-27 20:42:22] [INFO] Epoch  10: train_loss=0.2618 train_acc=0.948 val_loss=0.1626 val_acc=0.679 val_f1=0.525
+[2026-07-27 20:42:25] [INFO] Epoch  20: train_loss=0.2292 train_acc=0.959 val_loss=0.1505 val_acc=0.706 val_f1=0.611
+[2026-07-27 20:42:27] [INFO] Epoch  30: train_loss=0.2347 train_acc=0.967 val_loss=0.1421 val_acc=0.780 val_f1=0.732
+[2026-07-27 20:42:30] [INFO] Epoch  40: train_loss=0.2120 train_acc=0.974 val_loss=0.1406 val_acc=0.784 val_f1=0.748
+[2026-07-27 20:42:33] [INFO] Epoch  50: train_loss=0.2157 train_acc=0.979 val_loss=0.1453 val_acc=0.794 val_f1=0.759
+[2026-07-27 20:42:35] [INFO] Epoch  60: train_loss=0.1960 train_acc=0.980 val_loss=0.1493 val_acc=0.794 val_f1=0.768
+[2026-07-27 20:42:38] [INFO] Epoch  70: train_loss=0.2099 train_acc=0.981 val_loss=0.1536 val_acc=0.794 val_f1=0.766
+[2026-07-27 20:42:41] [INFO] Epoch  80: train_loss=0.2133 train_acc=0.981 val_loss=0.1636 val_acc=0.771 val_f1=0.735
+[2026-07-27 20:42:42] [INFO] Early stopping na epoch 84
+[2026-07-27 20:42:42] [INFO] Epoch   1: train_loss=5.6642 train_acc=0.259 val_loss=0.8902 val_acc=0.296 val_f1=0.301
+[2026-07-27 20:42:44] [INFO] Epoch  10: train_loss=0.8955 train_acc=0.342 val_loss=0.7590 val_acc=0.210 val_f1=0.180
+[2026-07-27 20:42:46] [INFO] Epoch  20: train_loss=0.8266 train_acc=0.394 val_loss=0.7262 val_acc=0.309 val_f1=0.295
+[2026-07-27 20:42:47] [INFO] Epoch  30: train_loss=0.7345 train_acc=0.473 val_loss=0.6845 val_acc=0.370 val_f1=0.368
+[2026-07-27 20:42:49] [INFO] Epoch  40: train_loss=0.6435 train_acc=0.542 val_loss=0.6750 val_acc=0.420 val_f1=0.414
+[2026-07-27 20:42:51] [INFO] Epoch  50: train_loss=0.5743 train_acc=0.601 val_loss=0.6729 val_acc=0.420 val_f1=0.419
+[2026-07-27 20:42:53] [INFO] Epoch  60: train_loss=0.5232 train_acc=0.647 val_loss=0.7449 val_acc=0.420 val_f1=0.423
+[2026-07-27 20:42:55] [INFO] Epoch  70: train_loss=0.4870 train_acc=0.683 val_loss=0.7819 val_acc=0.407 val_f1=0.413
+[2026-07-27 20:42:57] [INFO] Epoch  80: train_loss=0.4651 train_acc=0.693 val_loss=0.8004 val_acc=0.420 val_f1=0.425
+[2026-07-27 20:42:58] [INFO] Epoch  90: train_loss=0.4421 train_acc=0.731 val_loss=0.8508 val_acc=0.407 val_f1=0.409
+[2026-07-27 20:43:00] [INFO] Epoch 100: train_loss=0.4202 train_acc=0.748 val_loss=0.9110 val_acc=0.407 val_f1=0.407
+[2026-07-27 20:43:01] [INFO] Early stopping na epoch 105
+[2026-07-27 20:43:02] [INFO] Epoch   1: train_loss=0.6104 train_acc=0.730 val_loss=0.2557 val_acc=0.693 val_f1=0.595
+[2026-07-27 20:43:04] [INFO] Epoch  10: train_loss=0.2128 train_acc=0.944 val_loss=0.1674 val_acc=0.679 val_f1=0.525
+[2026-07-27 20:43:07] [INFO] Epoch  20: train_loss=0.1973 train_acc=0.957 val_loss=0.1662 val_acc=0.697 val_f1=0.578
+[2026-07-27 20:43:10] [INFO] Epoch  30: train_loss=0.1837 train_acc=0.968 val_loss=0.1511 val_acc=0.752 val_f1=0.693
+[2026-07-27 20:43:12] [INFO] Epoch  40: train_loss=0.1766 train_acc=0.972 val_loss=0.1543 val_acc=0.748 val_f1=0.685
+[2026-07-27 20:43:15] [INFO] Epoch  50: train_loss=0.1835 train_acc=0.974 val_loss=0.1571 val_acc=0.771 val_f1=0.733
+[2026-07-27 20:43:18] [INFO] Epoch  60: train_loss=0.1874 train_acc=0.978 val_loss=0.1632 val_acc=0.757 val_f1=0.711
+[2026-07-27 20:43:20] [INFO] Epoch  70: train_loss=0.1856 train_acc=0.977 val_loss=0.1723 val_acc=0.752 val_f1=0.716
+[2026-07-27 20:43:23] [INFO] Epoch  80: train_loss=0.1851 train_acc=0.976 val_loss=0.1563 val_acc=0.775 val_f1=0.741
+[2026-07-27 20:43:26] [INFO] Epoch  90: train_loss=0.1949 train_acc=0.980 val_loss=0.1738 val_acc=0.775 val_f1=0.735
+[2026-07-27 20:43:28] [INFO] Early stopping na epoch 98
+[2026-07-27 20:43:28] [INFO] Epoch   1: train_loss=3.8070 train_acc=0.268 val_loss=0.9450 val_acc=0.296 val_f1=0.263
+[2026-07-27 20:43:30] [INFO] Epoch  10: train_loss=0.8541 train_acc=0.385 val_loss=0.7268 val_acc=0.346 val_f1=0.342
+[2026-07-27 20:43:32] [INFO] Epoch  20: train_loss=0.7404 train_acc=0.486 val_loss=0.7088 val_acc=0.395 val_f1=0.389
+[2026-07-27 20:43:34] [INFO] Epoch  30: train_loss=0.6546 train_acc=0.522 val_loss=0.7180 val_acc=0.432 val_f1=0.424
+[2026-07-27 20:43:35] [INFO] Epoch  40: train_loss=0.5827 train_acc=0.599 val_loss=0.7393 val_acc=0.432 val_f1=0.424
+[2026-07-27 20:43:37] [INFO] Epoch  50: train_loss=0.5389 train_acc=0.636 val_loss=0.7932 val_acc=0.407 val_f1=0.390
+[2026-07-27 20:43:39] [INFO] Epoch  60: train_loss=0.4915 train_acc=0.682 val_loss=0.8325 val_acc=0.420 val_f1=0.407
+[2026-07-27 20:43:39] [INFO] Early stopping na epoch 61
+[2026-07-27 20:43:40] [INFO] Epoch   1: train_loss=0.8276 train_acc=0.791 val_loss=0.4758 val_acc=0.642 val_f1=0.531
+[2026-07-27 20:43:45] [INFO] Epoch  10: train_loss=0.2944 train_acc=0.937 val_loss=0.1795 val_acc=0.656 val_f1=0.479
+[2026-07-27 20:43:50] [INFO] Epoch  20: train_loss=0.2510 train_acc=0.950 val_loss=0.1771 val_acc=0.661 val_f1=0.506
+[2026-07-27 20:43:55] [INFO] Epoch  30: train_loss=0.2137 train_acc=0.962 val_loss=0.1759 val_acc=0.711 val_f1=0.636
+[2026-07-27 20:44:00] [INFO] Epoch  40: train_loss=0.2081 train_acc=0.972 val_loss=0.1698 val_acc=0.734 val_f1=0.690
+[2026-07-27 20:44:05] [INFO] Epoch  50: train_loss=0.1812 train_acc=0.975 val_loss=0.1754 val_acc=0.739 val_f1=0.699
+[2026-07-27 20:44:11] [INFO] Epoch  60: train_loss=0.1864 train_acc=0.978 val_loss=0.1866 val_acc=0.743 val_f1=0.705
+[2026-07-27 20:44:16] [INFO] Epoch  70: train_loss=0.1873 train_acc=0.979 val_loss=0.1848 val_acc=0.748 val_f1=0.714
+[2026-07-27 20:44:21] [INFO] Epoch  80: train_loss=0.1833 train_acc=0.980 val_loss=0.1938 val_acc=0.748 val_f1=0.712
+[2026-07-27 20:44:24] [INFO] Early stopping na epoch 85
+[2026-07-27 20:44:24] [INFO] Epoch   1: train_loss=5.5581 train_acc=0.255 val_loss=1.0910 val_acc=0.247 val_f1=0.215
+[2026-07-27 20:44:25] [INFO] Epoch  10: train_loss=0.8918 train_acc=0.342 val_loss=0.7853 val_acc=0.333 val_f1=0.325
+[2026-07-27 20:44:27] [INFO] Epoch  20: train_loss=0.8027 train_acc=0.418 val_loss=0.7441 val_acc=0.370 val_f1=0.373
+[2026-07-27 20:44:29] [INFO] Epoch  30: train_loss=0.7107 train_acc=0.487 val_loss=0.7124 val_acc=0.420 val_f1=0.419
+[2026-07-27 20:44:31] [INFO] Epoch  40: train_loss=0.6425 train_acc=0.538 val_loss=0.6915 val_acc=0.346 val_f1=0.344
+[2026-07-27 20:44:33] [INFO] Epoch  50: train_loss=0.5833 train_acc=0.584 val_loss=0.6846 val_acc=0.420 val_f1=0.408
+[2026-07-27 20:44:33] [INFO] Early stopping na epoch 54
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        124            5            4            1            3
+  Laringite                      11            9            3            2            3
+  Disfonia Psicogenica            9            0            4            1            4
+  Disfonia Funcional             10            1            5            4            2
+  Edema de Reinke                 1            1            2            0            9
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8000     0.9051     0.8493
+Laringite                  0.5625     0.3214     0.4091
+Disfonia Psicogenica       0.2222     0.2222     0.2222
+Disfonia Funcional         0.5000     0.1818     0.2667
+Edema de Reinke            0.4286     0.6923     0.5294
+
+=== Metricas Globais ===
+Acuracia:     0.6881
+Macro F1:     0.4553
+Weighted F1:  0.6631
+Total amostras: 218
+[2026-07-27 20:44:34] [INFO] 
+========== RESULTADOS AGREGADOS ==========
+[2026-07-27 20:44:34] [INFO] Acuracia media: 0.6976  Macro F1 medio: 0.4514
+
+=== Matriz de Confusao ===
+                             Normal    Laringite Disfonia Psicogenica Disfonia Funcional Edema de Reinke
+  Normal                        638           16           14            9           10
+  Laringite                      55           44            6            9           26
+  Disfonia Psicogenica           32            8           25           13           13
+  Disfonia Funcional             47           14           25           17            9
+  Edema de Reinke                 7           10            7            2           42
+
+=== Metricas por Classe ===
+Classe                   Precisao     Recall   F1-Score
+Normal                     0.8190     0.9287     0.8704
+Laringite                  0.4783     0.3143     0.3793
+Disfonia Psicogenica       0.3247     0.2747     0.2976
+Disfonia Funcional         0.3400     0.1518     0.2099
+Edema de Reinke            0.4200     0.6176     0.5000
+
+=== Metricas Globais ===
+Acuracia:     0.6976
+Macro F1:     0.4514
+Weighted F1:  0.6700
+Total amostras: 1098
+[2026-07-27 20:44:34] [INFO] 
+========== BOOTSTRAP CI (95%, N=1000, seed=42) ==========
+[2026-07-27 20:44:34] [INFO] CI_ACCURACY:         0.6970 [0.6712, 0.7250]
+[2026-07-27 20:44:34] [INFO] CI_MACRO_F1:         0.4499 [0.4151, 0.4896]
+[2026-07-27 20:44:34] [INFO] CI_F1_NORMAL:        0.8699 [0.8516, 0.8875]
+[2026-07-27 20:44:34] [INFO] CI_F1_LARYNGITE:     0.3795 [0.3030, 0.4603]
+[2026-07-27 20:44:34] [INFO] CI_F1_DISFONIA:      0.2952 [0.2025, 0.3784]
+[2026-07-27 20:44:34] [INFO] CI_F1_FUNC_DISFONIA: 0.2080 [0.1233, 0.2911]
+[2026-07-27 20:44:34] [INFO] CI_F1_REINKE:        0.4972 [0.4060, 0.5912]
+[2026-07-27 20:44:34] [INFO] 
+========== MCNEMAR: MLP vs BASELINES ==========
+[2026-07-27 20:44:34] [INFO] MLP vs MajorityClass: chi2=34.3729 p=0.0000 -- MLP significativamente melhor que MajorityClass (p<0.05)
+[2026-07-27 20:44:34] [INFO] MLP vs kNN:           chi2=20.1437 p=0.0000 -- MLP significativamente melhor que kNN (p<0.05)
+[2026-07-27 20:44:34] [INFO] MLP vs LogisticRegression: chi2=20.6380 p=0.0000 -- MLP significativamente melhor que LogisticRegression (p<0.05)

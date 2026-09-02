@@ -1,0 +1,14 @@
+[2026-04-24 01:19:28] [INFO] Vocal Stacked v31.2
+[2026-04-24 01:19:28] [INFO] === MODO: TREINAMENTO NESTED STACKED HIERARCHY (v31.2) ===
+[2026-04-24 01:19:28] [INFO] Classe 0 (saudavel): 687 pacientes
+[2026-04-24 01:19:28] [INFO] Classe 1 (laringite): 140 pacientes
+[2026-04-24 01:19:28] [INFO] Classe 2 (disfonia_psicogênica): 91 pacientes
+[2026-04-24 01:19:28] [INFO] Classe 3 (disfonia_funcional): 112 pacientes
+[2026-04-24 01:19:28] [INFO] Classe 4 (edema_de_reinke): 68 pacientes
+[2026-04-24 01:19:28] [INFO] Dataset total: 1098 pacientes
+[2026-04-24 01:19:28] [INFO] CSV lido: 1254 registros de ./overview_merged.csv
+[2026-04-24 01:20:27] [INFO] Extracao completa: 1098 pacientes, 0 erros, 58.5s
+[2026-04-24 01:20:27] [INFO] Features exportadas: results/features.csv (1098 x 447)
+[2026-04-24 01:20:27] [INFO] Pre-calculando aumentacoes de áudio...
+[2026-04-24 01:22:39] [INFO] 
+========== FOLD 1/5 ==========
